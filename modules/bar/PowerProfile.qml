@@ -13,13 +13,26 @@ Item {
     property string displayProfile: profile
 
     readonly property var profiles: ["power-saver", "balanced", "performance"]
-    readonly property string iconName: {
-        if (root.displayProfile === "performance")
-            return "power-profile-performance-symbolic";
-        if (root.displayProfile === "power-saver")
-            return "power-profile-power-saver-symbolic";
-        return "power-profile-balanced-symbolic";
-    }
+
+    // 0 = fondo actual, 1 = estilo de énfasis. Balanced queda en medio.
+    readonly property real tone: root.displayProfile === "performance" ? 1.0
+        : root.displayProfile === "balanced" ? 0.5
+        : 0.0
+    readonly property color lowColor: Qt.lighter(Theme.chipHover, 1.3)
+    readonly property color fillColor: Qt.rgba(
+        root.lowColor.r + (Theme.m3Primary.r - root.lowColor.r) * root.tone,
+        root.lowColor.g + (Theme.m3Primary.g - root.lowColor.g) * root.tone,
+        root.lowColor.b + (Theme.m3Primary.b - root.lowColor.b) * root.tone,
+        1.0
+    )
+    readonly property color iconColor: root.tone >= 0.5
+        ? Theme.m3OnPrimary
+        : Theme.text
+    readonly property string glyph: root.displayProfile === "power-saver"
+        ? "\u{F06C}" // hoja
+        : root.displayProfile === "performance"
+            ? "\u{F0E7}" // rayo
+            : ""
 
     implicitWidth: 28
     implicitHeight: 26
@@ -60,11 +73,13 @@ Item {
         height: 26
         radius: width / 2
         color: hover.hovered
-            ? Qt.lighter(Theme.chipHover, 1.45)
-            : Qt.lighter(Theme.chipHover, 1.3)
+            ? (root.tone > 0
+                ? Qt.lighter(root.fillColor, 1.08)
+                : Qt.lighter(Theme.chipHover, 1.45))
+            : root.fillColor
 
         Behavior on color {
-            ColorAnimation { duration: Theme.durFast; easing.type: Easing.OutCubic }
+            ColorAnimation { duration: Theme.dur; easing.type: Easing.OutCubic }
         }
     }
 
@@ -73,14 +88,28 @@ Item {
         cursorShape: Qt.PointingHandCursor
     }
 
+    Text {
+        anchors.centerIn: parent
+        visible: root.glyph !== ""
+        text: root.glyph
+        color: root.iconColor
+        font.family: Theme.fontIcon
+        font.pixelSize: 16
+
+        Behavior on color {
+            ColorAnimation { duration: Theme.dur; easing.type: Easing.OutCubic }
+        }
+    }
+
     IconImage {
         anchors.centerIn: parent
+        visible: root.glyph === ""
         implicitSize: 16
-        source: Quickshell.iconPath(root.iconName, "power-profile-balanced-symbolic")
+        source: Quickshell.iconPath("power-profile-balanced-symbolic")
         layer.enabled: true
         layer.effect: MultiEffect {
             colorization: 1.0
-            colorizationColor: Theme.text
+            colorizationColor: root.iconColor
         }
     }
 

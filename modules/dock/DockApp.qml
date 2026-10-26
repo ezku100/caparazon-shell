@@ -48,7 +48,7 @@ Item {
         layer.effect: MultiEffect {
             colorization: 1.0
             colorizationColor: root.iconColor
-            shadowEnabled: true
+            shadowEnabled: hover.hovered || shadowOpacity > 0.01
             shadowColor: Theme.glowColor
             shadowBlur: 0.55
             shadowOpacity: hover.hovered ? 0.80 : 0.0

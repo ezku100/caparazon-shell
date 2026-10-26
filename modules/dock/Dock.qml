@@ -89,12 +89,7 @@ PanelWindow {
     }
 
     readonly property var pinnedApps: pinsAdapter.pinned || []
-
-    Process {
-        id: ensurePinsDir
-        running: true
-        command: ["mkdir", "-p", dock.configHome + "/caparazon"]
-    }
+    property var appEntryCache: ({})
 
     // Apps con ventanas abiertas que no están ancladas. Se agrupan por
     // appId para que varias ventanas de la misma app ocupen un solo icono.
@@ -440,28 +435,38 @@ PanelWindow {
             return null;
 
         const id = normalizeId(raw);
+        if (dock.appEntryCache[id] !== undefined)
+            return dock.appEntryCache[id];
+
         const candidates = [raw, id, id + ".desktop"];
         for (let i = 0; i < candidates.length; ++i) {
             const entry = DesktopEntries.byId(candidates[i]);
-            if (entry)
+            if (entry) {
+                dock.appEntryCache[id] = entry;
                 return entry;
+            }
         }
 
         const guessed = DesktopEntries.heuristicLookup(raw)
             || DesktopEntries.heuristicLookup(id)
             || DesktopEntries.heuristicLookup(displayName(raw));
-        if (guessed)
+        if (guessed) {
+            dock.appEntryCache[id] = guessed;
             return guessed;
+        }
 
         const entries = DesktopEntries.applications
             ? DesktopEntries.applications.values
             : [];
         for (let i = 0; i < entries.length; ++i) {
             const entry = entries[i];
-            if (entry && entryMatchesAppId(entry, id))
+            if (entry && entryMatchesAppId(entry, id)) {
+                dock.appEntryCache[id] = entry;
                 return entry;
+            }
         }
 
+        dock.appEntryCache[id] = null;
         return null;
     }
 

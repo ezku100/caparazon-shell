@@ -44,9 +44,13 @@ Item {
         width: 26
         height: 26
         radius: width / 2
-        color: hover.hovered
-            ? Qt.lighter(Theme.chipHover, 1.45)
-            : Qt.lighter(Theme.chipHover, 1.3)
+        color: root.kind === "off"
+            ? (hover.hovered
+                ? Qt.lighter(Theme.chipHover, 1.45)
+                : Qt.lighter(Theme.chipHover, 1.3))
+            : (hover.hovered
+                ? Qt.lighter(Theme.m3Primary, 1.08)
+                : Theme.m3Primary)
 
         Behavior on color {
             ColorAnimation { duration: Theme.durFast; easing.type: Easing.OutCubic }
@@ -67,7 +71,7 @@ Item {
         layer.enabled: true
         layer.effect: MultiEffect {
             colorization: 1.0
-            colorizationColor: root.kind === "off" ? Theme.textDim : Theme.text
+            colorizationColor: root.kind === "off" ? Theme.textDim : Theme.m3OnPrimary
         }
     }
 }

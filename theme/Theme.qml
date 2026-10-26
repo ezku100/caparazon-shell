@@ -15,6 +15,7 @@ QtObject {
     readonly property color m3SurfaceContainerHighest: MatugenPalette.surfaceContainerHighest
     readonly property color m3OnSurface:               MatugenPalette.fgSurface
     readonly property color m3Primary:                 MatugenPalette.primary
+    readonly property color m3OnPrimary:               MatugenPalette.fgPrimary
     readonly property color m3Tertiary:                MatugenPalette.tertiary
     readonly property color m3OnSurfaceVariant:        MatugenPalette.fgSurfaceVariant
     readonly property color m3Outline:                 MatugenPalette.outline
