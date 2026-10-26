@@ -13,7 +13,7 @@ Item {
 
     Process {
         id: kwinLoader
-        running: true
+        running: false
         command: [
             "bash", "-c",
             // Recargar siempre: si Quickshell se reinicia, el script de KWin
@@ -33,7 +33,7 @@ Item {
         id: journal
         running: true
         command: [
-            "journalctl", "--user", "-f", "-n", "2000", "-o", "cat",
+            "journalctl", "--user", "-b", "-f", "-n", "200", "-o", "cat",
             "_COMM=kwin_wayland"
         ]
         stdout: SplitParser {
@@ -62,6 +62,25 @@ Item {
                     console.log("caparazon: lista de ventanas inválida:", line);
                 }
             }
+        }
+    }
+
+    // journalctl debe estar escuchando antes de recargar el script de KWin;
+    // si no, las líneas que el script publica al cargar se pierden.
+    Timer {
+        interval: 600
+        running: true
+        onTriggered: kwinLoader.running = true
+    }
+
+    // Respaldo: si tras arrancar aún no llegó ninguna lista de ventanas,
+    // se recarga el script una vez más.
+    Timer {
+        interval: 3000
+        running: true
+        onTriggered: {
+            if (root.windowAppIds.length === 0 && !kwinLoader.running)
+                kwinLoader.running = true;
         }
     }
 }
