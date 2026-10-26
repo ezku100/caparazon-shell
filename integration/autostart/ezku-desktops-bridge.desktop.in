@@ -1,0 +1,10 @@
+[Desktop Entry]
+Categories=System;
+Comment=Puente de escritorios ocupados (Caparazon y widgets de Noctalia)
+Exec=@HOME@/.local/bin/ezku-desktops-bootstrap.sh
+Hidden=true
+Icon=preferences-system-windows
+Name=Ezku Desktops Bridge
+Terminal=false
+Type=Application
+X-GNOME-Autostart-enabled=true
