@@ -5,6 +5,7 @@ import QtQuick.Shapes
 import QtQuick.Effects
 import "../../theme"
 import "../../components"
+import "../appmenu"
 
 // Caparazón — barra superior.
 // Panel layer-shell anclado arriba, forma "nacida del borde" y acabado
@@ -14,8 +15,12 @@ PanelWindow {
 
     required property var modelData
     screen: modelData
+    property var powerMenuState: null
+    property var appMenuState: null
+    property var clipboardHistory: null
     property var trayMenuState: null
     property var notificationServer: null
+    property var workspacesService: null
     property string activeWindowAppId: ""
     property string activeWindowTitle: ""
     property int cpuUsage: 0
@@ -40,6 +45,25 @@ PanelWindow {
             ? activeTrayMenu.topMenu()
             : activeTrayMenu;
         top.close();
+    }
+
+    function openAppMenu() {
+        closeTrayMenu();
+        if (!appMenuState)
+            return;
+        if (appMenuState.opened) {
+            appMenuState.close();
+            return;
+        }
+        appMenuState.open(bar.screen);
+    }
+
+    function openPowerMenu() {
+        closeTrayMenu();
+        if (appMenuState && appMenuState.opened)
+            appMenuState.close();
+        if (powerMenuState)
+            powerMenuState.open(bar.screen);
     }
 
     // Barra FLOTANTE: no abarca todo el ancho. Márgenes laterales simétricos
@@ -196,11 +220,22 @@ PanelWindow {
             // Módulos independientes: el selector queda anclado a la
             // izquierda y la ventana activa crece hacia la derecha sin
             // desplazarlo.
-            Workspaces {
-                id: workspaces
-                screenName: bar.screen ? bar.screen.name : ""
+            LauncherButton {
+                id: launcher
                 anchors {
                     left: parent.left; leftMargin: Theme.padH + Theme.radiusTop
+                    verticalCenter: parent.verticalCenter
+                }
+                onActivated: bar.openAppMenu()
+            }
+
+            Workspaces {
+                id: workspaces
+                visible: true
+                screenName: bar.screen ? bar.screen.name : ""
+                service: bar.workspacesService
+                anchors {
+                    left: launcher.right; leftMargin: 14
                     verticalCenter: parent.verticalCenter
                 }
             }
@@ -268,7 +303,9 @@ PanelWindow {
                     BluetoothIndicator {}
                     MicVolume {}
                     Volume {}
-                    PowerButton {}
+                    PowerButton {
+                        onActivated: bar.openPowerMenu()
+                    }
                 }
             }
         }
@@ -305,34 +342,56 @@ PanelWindow {
     // escritorio o cualquier ventana. Queda por debajo del popup del menú
     // (que sigue recibiendo sus propios clics) y deja un hueco sobre la
     // fila de iconos para no romper el cambio de bandeja en un solo clic.
-    PanelWindow {
-        id: menuClickCatcher
-        screen: bar.screen
-        visible: bar.activeTrayMenu !== null
-        anchors { top: true; left: true; right: true; bottom: true }
-        exclusiveZone: 0
-        focusable: false
-        color: "transparent"
+    Loader {
+        active: bar.activeTrayMenu !== null
+        sourceComponent: PanelWindow {
+            id: menuClickCatcher
+            screen: bar.screen
+            visible: true
+            anchors { top: true; left: true; right: true; bottom: true }
+            exclusiveZone: 0
+            focusable: false
+            color: "transparent"
 
-        mask: Region {
-            x: 0
-            y: 0
-            width: bar.screen ? bar.screen.width : bar.width
-            height: bar.screen ? bar.screen.height : bar.height
-
-            Region {
-                x: hitArea.x + tray.mapToItem(hitArea, 0, 0).x
+            mask: Region {
+                x: 0
                 y: 0
-                width: tray.width
-                height: Theme.barHeight
-                intersection: Intersection.Subtract
+                width: bar.screen ? bar.screen.width : bar.width
+                height: bar.screen ? bar.screen.height : bar.height
+
+                Region {
+                    x: hitArea.x + tray.mapToItem(hitArea, 0, 0).x
+                    y: 0
+                    width: tray.width
+                    height: Theme.barHeight
+                    intersection: Intersection.Subtract
+                }
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
+                onPressed: bar.closeTrayMenu()
             }
         }
+    }
 
-        MouseArea {
-            anchors.fill: parent
-            acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
-            onPressed: bar.closeTrayMenu()
+    Loader {
+        active: bar.powerMenuState && (bar.powerMenuState.opened || bar.powerMenuState.closing)
+        sourceComponent: PowerMenu {
+            screen: bar.screen
+            menuState: bar.powerMenuState
+        }
+    }
+
+    Loader {
+        active: bar.appMenuState
+            && bar.appMenuState.activeScreen === bar.screen
+            && (bar.appMenuState.opened || bar.appMenuState.closing)
+        sourceComponent: AppMenu {
+            screen: bar.screen
+            menuState: bar.appMenuState
+            clipboardHistory: bar.clipboardHistory
         }
     }
 }
