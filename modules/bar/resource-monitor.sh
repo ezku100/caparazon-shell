@@ -34,24 +34,27 @@ while true; do
     prev_total=$total
     prev_idle=$idle_total
 
-    # RAM y swap/zram desde /proc/meminfo.
-    read -r mem_total mem_available swap_total swap_free < <(
-        awk '
-            /^MemTotal:/{t=$2}
-            /^MemAvailable:/{a=$2}
-            /^SwapTotal:/{st=$2}
-            /^SwapFree:/{sf=$2}
-            END{print t, a, st, sf}
-        ' /proc/meminfo
-    )
+    # RAM y swap/zram desde /proc/meminfo sin subshells ni awk.
+    mem_total=0
+    mem_available=0
+    swap_total=0
+    swap_free=0
+    while IFS=": " read -r key val _; do
+        case "$key" in
+            MemTotal) mem_total=$val ;;
+            MemAvailable) mem_available=$val ;;
+            SwapTotal) swap_total=$val ;;
+            SwapFree) swap_free=$val ;;
+        esac
+    done < /proc/meminfo
 
-    if [[ -n "${mem_total:-}" && -n "${mem_available:-}" && "$mem_total" -gt 0 ]]; then
+    if (( mem_total > 0 )); then
         ram=$((100 * (mem_total - mem_available) / mem_total))
     else
         ram=0
     fi
 
-    if [[ -n "${swap_total:-}" && -n "${swap_free:-}" && "$swap_total" -gt 0 ]]; then
+    if (( swap_total > 0 )); then
         swap=$((100 * (swap_total - swap_free) / swap_total))
     else
         swap=0
@@ -66,37 +69,51 @@ while true; do
         fi
     done
 
-    # Red: interfaz por defecto + velocidad del enlace.
-    iface=$(ip route show default 2>/dev/null | awk '
-        NR == 1 {
-            for (i = 1; i <= NF; ++i)
-                if ($i == "dev") { print $(i + 1); exit }
-        }
-    ')
+    # Red: interfaz por defecto en cache (evita llamar a ip/awk cada segundo).
+    if [[ -z "${iface:-}" || ! -d "/sys/class/net/$iface" ]]; then
+        iface=""
+        if [[ -r /proc/net/route ]]; then
+            while read -r ifn dest _; do
+                if [[ "$dest" == "00000000" ]]; then
+                    iface="$ifn"
+                    break
+                fi
+            done < /proc/net/route
+        fi
+        if [[ -z "$iface" ]]; then
+            for d in /sys/class/net/*; do
+                bn="${d##*/}"
+                if [[ "$bn" != "lo" && "$bn" != "*" ]]; then
+                    iface="$bn"
+                    break
+                fi
+            done
+        fi
 
-    if [[ -z "${iface:-}" ]]; then
-        iface=$(ls /sys/class/net 2>/dev/null | grep -v '^lo$' | head -1)
-    fi
-
-    net_icon=network-wired
-    if [[ -n "${iface:-}" && -d "/sys/class/net/$iface/wireless" ]]; then
-        net_icon=network-wireless
+        net_icon=network-wired
+        if [[ -n "${iface:-}" && -d "/sys/class/net/$iface/wireless" ]]; then
+            net_icon=network-wireless
+        fi
+        speed=1000
+        if [[ -n "${iface:-}" && -r "/sys/class/net/$iface/speed" ]]; then
+            read -r speed < "/sys/class/net/$iface/speed" 2>/dev/null || speed=1000
+            if ! [[ "$speed" =~ ^[0-9]+$ ]] || (( speed <= 0 )); then
+                speed=1000
+            fi
+        fi
     fi
 
     net=0
     if [[ -n "${iface:-}" ]]; then
-        rx=$(cat "/sys/class/net/$iface/statistics/rx_bytes" 2>/dev/null || echo 0)
-        tx=$(cat "/sys/class/net/$iface/statistics/tx_bytes" 2>/dev/null || echo 0)
+        rx=0
+        tx=0
+        [[ -r "/sys/class/net/$iface/statistics/rx_bytes" ]] && read -r rx < "/sys/class/net/$iface/statistics/rx_bytes"
+        [[ -r "/sys/class/net/$iface/statistics/tx_bytes" ]] && read -r tx < "/sys/class/net/$iface/statistics/tx_bytes"
 
         if [[ "$iface" == "${prev_iface:-}" && -n "${prev_rx:-}" && -n "${prev_tx:-}" ]]; then
             bytes=$(( (rx - prev_rx) + (tx - prev_tx) ))
             if (( bytes < 0 )); then
                 bytes=0
-            fi
-
-            speed=$(cat "/sys/class/net/$iface/speed" 2>/dev/null || echo 0)
-            if ! [[ "$speed" =~ ^[0-9]+$ ]] || (( speed <= 0 )); then
-                speed=1000
             fi
 
             net=$(( bytes * 8 * 100 / (speed * 1000000) ))
@@ -110,8 +127,8 @@ while true; do
         prev_tx=$tx
     fi
 
-    # Perfil de energía de PowerDevil; se consulta cada 2 s.
-    if (( tick % 2 == 1 )); then
+    # Perfil de energía de PowerDevil; se consulta cada 6 s para ahorrar CPU/DBus.
+    if (( tick % 6 == 1 )); then
         profile=$(qdbus6 org.kde.Solid.PowerManagement \
             /org/kde/Solid/PowerManagement/Actions/PowerProfile \
             org.kde.Solid.PowerManagement.Actions.PowerProfile.currentProfile 2>/dev/null || true)

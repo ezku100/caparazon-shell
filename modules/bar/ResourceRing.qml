@@ -122,96 +122,164 @@ Item {
         }
     }
 
-    PopupWindow {
-        id: tip
-        visible: root.tipVisible && root.tipText !== ""
-        color: "transparent"
-        grabFocus: false
+    Loader {
+        active: root.tipVisible && root.tipText !== ""
+        sourceComponent: PopupWindow {
+            id: tip
+            visible: true
+            color: "transparent"
+            grabFocus: false
 
-        readonly property int bleed: 14
-        readonly property int arrowW: 16
-        readonly property int arrowH: 8
-        readonly property int bodyWidth: Math.max(96, tipText.implicitWidth + 28)
-        readonly property int bodyHeight: 36
+            readonly property int bleed: 14
+            readonly property int arrowW: 18
+            readonly property int arrowH: 8
+            readonly property int bubbleRadius: 16
+            readonly property int bodyWidth: Math.max(96, tipText.implicitWidth + 28)
+            readonly property int bodyHeight: 36
 
-        anchor.item: root
-        anchor.edges: Edges.Top
-        anchor.gravity: Edges.Bottom
-        anchor.adjustment: PopupAdjustment.SlideX
-        anchor.rect.x: Math.round(root.width / 2)
-        // Igual que TrayMenu: el pico de la cola debe tocar el borde de la barra.
-        anchor.rect.y: Math.round((Theme.barHeight + root.height) / 2 + 6)
-        anchor.rect.width: 1
-        anchor.rect.height: 1
+            anchor.item: root
+            anchor.edges: Edges.Top
+            anchor.gravity: Edges.Bottom
+            anchor.adjustment: PopupAdjustment.SlideX
+            anchor.rect.x: Math.round(root.width / 2)
+            // Igual que TrayMenu: el pico de la cola debe tocar el borde de la barra.
+            anchor.rect.y: Math.round((Theme.barHeight + root.height) / 2 + 6)
+            anchor.rect.width: 1
+            anchor.rect.height: 1
 
-        implicitWidth: bodyWidth + bleed * 2
-        // El bleed inferior evita que se recorte la sombra de la burbuja.
-        implicitHeight: arrowH - 1 + bodyHeight + bleed
+            implicitWidth: bodyWidth + bleed * 2
+            // El bleed inferior evita que se recorte la sombra del globo.
+            implicitHeight: arrowH + bodyHeight + bleed
 
-        mask: Region { item: bubble }
+            mask: Region { item: balloon }
 
-        Item {
-            id: body
-            x: tip.bleed
-            y: tip.arrowH - 1
-            width: tip.bodyWidth
-            height: tip.bodyHeight
+            Item {
+                id: body
+                x: tip.bleed
+                y: 0
+                width: tip.bodyWidth
+                height: tip.arrowH + tip.bodyHeight
 
-            MultiEffect {
-                source: bubble
-                anchors.fill: bubble
-                blurMax: 24
-                shadowEnabled: true
-                shadowColor: Theme.shadowColor
-                shadowOpacity: 0.20
-                shadowBlur: 0.32
-                shadowHorizontalOffset: 0
-                shadowVerticalOffset: 3
-            }
+                // Sombra: se proyecta desde la silueta completa (cuerpo + cola).
+                MultiEffect {
+                    source: balloon
+                    anchors.fill: balloon
+                    blurMax: 24
+                    shadowEnabled: true
+                    shadowColor: Theme.shadowColor
+                    shadowOpacity: 0.20
+                    shadowBlur: 0.32
+                    shadowHorizontalOffset: 0
+                    shadowVerticalOffset: 3
+                }
 
-            Rectangle {
-                id: bubble
-                anchors.fill: parent
-                radius: 16
-                color: Theme.surface
-            }
+                // Globo de texto: un solo contorno (rectángulo redondeado + cola
+                // centrada con la punta suavizada), sin costuras entre piezas.
+                // Dentro de un ShapePath, "width"/"height" sin prefijo NO son los
+                // del Shape, así que todo se calcula desde balloonPath.
+                Shape {
+                    id: balloon
+                    anchors.fill: parent
+                    antialiasing: true
+                    preferredRendererType: Shape.CurveRenderer
 
-            Text {
-                id: tipText
-                anchors.centerIn: parent
-                width: implicitWidth
-                text: root.tipText
-                color: Theme.m3OnSurface
-                font.family: Theme.fontUI
-                font.pixelSize: 13
-                font.weight: Font.Medium
-                wrapMode: Text.NoWrap
-                elide: Text.ElideNone
-                textFormat: Text.PlainText
-            }
-        }
+                    ShapePath {
+                        id: balloonPath
+                        readonly property real w: tip.bodyWidth
+                        readonly property real h: tip.bodyHeight
+                        readonly property real a: tip.arrowH
+                        readonly property real tw: tip.arrowW
+                        readonly property real r: tip.bubbleRadius
+                        readonly property real cx: w / 2
 
-        // Cola superior: misma silueta y relleno que la burbuja.
-        Shape {
-            // Debajo de la burbuja para que no tape el texto.
-            // -6 compensa el desplazamiento visual que introduce el bleed del popup.
-            z: -1
-            x: Math.round(tip.bleed + tip.bodyWidth / 2 - tip.arrowW / 2 - 6)
-            y: 0
-            width: tip.arrowW
-            height: tip.arrowH + 1
-            antialiasing: true
-            preferredRendererType: Shape.CurveRenderer
+                        strokeWidth: 0
+                        strokeColor: "transparent"
+                        fillColor: Theme.surface
 
-            ShapePath {
-                strokeWidth: 0
-                strokeColor: "transparent"
-                fillColor: bubble.color
-                startX: 0
-                startY: height
-                PathLine { x: width / 2; y: 0 }
-                PathLine { x: width; y: height }
-                PathLine { x: 0; y: height }
+                        startX: r
+                        startY: a
+
+                        // borde superior hasta la base de la cola
+                        PathLine { x: balloonPath.cx - balloonPath.tw / 2; y: balloonPath.a }
+
+                        // cola: lados a 45° y punta redondeada
+                        PathLine { x: balloonPath.cx - 2.2; y: 1.4 }
+                        PathQuad {
+                            x: balloonPath.cx + 2.2
+                            y: 1.4
+                            controlX: balloonPath.cx
+                            controlY: -0.9
+                        }
+                        PathLine { x: balloonPath.cx + balloonPath.tw / 2; y: balloonPath.a }
+
+                        // resto del borde superior
+                        PathLine { x: balloonPath.w - balloonPath.r; y: balloonPath.a }
+
+                        // superior derecha
+                        PathArc {
+                            x: balloonPath.w
+                            y: balloonPath.a + balloonPath.r
+                            radiusX: balloonPath.r
+                            radiusY: balloonPath.r
+                            direction: PathArc.Clockwise
+                            useLargeArc: false
+                        }
+
+                        // lado derecho
+                        PathLine { x: balloonPath.w; y: balloonPath.a + balloonPath.h - balloonPath.r }
+
+                        // inferior derecha
+                        PathArc {
+                            x: balloonPath.w - balloonPath.r
+                            y: balloonPath.a + balloonPath.h
+                            radiusX: balloonPath.r
+                            radiusY: balloonPath.r
+                            direction: PathArc.Clockwise
+                            useLargeArc: false
+                        }
+
+                        // borde inferior
+                        PathLine { x: balloonPath.r; y: balloonPath.a + balloonPath.h }
+
+                        // inferior izquierda
+                        PathArc {
+                            x: 0
+                            y: balloonPath.a + balloonPath.h - balloonPath.r
+                            radiusX: balloonPath.r
+                            radiusY: balloonPath.r
+                            direction: PathArc.Clockwise
+                            useLargeArc: false
+                        }
+
+                        // lado izquierdo
+                        PathLine { x: 0; y: balloonPath.a + balloonPath.r }
+
+                        // superior izquierda (cierra en el punto de inicio)
+                        PathArc {
+                            x: balloonPath.r
+                            y: balloonPath.a
+                            radiusX: balloonPath.r
+                            radiusY: balloonPath.r
+                            direction: PathArc.Clockwise
+                            useLargeArc: false
+                        }
+                    }
+                }
+
+                Text {
+                    id: tipText
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    y: tip.arrowH + Math.round((tip.bodyHeight - height) / 2)
+                    width: implicitWidth
+                    text: root.tipText
+                    color: Theme.m3OnSurface
+                    font.family: Theme.fontUI
+                    font.pixelSize: 13
+                    font.weight: Font.Medium
+                    wrapMode: Text.NoWrap
+                    elide: Text.ElideNone
+                    textFormat: Text.PlainText
+                }
             }
         }
     }
