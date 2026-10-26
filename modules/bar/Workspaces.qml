@@ -13,53 +13,17 @@ import "../../theme"
 Row {
     id: root
 
+    visible: true
     spacing: 4
 
-    property var desks: []
-    property string currentId: ""
+    property var service: null
     property string screenName: ""
-    readonly property var occupiedIds: {
-        const perScreen = stateAdapter.occupiedPerOutput;
-        if (root.screenName && perScreen && perScreen[root.screenName] !== undefined)
-            return perScreen[root.screenName];
-        return stateAdapter.occupied;
-    }
-    readonly property bool occupancyKnown: stateFile.loaded
 
-    // KWin mantiene un escritorio actual por salida cuando
-    // PerOutputVirtualDesktops está activo. El puente publica ese mapa para
-    // que cada barra marque su propia pantalla, no el escritorio global.
-    readonly property string screenCurrentId: {
-        const map = stateAdapter.perOutput;
-        if (root.screenName && map && typeof map[root.screenName] === "string"
-                && map[root.screenName].length > 0)
-            return map[root.screenName];
-        return root.currentId;
-    }
-
-    // Si el puente todavía no conoce el foco, mantenemos el comportamiento
-    // anterior (halo en el activo) en vez de apagarlo en ambas pantallas.
-    readonly property bool screenFocused: stateAdapter.focusedScreen === ""
-        || root.screenName === ""
-        || stateAdapter.focusedScreen === root.screenName
-
-    // El puente ezkudesktops publica los escritorios con ventanas en este
-    // archivo. Si todavía no existe, no oscurecemos nada por precaución.
-    FileView {
-        id: stateFile
-        path: Quickshell.env("HOME") + "/.cache/ezku-desktops.json"
-        watchChanges: true
-        printErrors: false
-        onFileChanged: reload()
-
-        JsonAdapter {
-            id: stateAdapter
-            property var occupied: []
-            property var occupiedPerOutput: ({})
-            property var perOutput: ({})
-            property string focusedScreen: ""
-        }
-    }
+    readonly property var desks: service ? service.desks : []
+    readonly property var occupiedIds: service ? service.occupiedIds(root.screenName) : []
+    readonly property bool occupancyKnown: service ? service.occupancyKnown : false
+    readonly property string screenCurrentId: service ? service.screenCurrentId(root.screenName) : ""
+    readonly property bool screenFocused: service ? service.screenFocused(root.screenName) : true
 
     // Números en kanji (1-99): 1 → 一, 10 → 十, 21 → 二十一.
     function kanji(n) {
@@ -72,60 +36,6 @@ Row {
         const ones = n % 10;
         return (tens === 1 ? "" : d[tens]) + "十" + (ones ? d[ones] : "");
     }
-
-    function refresh() {
-        if (!fetch.running)
-            fetch.running = true;
-        if (!fetchCurrent.running)
-            fetchCurrent.running = true;
-    }
-
-    Process {
-        id: fetch
-        command: ["busctl", "--user", "--json=short", "call", "org.kde.KWin",
-                  "/VirtualDesktopManager", "org.freedesktop.DBus.Properties", "Get",
-                  "ss", "org.kde.KWin.VirtualDesktopManager", "desktops"]
-        stdout: StdioCollector {
-            id: outDesks
-            onStreamFinished: {
-                try {
-                    const j = JSON.parse(outDesks.text);
-                    root.desks = j.data[0].data.map(function (e) {
-                        return { pos: e[0], id: e[1], name: e[2] };
-                    });
-                } catch (e) {
-                    console.log("caparazon: fallo al parsear escritorios:", e);
-                }
-            }
-        }
-    }
-
-    Process {
-        id: fetchCurrent
-        command: ["busctl", "--user", "--json=short", "call", "org.kde.KWin",
-                  "/VirtualDesktopManager", "org.freedesktop.DBus.Properties", "Get",
-                  "ss", "org.kde.KWin.VirtualDesktopManager", "current"]
-        stdout: StdioCollector {
-            id: outCurrent
-            onStreamFinished: {
-                try {
-                    root.currentId = JSON.parse(outCurrent.text).data[0].data;
-                } catch (e) { }
-            }
-        }
-    }
-
-    Process {
-        id: watcher
-        running: true
-        command: ["dbus-monitor", "--session",
-                  "type='signal',interface='org.kde.KWin.VirtualDesktopManager'"]
-        stdout: SplitParser {
-            onRead: function (line) { root.refresh(); }
-        }
-    }
-
-    Component.onCompleted: refresh()
 
     Repeater {
         model: root.desks
