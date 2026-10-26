@@ -14,25 +14,135 @@ Item {
         ? Mpris.players.values
         : []
 
+    // Reproductores con algo que mostrar: sonando o con una pista cargada.
+    readonly property var candidates: {
+        const list = [];
+        for (let i = 0; i < players.length; ++i) {
+            const candidate = players[i];
+            if (candidate && (candidate.isPlaying || candidate.trackTitle !== ""))
+                list.push(candidate);
+        }
+        return list;
+    }
+
+    // Reproductor elegido a mano con la rueda; null = selección automática.
+    property var pinnedPlayer: null
+
     readonly property var player: {
-        // Primero el reproductor que está sonando de verdad.
-        for (let i = players.length - 1; i >= 0; --i) {
-            const candidate = players[i];
-            if (candidate && candidate.isPlaying)
-                return candidate;
+        if (pinnedPlayer && candidates.indexOf(pinnedPlayer) !== -1)
+            return pinnedPlayer;
+        // Automático: el último que está sonando de verdad...
+        for (let i = candidates.length - 1; i >= 0; --i) {
+            if (candidates[i].isPlaying)
+                return candidates[i];
         }
-        // Si no hay reproducción, conservamos una pista pausada con contenido.
-        for (let i = players.length - 1; i >= 0; --i) {
-            const candidate = players[i];
-            if (candidate && candidate.trackTitle !== "")
-                return candidate;
+        // ...y si no hay reproducción, el último con una pista pausada.
+        return candidates.length > 0 ? candidates[candidates.length - 1] : null;
+    }
+
+    // Cambia de reproductor con la rueda: step = 1 siguiente, -1 anterior.
+    function cyclePlayer(step) {
+        const count = candidates.length;
+        if (count < 2)
+            return;
+        let index = candidates.indexOf(player);
+        if (index < 0)
+            index = count - 1;
+        pinnedPlayer = candidates[(index + step + count) % count];
+    }
+
+    // Cambia cuando empieza o termina de sonar algún reproductor.
+    readonly property string playingSignature: {
+        let key = "";
+        for (let i = 0; i < candidates.length; ++i) {
+            if (candidates[i].isPlaying)
+                key += i + ",";
         }
-        return null;
+        return key;
+    }
+
+    // Si el elegido está en pausa y empieza a sonar otro, vuelve el modo
+    // automático para que el widget siga lo que de verdad suena.
+    onPlayingSignatureChanged: {
+        if (!pinnedPlayer || pinnedPlayer.isPlaying)
+            return;
+        for (let i = 0; i < candidates.length; ++i) {
+            if (candidates[i] !== pinnedPlayer && candidates[i].isPlaying) {
+                pinnedPlayer = null;
+                return;
+            }
+        }
+    }
+
+    // Si el reproductor elegido desaparece, se descarta la elección.
+    onCandidatesChanged: {
+        if (pinnedPlayer && candidates.indexOf(pinnedPlayer) === -1)
+            pinnedPlayer = null;
     }
 
     // Sin pista ni reproducción activa no mostramos una tarjeta vacía.
     readonly property bool hasPlayer: player !== null
-    readonly property string artUrl: player ? (player.trackArtUrl || "") : ""
+    // Ponlo en true para ver en la salida de quickshell qué URL de carátula
+    // manda cada reproductor y si la imagen falla al cargar.
+    readonly property bool debugArt: false
+
+    // Los navegadores a veces mandan rutas sin esquema; Image necesita URL.
+    function normalizeArt(url) {
+        const value = String(url || "").trim();
+        if (value === "")
+            return "";
+        return value.indexOf("/") === 0 ? "file://" + value : value;
+    }
+
+    // Miniatura de un vídeo de YouTube a partir de su ID (mqdefault es 16:9
+    // sin franjas negras y existe para todos los vídeos).
+    function ytThumb(id) {
+        return "https://i.ytimg.com/vi/" + id + "/mqdefault.jpg";
+    }
+
+    // ID de vídeo a partir de la propia URL de carátula (i.ytimg.com/vi/ID/...).
+    function ytIdFromArt(url) {
+        const match = /(?:i\.ytimg\.com|img\.youtube\.com)\/vi(?:_webp)?\/([A-Za-z0-9_-]{11})\//
+            .exec(String(url || ""));
+        return match ? match[1] : "";
+    }
+
+    // ID de vídeo a partir de la URL de la pestaña (xesam:url).
+    function ytIdFromPage(url) {
+        const match = /(?:youtube\.com\/watch\?(?:[^#]*&)?v=|youtu\.be\/|youtube\.com\/shorts\/)([A-Za-z0-9_-]{11})/
+            .exec(String(url || ""));
+        return match ? match[1] : "";
+    }
+
+    // Carátulas a probar, en orden: la que manda el reproductor y, si es de
+    // YouTube o la pestaña lo es, una miniatura que siempre existe.
+    readonly property var artCandidates: {
+        const list = [];
+        if (!player)
+            return list;
+        const direct = normalizeArt(player.trackArtUrl);
+        if (direct !== "")
+            list.push(direct);
+        const meta = player.metadata || ({});
+        const ids = [ytIdFromArt(direct), ytIdFromPage(meta["xesam:url"])];
+        for (let i = 0; i < ids.length; ++i) {
+            if (ids[i] === "")
+                continue;
+            const thumb = ytThumb(ids[i]);
+            if (list.indexOf(thumb) === -1)
+                list.push(thumb);
+        }
+        return list;
+    }
+
+    // Posición dentro de artCandidates; avanza cuando una imagen falla.
+    property int artIndex: 0
+    readonly property string artKey: artCandidates.join("|")
+    onArtKeyChanged: artIndex = 0
+
+    readonly property string artUrl: artIndex < artCandidates.length
+        ? artCandidates[artIndex]
+        : ""
     readonly property string trackTitle: player ? (player.trackTitle || "") : ""
     readonly property string trackArtist: player
         ? (player.trackArtist || player.identity || "")
@@ -59,6 +169,31 @@ Item {
     Component.onCompleted: syncPosition()
 
     onPlayerChanged: syncPosition()
+
+    onArtUrlChanged: {
+        if (debugArt)
+            console.log("[MusicWidget] carátula de", player ? player.identity : "-", "→", artUrl);
+    }
+
+    // Rueda sobre el widget: cambia entre reproductores activos. Un clic de
+    // rueda (120) cambia uno; los touchpads acumulan hasta llegar a ese valor.
+    property real wheelAccum: 0
+
+    WheelHandler {
+        acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+        onWheel: function(event) {
+            if (root.candidates.length < 2)
+                return;
+            if (root.wheelAccum * event.angleDelta.y < 0)
+                root.wheelAccum = 0;
+            root.wheelAccum += event.angleDelta.y;
+            if (Math.abs(root.wheelAccum) >= 120) {
+                // Rueda hacia arriba = anterior, hacia abajo = siguiente.
+                root.cyclePlayer(root.wheelAccum > 0 ? -1 : 1);
+                root.wheelAccum = 0;
+            }
+        }
+    }
 
     Timer {
         interval: 250
@@ -111,8 +246,21 @@ Item {
                     sourceSize.height: 34
                     fillMode: Image.PreserveAspectCrop
                     asynchronous: true
+                    // Los navegadores reutilizan la misma ruta temporal para
+                    // pistas distintas; sin caché no se queda la carátula vieja.
+                    cache: false
                     mipmap: true
                     visible: root.artUrl !== "" && status === Image.Ready
+
+                    onStatusChanged: {
+                        if (status !== Image.Error)
+                            return;
+                        if (root.debugArt)
+                            console.log("[MusicWidget] no se pudo cargar:", root.artUrl);
+                        // Probar la siguiente carátula de la lista, si hay.
+                        if (root.artIndex < root.artCandidates.length - 1)
+                            root.artIndex += 1;
+                    }
 
                     RotationAnimation on rotation {
                         from: 0
