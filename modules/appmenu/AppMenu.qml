@@ -5,6 +5,7 @@ import QtQuick
 import QtQuick.Effects
 import "../../theme"
 import "EmojiData.js" as EmojiData
+import "InputMode.js" as InputMode
 
 // Menú central de aplicaciones. La tarjeta vive en una capa overlay para que
 // la búsqueda reciba el teclado sin pelearse con la barra ni con el dock.
@@ -109,23 +110,54 @@ PanelWindow {
         Qt.callLater(function() { searchInput.forceActiveFocus(); });
     }
 
-    // Selección del teclado en la cuadrícula de apps. Se guarda aquí y no en
-    // GridView.currentIndex porque el GridView la reinicia cada vez que se
-    // recalcula la lista; así la selección sobrevive y siempre queda dentro
-    // del rango.
-    property int selectedIndex: 0
-    // true mientras se usa el teclado (flechas o escribiendo): entonces sólo
-    // la tarjeta seleccionada se ilumina; en cuanto se mueve el ratón vuelve
-    // el efecto al pasar el cursor.
-    property bool keyboardMode: false
+    // Cursor único de la cuadrícula de apps. El teclado y el ratón ya no
+    // llevan cada uno su propia posición: el estado (InputMode.js) recuerda
+    // cuál de los dos lo manda, así que el último dispositivo usado toma el
+    // control y el otro deja de robar la selección.
+    property var selector: InputMode.initial()
+    readonly property int selectedIndex: root.selector.cursor
     readonly property int appCount: root.filteredApps.length
     readonly property int safeIndex: Math.max(0,
         Math.min(root.selectedIndex, root.appCount - 1))
 
     function resetSelection() {
-        root.selectedIndex = 0;
+        root.selector = InputMode.transition(root.selector, { type: "reset" });
         appGrid.currentIndex = 0;
         appGrid.positionViewAtBeginning();
+    }
+
+    // El puntero se ha movido por el menú. El recorrido se acumula y sólo al
+    // superar el umbral el ratón vuelve a mandar: el temblor del puntero no
+    // roba la selección del teclado.
+    function notePointerPosition(x, y) {
+        root.selector = InputMode.transition(root.selector,
+            { type: "pointer", x: x, y: y });
+        root.syncGridCursor();
+    }
+
+    // El puntero ha entrado en una tarjeta: con el ratón mandando el cursor
+    // pasa a ella, con el teclado mandando sólo se anota.
+    function noteHover(index) {
+        root.selector = InputMode.transition(root.selector,
+            { type: "hover", index: index });
+        root.syncGridCursor();
+    }
+
+    function noteHoverExit(index) {
+        root.selector = InputMode.transition(root.selector,
+            { type: "hoverExit", index: index });
+    }
+
+    // Escribir en el buscador devuelve el control al teclado.
+    function noteTyping() {
+        root.selector = InputMode.transition(root.selector, { type: "text" });
+    }
+
+    // Mantiene el currentIndex de la cuadrícula al día con el cursor.
+    function syncGridCursor() {
+        const index = root.safeIndex;
+        if (appGrid.currentIndex !== index)
+            appGrid.currentIndex = index;
     }
 
     // Mueve la selección con las flechas. El foco se queda en el buscador
@@ -134,24 +166,15 @@ PanelWindow {
         const count = root.appCount;
         if (count === 0)
             return;
-        root.keyboardMode = true;
         const columns = Math.max(1,
             Math.floor(appGrid.width / Math.max(1, appGrid.cellWidth)));
-        let index = root.safeIndex;
-        if (direction === "left") {
-            index = Math.max(0, index - 1);
-        } else if (direction === "right") {
-            index = Math.min(count - 1, index + 1);
-        } else if (direction === "up") {
-            if (index - columns >= 0)
-                index -= columns;
-        } else {
-            if (index + columns <= count - 1)
-                index += columns;
-            else if (Math.floor(index / columns) < Math.floor((count - 1) / columns))
-                index = count - 1;
-        }
-        root.selectedIndex = index;
+        root.selector = InputMode.transition(root.selector, {
+            type: "move",
+            direction: direction,
+            columns: columns,
+            count: count
+        });
+        const index = root.safeIndex;
         appGrid.currentIndex = index;
         appGrid.positionViewAtIndex(index, GridView.Contain);
     }
@@ -397,7 +420,7 @@ PanelWindow {
             closeTimer.stop();
             searchInput.text = "";
             root.resetSelection();
-            root.keyboardMode = false;
+            root.selector = InputMode.transition(root.selector, { type: "open" });
             emojiGrid.currentIndex = 0;
             root.appRevision += 1;
             Qt.callLater(function() {
@@ -406,6 +429,7 @@ PanelWindow {
             });
         } else {
             root.closing = true;
+            root.selector = InputMode.initial();
             closeTimer.restart();
         }
     }
@@ -651,9 +675,10 @@ PanelWindow {
 
                     onTextChanged: {
                         root.resetSelection();
-                        root.keyboardMode = searchInput.text.length > 0;
                         emojiGrid.currentIndex = 0;
                     }
+
+                    onTextEdited: root.noteTyping()
 
                     Keys.onEscapePressed: root.close()
                     // Flechas: en apps mueven la selección sin quitar el foco al
@@ -765,11 +790,12 @@ PanelWindow {
                 }
                 clip: true
 
-                // Mover el ratón devuelve el efecto al cursor. Se mide en
+                // Recorrido del puntero por el cuerpo del menú. Se mide en
                 // coordenadas de esta área, así que no salta cuando la lista
                 // se desplaza con el teclado bajo un cursor quieto.
                 HoverHandler {
-                    onPointChanged: root.keyboardMode = false
+                    onPointChanged: root.notePointerPosition(
+                        point.position.x, point.position.y)
                 }
 
                 GridView {
@@ -792,9 +818,10 @@ PanelWindow {
                             anchors.centerIn: parent
                             width: Math.min(156, parent.width - 8)
                             entry: modelData
-                            selected: root.keyboardMode && root.safeIndex === index
-                            suppressHover: root.keyboardMode
+                            selected: root.safeIndex === index
                             onActivated: root.launchEntry(modelData)
+                            onHoverEntered: root.noteHover(index)
+                            onHoverExited: root.noteHoverExit(index)
                         }
                     }
 
