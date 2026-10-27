@@ -111,6 +111,24 @@ install_shortcut() {
         > "$desktop"
     chmod 644 "$desktop"
     bind_shortcut_key
+    refresh_service_cache
+}
+
+refresh_service_cache() {
+    local builder
+    for builder in kbuildsycoca6 kbuildsycoca5; do
+        if command -v "$builder" >/dev/null 2>&1; then
+            "$builder" --noincremental >/dev/null 2>&1 || true
+            return 0
+        fi
+    done
+}
+
+refresh_shortcut_hint() {
+    if pgrep -x kwin_wayland >/dev/null 2>&1; then
+        echo "       El atajo global se activa al reiniciar el compositor"
+        echo "       (o al cerrar y abrir la sesion)."
+    fi
 }
 
 bind_shortcut_key() {
@@ -254,6 +272,7 @@ case "${1:-instalar}" in
             ACTIVE_SHELL_DIR="$SHELL_DIR"
         fi
         install_shortcut "$ACTIVE_SHELL_DIR"
+        refresh_shortcut_hint
         install_bridge
         install_theme
         echo
