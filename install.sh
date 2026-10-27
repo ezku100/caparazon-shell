@@ -86,6 +86,16 @@ install_autostart() {
         > "$AUTOSTART_DIR/ezku-desktops-bridge.desktop"
 }
 
+existing_shell_dir() {
+    local autostart="$AUTOSTART_DIR/caparazon.desktop"
+    local path
+    [ -f "$autostart" ] || return 1
+    path="$(sed -n 's/.*quickshell -p \([^ ]*\).*/\1/p' "$autostart" | head -n 1)"
+    [ -n "$path" ] || return 1
+    [ -f "$path/shell.qml" ] || return 1
+    printf '%s\n' "$path"
+}
+
 fetch_theme_engine() {
     echo "Obteniendo el motor accent-theme"
     if [ -d "$ACCENT_THEME_SOURCE/.git" ]; then
@@ -193,9 +203,15 @@ uninstall() {
 case "${1:-instalar}" in
     instalar)
         require_quickshell
-        install_shell
+        EXISTING_SHELL_DIR="$(existing_shell_dir || true)"
+        if [ -n "$EXISTING_SHELL_DIR" ] && [ "$EXISTING_SHELL_DIR" != "$SHELL_DIR" ]; then
+            echo "Reutilizando la shell de $EXISTING_SHELL_DIR"
+            echo "No se crea una copia en $SHELL_DIR ni se toca el arranque automatico"
+        else
+            install_shell
+            install_autostart
+        fi
         install_bridge
-        install_autostart
         install_theme
         echo
         echo "Listo. Para probarla ahora mismo:"
