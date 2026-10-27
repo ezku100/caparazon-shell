@@ -101,6 +101,25 @@ Singleton {
         return "";
     }
 
+    // Primer nombre que resuelva en el tema o en el índice; "" si ninguno.
+    // Los iconos propios de la shell (categorías, indicadores de la barra) no
+    // pueden depender de una ruta de un tema concreto: se piden por nombre y
+    // cada tema pone el suyo.
+    function themed(names) {
+        for (let i = 0; i < names.length; ++i) {
+            const found = root.resolved(names[i]);
+            if (found.length > 0)
+                return found;
+        }
+        return "";
+    }
+
+    // Primer nombre disponible o, si no hay ninguno, el genérico.
+    function firstOf(names) {
+        const found = root.themed(names);
+        return found.length > 0 ? found : root.source(root.genericIcon, "");
+    }
+
     // Leer userIcons crea la dependencia que repinta las tarjetas cuando el
     // índice termina de llenarse.
     function indexed(name) {

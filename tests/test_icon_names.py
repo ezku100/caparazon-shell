@@ -98,3 +98,9 @@ def test_paths_yield_a_theme_name_for_the_user_index() -> None:
     cases = run_cases()
     assert_case(cases, "path_name_takes_last_segment")
     assert_case(cases, "path_name_strips_extension")
+
+
+def test_resolved_urls_are_passed_through() -> None:
+    cases = run_cases()
+    assert_case(cases, "image_url_is_a_url")
+    assert_case(cases, "qrc_url_is_a_url")

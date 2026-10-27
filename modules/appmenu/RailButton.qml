@@ -3,6 +3,7 @@ import Quickshell.Widgets
 import QtQuick
 import QtQuick.Effects
 import "../../theme"
+import "../icons"
 
 // Botón de la barra lateral del menú: sólo icono, como el resto del shell.
 Item {
@@ -38,14 +39,7 @@ Item {
     IconImage {
         anchors.centerIn: parent
         implicitSize: 18
-        source: {
-            const name = root.icon;
-            if (name.indexOf("image://") === 0 || name.indexOf("file://") === 0)
-                return name;
-            if (name.indexOf("/") === 0)
-                return "file://" + name;
-            return "file:///usr/share/icons/Papirus/22x22/apps/" + name + ".svg";
-        }
+        source: IconResolver.source(root.icon, "application-x-executable")
         layer.enabled: root.tint
         layer.effect: MultiEffect {
             colorization: 1.0

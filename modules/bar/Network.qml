@@ -4,6 +4,7 @@ import Quickshell.Widgets
 import QtQuick
 import QtQuick.Effects
 import "../../theme"
+import "../icons"
 
 // Indicador de red (NetworkManager vía Quickshell.Networking).
 Item {
@@ -11,8 +12,6 @@ Item {
 
     implicitWidth: 28
     implicitHeight: 26
-
-    readonly property string iconDir: "file:///usr/share/icons/Papirus/22x22/panel/"
 
     // Networking.devices es un ObjectModel; hay que usar .values.
     readonly property var devs: Networking.devices ? Networking.devices.values : []
@@ -37,6 +36,12 @@ Item {
     readonly property string kind: root.hasWired ? "wired"
         : root.hasWifi ? "wifi"
         : "off"
+
+    readonly property string iconSource: root.kind === "wired"
+        ? IconResolver.firstOf(["network-wired", "network-wired-activated", "network-workgroup"])
+        : root.kind === "wifi"
+        ? IconResolver.firstOf(["network-wireless-connected", "network-wireless", "network-wifi"])
+        : IconResolver.firstOf(["network-wireless-disconnected", "network-wireless-offline", "network-wireless"])
 
     // Mismo círculo de fondo que el selector de perfil de energía.
     Rectangle {
@@ -65,9 +70,7 @@ Item {
     IconImage {
         anchors.centerIn: parent
         implicitSize: 16
-        source: root.iconDir + (root.kind === "wired" ? "network-wired.svg"
-            : root.kind === "wifi" ? "network-wireless-connected.svg"
-            : "network-wireless-disconnected.svg")
+        source: root.iconSource
         layer.enabled: true
         layer.effect: MultiEffect {
             colorization: 1.0

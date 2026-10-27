@@ -4,6 +4,7 @@ import Quickshell.Widgets
 import QtQuick
 import QtQuick.Effects
 import "../../theme"
+import "../icons"
 
 // Indicador de Bluetooth. Sólo ocupa espacio cuando BlueZ reconoce al menos
 // un adaptador; si no hay dongle o no se detecta, desaparece por completo.
@@ -11,12 +12,15 @@ import "../../theme"
 Item {
     id: root
 
-    readonly property string iconDir: "file:///usr/share/icons/Papirus/22x22/panel/"
     readonly property var adapter: Bluetooth.defaultAdapter
     readonly property bool available: Bluetooth.adapters.values.length > 0
     readonly property bool active: root.adapter !== null
         && root.adapter.enabled
         && root.adapter.state === BluetoothAdapterState.Enabled
+
+    readonly property string iconSource: root.active
+        ? IconResolver.firstOf(["bluetooth-active", "bluetooth", "preferences-system-bluetooth"])
+        : IconResolver.firstOf(["bluetooth-disabled", "bluetooth-off", "preferences-system-bluetooth"])
 
     implicitWidth: 28
     implicitHeight: 26
@@ -49,9 +53,7 @@ Item {
     IconImage {
         anchors.centerIn: parent
         implicitSize: 16
-        source: root.active
-            ? root.iconDir + "bluetooth-active.svg"
-            : root.iconDir + "bluetooth-disabled.svg"
+        source: root.iconSource
         layer.enabled: true
         layer.effect: MultiEffect {
             colorization: 1.0
