@@ -186,10 +186,10 @@ def test_installer_does_not_duplicate_an_existing_shell(tmp_path: Path) -> None:
     engine = make_fake_engine(tmp_path)
     environ = isolated_environment(tmp_path, engine_repository=engine)
     home = tmp_path / "home"
-    existing = home / "dotfiles" / "quickshell" / "caparazon"
+    existing = home / "Projects" / "caparazon-shell"
     _ = existing.mkdir(parents=True)
     _ = (existing / "shell.qml").write_text(
-        "// shell de dotfiles\n",
+        "// shell del clon\n",
         encoding="utf-8",
     )
     autostart = home / ".config" / "autostart" / "caparazon.desktop"
@@ -204,7 +204,7 @@ def test_installer_does_not_duplicate_an_existing_shell(tmp_path: Path) -> None:
     assert result.returncode == 0, result.stderr
     assert (
         existing / "shell.qml"
-    ).read_text(encoding="utf-8") == "// shell de dotfiles\n"
+    ).read_text(encoding="utf-8") == "// shell del clon\n"
     assert not (home / ".config" / "quickshell" / "caparazon").exists()
     assert str(existing) in autostart.read_text(encoding="utf-8")
 

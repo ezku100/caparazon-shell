@@ -61,10 +61,9 @@ El instalador copia la shell a `~/.config/quickshell/caparazon`, instala el
 puente de escritorios (`~/.local/bin` y el script de KWin) y registra el
 arranque automático en `~/.config/autostart`.
 
-Si ya tienes la shell instalada en otra ruta y registrada en el arranque
-automático —por ejemplo, la copia de trabajo de tu repo de dotfiles—, el
-instalador la reutiliza: no crea una segunda copia ni cambia el arranque.
-Así solo hay una shell en el sistema.
+Si el arranque automático ya apunta a otra copia —por ejemplo, tu clon de
+trabajo—, el instalador la reutiliza: no copia la shell ni cambia el
+arranque. Así el sistema tiene una sola shell, y es la que editas.
 
 Además instala el motor de tema [`ezku100/accent-theme`](https://github.com/ezku100/accent-theme)
 (clon o `git pull` en `~/.local/share/accent-theme/source`), registra la
@@ -86,9 +85,13 @@ La desinstalación devuelve el tema al servicio heredado
 ```bash
 quickshell -p ~/.config/quickshell/caparazon     # en primer plano
 quickshell -p ~/.config/quickshell/caparazon -d  # desmontado
+quickshell -p ~/Projects/caparazon-shell -d       # desde tu clon
 quickshell -c caparazon                         # por nombre de configuracion
 pkill -f 'quickshell -p'                        # pararlo
 ```
+
+Usa en cada comando la misma ruta con la que arrancaste la shell; el control
+por IPC se dirige a la instancia que está corriendo.
 
 Control del menú central desde la terminal o un atajo de KDE:
 
@@ -119,7 +122,6 @@ caparazon-shell/
 ├── components/            # piezas visuales compartidas
 ├── assets/                # tipografias
 ├── integration/           # puente de KWin, daemon y arranque automatico
-├── scripts/               # utilidades de mantenimiento
 └── install.sh
 ```
 
@@ -178,9 +180,12 @@ quickshell -p ~/Projects/caparazon-shell
 journalctl --user -f _COMM=quickshell
 ```
 
-La fuente de verdad de este repositorio esta en el repo de dotfiles
-(`quickshell/caparazon`). `scripts/sync-from-dotfiles.sh` copia los cambios
-de aqui hacia alla o viceversa segun se ejecute.
+Este repositorio es la fuente de verdad: se edita aqui, se commitea y se
+sube. Para trabajar sobre el clon, deja el arranque automatico apuntando a
+esa misma ruta —en `~/.config/autostart/caparazon.desktop`, la linea `Exec=`
+debe usar `quickshell -p ~/Projects/caparazon-shell -d`— y arranca la shell
+desde ahi. El instalador respeta lo que haya en el arranque: si ya apunta a
+tu clon, no copia la shell ni crea una segunda.
 
 ## Creditos
 
