@@ -49,6 +49,16 @@ require_quickshell() {
     fi
 }
 
+require_nerd_font() {
+    if ! fc-list 2>/dev/null | grep -qi "JetBrainsMono Nerd Font"; then
+        echo "AVISO: falta JetBrainsMono Nerd Font; el menu de apagado" >&2
+        echo "       mostrara cuadros en lugar de iconos." >&2
+        echo "       Descarga el release de" >&2
+        echo "       https://github.com/ryanoasis/nerd-fonts/releases" >&2
+        echo "       copia los .ttf a ~/.local/share/fonts y ejecuta fc-cache -f." >&2
+    fi
+}
+
 require_theme_dependencies() {
     local missing=()
     local dependency
@@ -261,6 +271,7 @@ uninstall() {
 case "${1:-instalar}" in
     instalar)
         require_quickshell
+        require_nerd_font
         EXISTING_SHELL_DIR="$(existing_shell_dir || true)"
         if [ -n "$EXISTING_SHELL_DIR" ] && [ "$EXISTING_SHELL_DIR" != "$SHELL_DIR" ]; then
             echo "Reutilizando la shell de $EXISTING_SHELL_DIR"
