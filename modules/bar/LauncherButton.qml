@@ -12,16 +12,18 @@ Item {
 
     signal activated()
 
-    // Icono de la distro por nombre de tema; el archivo propio de PikaOS queda
-    // como respaldo para que siga viéndose su logo donde exista.
+    // Logo de la distro: el especifico de PikaOS si el tema lo trae, si no el
+    // archivo propio de PikaOS, y si tampoco esta, el logo generico del tema.
     readonly property string iconSource: {
-        const themed = IconResolver.themed([
+        const themed = IconResolver.exactThemed([
             "distributor-logo-pikaos", "distributor-logo-pika-os",
-            "pikaos-logo", "distributor-logo", "start-here"]);
+            "pikaos-logo", "pikaos"]);
         if (themed.length > 0)
             return themed;
-        const local = IconResolver.resolved("file:///usr/share/pixmaps/pika-logo-duotone.svg");
-        return local.length > 0 ? local : IconResolver.firstOf(["applications-all", "computer"]);
+        const local = IconResolver.resolved("/usr/share/pixmaps/pika-logo-duotone.svg");
+        if (local.length > 0)
+            return local;
+        return IconResolver.firstOf(["distributor-logo", "start-here"]);
     }
 
     implicitWidth: 28
