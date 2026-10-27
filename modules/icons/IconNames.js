@@ -10,6 +10,27 @@
 
 var SYMBOLIC_SUFFIX = "-symbolic";
 
+var ICON_EXTENSIONS = [".png", ".svg", ".xpm", ".jpg", ".jpeg", ".webp"];
+
+// Nombre de icono a partir de un archivo: quita sólo extensiones de imagen,
+// para poder buscar en el índice de iconos del usuario.
+function stem(fileName) {
+    var raw = typeof fileName === "string" ? fileName.trim() : "";
+    var dot = raw.lastIndexOf(".");
+    if (dot <= 0)
+        return raw;
+    if (ICON_EXTENSIONS.indexOf(raw.slice(dot).toLowerCase()) === -1)
+        return raw;
+    return raw.slice(0, dot);
+}
+
+// Nombre de icono que sugiere una ruta: último segmento, sin extensión.
+function nameFromPath(path) {
+    var raw = typeof path === "string" ? path.trim() : "";
+    var slash = raw.lastIndexOf("/");
+    return stem(slash === -1 ? raw : raw.slice(slash + 1));
+}
+
 // Clasifica lo que trae un .desktop o KWin: ruta absoluta, URL file: o nombre
 // de tema. Sin esta distinción una ruta se trata como nombre de tema, no se
 // encuentra y el icono acaba en el genérico.

@@ -28,6 +28,8 @@ try {
 
 const candidates = context.candidates;
 const iconKind = context.iconKind;
+const stem = context.stem;
+const nameFromPath = context.nameFromPath;
 
 function check(ok, detail) {
     return { ok: ok, detail: detail };
@@ -96,6 +98,36 @@ const cases = [
         name: "Una ruta absoluta no se propone como nombre de icono",
         run: () => candidates("/usr/share/icons/hicolor/48x48/apps/obs.png"),
         expect: (names) => check(names.length === 0, list(names)),
+    },
+    {
+        id: "stem_strips_icon_extension",
+        name: "El nombre base quita la extension de icono",
+        run: () => stem("citron.png"),
+        expect: (value) => check(value === "citron", String(value)),
+    },
+    {
+        id: "stem_keeps_non_icon_extension",
+        name: "Una extension que no es de icono se conserva",
+        run: () => stem("archive.tar.gz"),
+        expect: (value) => check(value === "archive.tar.gz", String(value)),
+    },
+    {
+        id: "stem_keeps_extensionless_name",
+        name: "Un nombre sin extension se queda igual",
+        run: () => stem("app"),
+        expect: (value) => check(value === "app", String(value)),
+    },
+    {
+        id: "path_name_takes_last_segment",
+        name: "De una ruta se toma el ultimo segmento",
+        run: () => nameFromPath("/home/u/AppImages/.icons/citron"),
+        expect: (value) => check(value === "citron", String(value)),
+    },
+    {
+        id: "path_name_strips_extension",
+        name: "De una ruta con extension se toma el nombre sin extension",
+        run: () => nameFromPath("/opt/obs.png"),
+        expect: (value) => check(value === "obs", String(value)),
     },
     {
         id: "absolute_path_is_a_path",
