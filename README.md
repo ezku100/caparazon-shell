@@ -159,6 +159,11 @@ carga scripts propios en KWin:
 Los datos viajan por el journal del compositor y se leen con `journalctl -f`,
 lo que evita un proceso por monitor.
 
+El tema de iconos es la excepción: el proceso lo lee una sola vez al arrancar,
+así que al cambiarlo en KDE la shell seguiría con los iconos viejos.
+Caparazón vigila `kdeglobals` y se reinicia sola en cuanto el tema cambia de
+verdad; el reinicio tarda un segundo y vacía el historial del portapapeles.
+
 ## Tema
 
 `theme/MatugenPalette.qml` lee `~/.cache/caparazon/colors.json` y lo recarga
