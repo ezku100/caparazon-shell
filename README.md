@@ -116,6 +116,9 @@ El atajo global se registra como un lanzador de servicio de KDE
 combinación anotada en `~/.config/kglobalshortcutsrc`, así que
 `./install.sh` lo deja funcionando sin tocar los ajustes del sistema.
 
+KWin lee ese lanzador al arrancar: si instalaste la shell con la sesión
+ya abierta, reinicia el compositor para que recoja el comando nuevo.
+
 ## Estructura
 
 ```text
