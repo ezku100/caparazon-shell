@@ -180,6 +180,35 @@ def run_installer(
     )
 
 
+def test_installer_does_not_duplicate_an_existing_shell(tmp_path: Path) -> None:
+    if shutil.which("git") is None:
+        pytest.skip("git no disponible")
+    engine = make_fake_engine(tmp_path)
+    environ = isolated_environment(tmp_path, engine_repository=engine)
+    home = tmp_path / "home"
+    existing = home / "dotfiles" / "quickshell" / "caparazon"
+    _ = existing.mkdir(parents=True)
+    _ = (existing / "shell.qml").write_text(
+        "// shell de dotfiles\n",
+        encoding="utf-8",
+    )
+    autostart = home / ".config" / "autostart" / "caparazon.desktop"
+    _ = autostart.parent.mkdir(parents=True)
+    _ = autostart.write_text(
+        f"[Desktop Entry]\nExec=quickshell -p {existing} -d\n",
+        encoding="utf-8",
+    )
+
+    result = run_installer("instalar", environ)
+
+    assert result.returncode == 0, result.stderr
+    assert (
+        existing / "shell.qml"
+    ).read_text(encoding="utf-8") == "// shell de dotfiles\n"
+    assert not (home / ".config" / "quickshell" / "caparazon").exists()
+    assert str(existing) in autostart.read_text(encoding="utf-8")
+
+
 def test_template_publishes_every_required_token() -> None:
     template = cast(
         "dict[str, str]",

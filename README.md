@@ -61,6 +61,11 @@ El instalador copia la shell a `~/.config/quickshell/caparazon`, instala el
 puente de escritorios (`~/.local/bin` y el script de KWin) y registra el
 arranque automático en `~/.config/autostart`.
 
+Si ya tienes la shell instalada en otra ruta y registrada en el arranque
+automático —por ejemplo, la copia de trabajo de tu repo de dotfiles—, el
+instalador la reutiliza: no crea una segunda copia ni cambia el arranque.
+Así solo hay una shell en el sistema.
+
 Además instala el motor de tema [`ezku100/accent-theme`](https://github.com/ezku100/accent-theme)
 (clon o `git pull` en `~/.local/share/accent-theme/source`), registra la
 plantilla de la shell y comprueba que la paleta generada contiene todos los
