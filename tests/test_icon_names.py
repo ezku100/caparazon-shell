@@ -86,3 +86,15 @@ def test_theme_names_and_blanks_are_told_apart() -> None:
     cases = run_cases()
     assert_case(cases, "theme_name_is_a_name")
     assert_case(cases, "blank_name_is_empty")
+
+def test_icon_file_names_lose_only_icon_extensions() -> None:
+    cases = run_cases()
+    assert_case(cases, "stem_strips_icon_extension")
+    assert_case(cases, "stem_keeps_non_icon_extension")
+    assert_case(cases, "stem_keeps_extensionless_name")
+
+
+def test_paths_yield_a_theme_name_for_the_user_index() -> None:
+    cases = run_cases()
+    assert_case(cases, "path_name_takes_last_segment")
+    assert_case(cases, "path_name_strips_extension")
