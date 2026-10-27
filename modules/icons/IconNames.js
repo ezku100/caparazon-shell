@@ -31,14 +31,16 @@ function nameFromPath(path) {
     return stem(slash === -1 ? raw : raw.slice(slash + 1));
 }
 
-// Clasifica lo que trae un .desktop o KWin: ruta absoluta, URL file: o nombre
-// de tema. Sin esta distinción una ruta se trata como nombre de tema, no se
-// encuentra y el icono acaba en el genérico.
+// Clasifica lo que trae un .desktop, KWin o un icono ya resuelto: ruta
+// absoluta, URL (file:, image:, qrc:) o nombre de tema. Sin esta distinción
+// una ruta se trata como nombre de tema, no se encuentra y el icono acaba en
+// el genérico; y una URL image:// ya resuelta se volvería a buscar como tema.
 function iconKind(name) {
     var raw = typeof name === "string" ? name.trim() : "";
     if (raw.length === 0)
         return "empty";
-    if (raw.indexOf("file:") === 0)
+    if (raw.indexOf("file:") === 0 || raw.indexOf("image:") === 0
+            || raw.indexOf("qrc:") === 0)
         return "url";
     if (raw.charAt(0) === "/")
         return "path";

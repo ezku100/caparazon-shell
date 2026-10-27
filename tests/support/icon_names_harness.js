@@ -142,6 +142,18 @@ const cases = [
         expect: (kind) => check(kind === "url", String(kind)),
     },
     {
+        id: "image_url_is_a_url",
+        name: "Una URL image:// ya resuelta se clasifica como URL",
+        run: () => iconKind("image://icon/com.obsproject.Studio"),
+        expect: (kind) => check(kind === "url", String(kind)),
+    },
+    {
+        id: "qrc_url_is_a_url",
+        name: "Una URL qrc: se clasifica como URL",
+        run: () => iconKind("qrc:/icons/x.png"),
+        expect: (kind) => check(kind === "url", String(kind)),
+    },
+    {
         id: "theme_name_is_a_name",
         name: "Un nombre de tema se clasifica como nombre",
         run: () => iconKind("com.obsproject.Studio"),
