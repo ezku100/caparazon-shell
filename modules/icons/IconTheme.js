@@ -92,10 +92,12 @@ function restartCommand(unit) {
     return ["sh", "-c", script, "caparazon-reload", target];
 }
 
-// Comando que relanza la shell cuando el proceso actual haya muerto.
+// Comando que relanza la shell.
 //
-// Se usa cuando la shell no corre bajo systemd: se espera a que el PID
-// actual desaparezca y se vuelve a ejecutar el mismo argv.
+// Se usa cuando la shell no corre bajo systemd. El script va primero, así
+// que este comando no se puede lanzar desde dentro de la shell: mata al
+// proceso actual, espera a que desaparezca y ejecuta el mismo argv de antes.
+// La espera da tiempo a que el tema nuevo quede escrito antes de arrancar.
 function relaunchCommand(pid, argv) {
     var args = [];
     if (Array.isArray(argv)) {
@@ -105,7 +107,10 @@ function relaunchCommand(pid, argv) {
                 args.push(value);
         }
     }
+    var target = String(pid);
     var script =
-        "while kill -0 " + String(pid) + " 2>/dev/null; do sleep 0.2; done; exec \"$@\"";
+        "kill -TERM " + target + " 2>/dev/null; "
+        + "while kill -0 " + target + " 2>/dev/null; do sleep 0.2; done; "
+        + "exec \"$@\"";
     return ["sh", "-c", script, "caparazon-relaunch"].concat(args);
 }

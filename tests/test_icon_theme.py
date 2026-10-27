@@ -99,3 +99,9 @@ def test_the_restart_command_falls_back_to_systemctl() -> None:
 def test_the_relaunch_command_waits_for_the_pid() -> None:
     cases = run_cases()
     assert_case(cases, "the_relaunch_command_waits_for_the_pid")
+
+
+def test_the_relaunch_command_kills_the_current_process() -> None:
+    """Si nadie mata a la shell, el relanzamiento no llega a ocurrir."""
+    cases = run_cases()
+    assert_case(cases, "the_relaunch_command_kills_the_current_process")

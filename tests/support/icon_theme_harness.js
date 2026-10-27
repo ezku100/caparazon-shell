@@ -180,6 +180,16 @@ const cases = [
                 list(argv),
             ),
     },
+    {
+        id: "the_relaunch_command_kills_the_current_process",
+        name: "El relanzamiento mata al proceso actual para que vuelva",
+        run: () => relaunchCommand(4242, ["quickshell", "-p", "/home/u/shell"]),
+        expect: (argv) =>
+            check(
+                argv[2].indexOf("kill -TERM 4242") !== -1,
+                argv[2],
+            ),
+    },
 ];
 
 const results = cases.map((item) => {
