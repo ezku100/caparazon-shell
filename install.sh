@@ -130,7 +130,7 @@ link_xdg_cache() {
 
 validate_palette() {
     local palette="$ACCENT_THEME_PALETTE"
-    local missing=""
+    local missing_tokens=""
     local token
     if [ ! -f "$palette" ]; then
         echo "ERROR: el motor no genero $palette" >&2
@@ -139,11 +139,11 @@ validate_palette() {
     while read -r token || [ -n "$token" ]; do
         [ -z "$token" ] && continue
         if ! grep -q "\"$token\"" "$palette"; then
-            missing="$missing $token"
+            missing_tokens="$missing_tokens $token"
         fi
     done < "$ACCENT_THEME_TOKENS"
-    if [ -n "$missing" ]; then
-        echo "ERROR: la paleta no contiene:$missing" >&2
+    if [ -n "$missing_tokens" ]; then
+        echo "ERROR: la paleta no contiene:$missing_tokens" >&2
         return 1
     fi
     echo "Paleta validada en $palette"
