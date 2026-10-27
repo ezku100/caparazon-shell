@@ -5,6 +5,7 @@ import QtQuick.Layouts
 import QtQuick.Shapes
 import QtQuick.Effects
 import "../../theme"
+import "../icons"
 
 // Menú contextual de las apps del dock. Reutiliza el lenguaje visual del
 // menú de bandeja: burbuja M3, sombra suave, filas de 40 px y cola inferior.
@@ -219,7 +220,7 @@ PopupWindow {
                                     implicitSize: 16
                                     Layout.preferredWidth: 16
                                     Layout.preferredHeight: 16
-                                    source: Quickshell.iconPath(entry.modelData.icon,
+                                    source: IconResolver.source(entry.modelData.icon,
                                         "application-x-executable")
                                 }
 

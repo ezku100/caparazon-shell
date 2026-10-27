@@ -4,6 +4,7 @@ import Quickshell.Widgets
 import QtQuick
 import QtQuick.Effects
 import "../../theme"
+import "../icons"
 import "EmojiData.js" as EmojiData
 import "InputMode.js" as InputMode
 
@@ -93,7 +94,7 @@ PanelWindow {
 
     function findIcon(names) {
         for (let i = 0; i < names.length; ++i) {
-            const path = Quickshell.iconPath(names[i], true);
+            const path = IconResolver.resolved(names[i]);
             if (path && path.length > 0)
                 return path;
         }

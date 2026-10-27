@@ -1,6 +1,7 @@
 import Quickshell
 import QtQuick
 import "../../theme"
+import "../icons"
 
 // Notificación activa más reciente. Vive al lado del reloj dentro del
 // grupo centrado: cuando aparece, el reloj se desplaza hacia escritorios
@@ -21,8 +22,7 @@ Item {
     readonly property string iconSource: {
         if (!notification || !notification.appIcon)
             return "";
-        const path = Quickshell.iconPath(notification.appIcon, true);
-        return path !== "" ? path : notification.appIcon;
+        return IconResolver.resolved(notification.appIcon);
     }
 
     width: active ? Math.min(260, content.implicitWidth + 16) : 0
