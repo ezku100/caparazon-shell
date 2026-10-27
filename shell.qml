@@ -6,6 +6,7 @@ import QtQuick
 import "modules/bar"
 import "modules/appmenu"
 import "modules/dock"
+import "modules/icons"
 
 // Caparazón — punto de entrada.
 // Una barra por pantalla (Quickshell.screens).
@@ -37,6 +38,12 @@ ShellRoot {
     // Historial de portapapeles: un solo watcher para toda la shell.
     ClipboardHistoryService {
         id: clipboardHistoryService
+    }
+
+    // Vigilante del tema de iconos: reinicia la shell cuando KDE cambia de
+    // tema, porque el proceso lee el tema una sola vez al arrancar.
+    IconThemeWatcher {
+        id: iconThemeWatcher
     }
 
     // Servidor de notificaciones: una sola instancia para toda la shell.

@@ -1,1 +1,2 @@
 singleton IconResolver 1.0 IconResolver.qml
+IconThemeWatcher 1.0 IconThemeWatcher.qml
