@@ -19,9 +19,18 @@ fi
 
 echo "Sincronizando $SRC -> $REPO"
 for item in shell.qml modules theme components assets; do
-    rm -rf "$REPO/$item"
+    rm -rf "${REPO:?}/$item"
     cp -r "$SRC/$item" "$REPO/$item"
 done
+
+# La plantilla de matugen de la shell tambien vive en dotfiles. Solo se copia
+# esa carpeta: el resto de integration/ (puente, KWin y arranque) es propio de
+# este repositorio.
+if [[ -d "$SRC/integration/theme" ]]; then
+    mkdir -p "$REPO/integration"
+    rm -rf "$REPO/integration/theme"
+    cp -r "$SRC/integration/theme" "$REPO/integration/theme"
+fi
 
 if [[ -z "$(git -C "$REPO" status --porcelain)" ]]; then
     echo "No habia cambios."
