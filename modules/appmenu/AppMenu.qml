@@ -5,6 +5,7 @@ import QtQuick
 import QtQuick.Effects
 import "../../theme"
 import "../icons"
+import "../icons"
 import "EmojiData.js" as EmojiData
 import "InputMode.js" as InputMode
 
@@ -646,7 +647,7 @@ PanelWindow {
 
                     IconImage {
                         anchors.fill: parent
-                        source: "file:///usr/share/icons/Papirus/22x22/actions/edit-find.svg"
+                        source: IconResolver.firstOf(["edit-find", "system-search", "edit-find-symbolic"])
                         layer.enabled: true
                         layer.effect: MultiEffect {
                             colorization: 1.0

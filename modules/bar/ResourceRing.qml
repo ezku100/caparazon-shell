@@ -4,6 +4,7 @@ import QtQuick
 import QtQuick.Shapes
 import QtQuick.Effects
 import "../../theme"
+import "../icons"
 
 // Icono dentro de un anillo de progreso o de un círculo de fondo.
 Item {
@@ -30,7 +31,7 @@ Item {
     readonly property string resolvedIconSource: root.iconSource !== ""
         ? root.iconSource
         : (root.iconName !== ""
-            ? Quickshell.iconPath(root.iconName, "application-x-executable")
+            ? IconResolver.source(root.iconName, "application-x-executable")
             : "")
 
     implicitWidth: 28

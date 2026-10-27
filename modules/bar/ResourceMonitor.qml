@@ -1,5 +1,6 @@
 import QtQuick
 import "../../theme"
+import "../icons"
 
 // CPU, RAM, GPU, swap/zram y red.
 // Los valores llegan del ResourceMonitorService global.
@@ -13,8 +14,8 @@ Item {
     property int network: 0
     property string networkIcon: "network-wired"
 
-    readonly property string papirusPanel: "file:///usr/share/icons/Papirus/22x22/panel/"
-    readonly property string networkSource: root.papirusPanel + "network-transmit-receive.svg"
+    readonly property string networkSource: IconResolver.firstOf([
+        "network-transmit-receive", "network-wired", "network-wireless"])
 
     implicitWidth: row.implicitWidth
     implicitHeight: Theme.barHeight
@@ -27,25 +28,29 @@ Item {
         ResourceRing {
             label: "CPU"
             value: root.cpu
-            iconSource: root.papirusPanel + "indicator-sensors-cpu.svg"
+            iconSource: IconResolver.firstOf([
+                "cpu", "indicator-sensors-cpu", "utilities-system-monitor", "computer"])
         }
 
         ResourceRing {
             label: "RAM"
             value: root.ram
-            iconSource: root.papirusPanel + "indicator-sensors-memory.svg"
+            iconSource: IconResolver.firstOf([
+                "memory", "indicator-sensors-memory", "media-flash", "media-floppy"])
         }
 
         ResourceRing {
             label: "GPU"
             value: root.gpu
-            iconSource: root.papirusPanel + "indicator-sensors-gpu.svg"
+            iconSource: IconResolver.firstOf([
+                "video-card", "indicator-sensors-gpu", "video-display", "computer"])
         }
 
         ResourceRing {
             label: "Swap"
             value: root.swap
-            iconSource: root.papirusPanel + "drive-harddisk.svg"
+            iconSource: IconResolver.firstOf([
+                "drive-harddisk", "drive-harddisk-solidstate", "media-floppy"])
         }
 
         ResourceRing {
