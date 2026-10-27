@@ -1,0 +1,17 @@
+surface
+surfaceContainerLowest
+surfaceContainerLow
+surfaceContainer
+surfaceContainerHigh
+surfaceContainerHighest
+fgSurface
+fgSurfaceVariant
+outline
+outlineVariant
+primary
+fgPrimary
+secondary
+tertiary
+error
+errorContainer
+fgErrorContainer
