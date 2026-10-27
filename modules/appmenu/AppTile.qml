@@ -9,16 +9,26 @@ Item {
     id: root
 
     required property var entry
-    // Seleccionada con el teclado (flechas + Enter en el menú).
+    // Seleccionada por el cursor del menú: el dispositivo que esté mandando
+    // (flechas o ratón) decide cuál es.
     property bool selected: false
-    // Mientras se navega con el teclado, el ratón quieto no debe iluminar
-    // otra tarjeta a la vez.
-    property bool suppressHover: false
 
-    // Mismo efecto (fondo, texto y tambaleo del icono) tanto al pasar el
-    // ratón como al estar seleccionada con el teclado.
+    // El puntero está sobre la tarjeta. El menú lo necesita para mover el
+    // cursor cuando el ratón es el que manda.
+    readonly property bool hovered: hover.hovered
+    signal hoverEntered()
+    signal hoverExited()
+
+    // Fondo, texto y tambaleo siguen al cursor, así que nunca hay dos
+    // tarjetas iluminadas a la vez.
     readonly property bool active: root.selected
-        || (hover.hovered && !root.suppressHover)
+
+    onHoveredChanged: {
+        if (root.hovered)
+            root.hoverEntered();
+        else
+            root.hoverExited();
+    }
 
     onActiveChanged: {
         if (root.active) {
