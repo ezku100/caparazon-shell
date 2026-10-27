@@ -28,7 +28,6 @@ PanelWindow {
     property int gpuUsage: 0
     property int swapUsage: 0
     property int networkUsage: 0
-    property string networkIcon: "network-wired"
     property string powerProfile: "balanced"
 
     readonly property var activeTrayMenu: trayMenuState ? trayMenuState.active : null
@@ -277,7 +276,6 @@ PanelWindow {
                 gpu: bar.gpuUsage
                 swap: bar.swapUsage
                 network: bar.networkUsage
-                networkIcon: bar.networkIcon
             }
 
             Row {

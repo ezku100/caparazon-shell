@@ -90,10 +90,6 @@ while true; do
             done
         fi
 
-        net_icon=network-wired
-        if [[ -n "${iface:-}" && -d "/sys/class/net/$iface/wireless" ]]; then
-            net_icon=network-wireless
-        fi
         speed=1000
         if [[ -n "${iface:-}" && -r "/sys/class/net/$iface/speed" ]]; then
             read -r speed < "/sys/class/net/$iface/speed" 2>/dev/null || speed=1000
@@ -137,7 +133,7 @@ while true; do
         esac
     fi
 
-    printf '%s %s %s %s %s %s %s\n' \
-        "$cpu" "$ram" "$gpu" "$swap" "$net" "$power_profile" "$net_icon"
+    printf '%s %s %s %s %s %s\n' \
+        "$cpu" "$ram" "$gpu" "$swap" "$net" "$power_profile"
     sleep 1
 done

@@ -222,7 +222,6 @@ ShellRoot {
             gpuUsage: resourceService.gpu
             swapUsage: resourceService.swap
             networkUsage: resourceService.network
-            networkIcon: resourceService.networkIcon
             powerProfile: resourceService.powerProfile
         }
     }

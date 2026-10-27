@@ -12,7 +12,6 @@ Item {
     property int gpu: 0
     property int swap: 0
     property int network: 0
-    property string networkIcon: "network-wired"
 
     readonly property string networkSource: IconResolver.firstOf([
         "network-transmit-receive", "network-wired", "network-wireless"])
