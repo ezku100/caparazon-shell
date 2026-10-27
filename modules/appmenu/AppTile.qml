@@ -2,6 +2,7 @@ import Quickshell
 import Quickshell.Widgets
 import QtQuick
 import "../../theme"
+import "../icons"
 
 // Icono de aplicación del menú central. Conserva el icono original para que
 // sea reconocible y reutiliza el tambaleo en bucle del dock al pasar el ratón.
@@ -48,14 +49,9 @@ Item {
 
     signal activated()
 
-    readonly property string iconSource: {
-        const icon = root.entry && root.entry.icon
-            ? String(root.entry.icon)
-            : "application-x-executable";
-        if (icon.indexOf("/") === 0)
-            return Qt.resolvedUrl(icon);
-        return Quickshell.iconPath(icon, "application-x-executable");
-    }
+    readonly property string iconSource: IconResolver.source(
+        root.entry && root.entry.icon ? String(root.entry.icon) : "",
+        "application-x-executable")
 
     implicitWidth: 106
     implicitHeight: 108

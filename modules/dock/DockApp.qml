@@ -3,6 +3,7 @@ import Quickshell.Widgets
 import QtQuick
 import QtQuick.Effects
 import "../../theme"
+import "../icons"
 
 Item {
     id: root
@@ -21,12 +22,8 @@ Item {
     readonly property color dotColor: root.focused
         ? Theme.m3Primary
         : Theme.textDim
-    readonly property string iconSource: {
-        const icon = root.app.icon || "application-x-executable";
-        if (icon.indexOf("/") === 0)
-            return Qt.resolvedUrl(icon);
-        return Quickshell.iconPath(icon, "application-x-executable");
-    }
+    readonly property string iconSource: IconResolver.source(root.app.icon,
+        "application-x-executable")
 
     implicitWidth: 44
     implicitHeight: 44

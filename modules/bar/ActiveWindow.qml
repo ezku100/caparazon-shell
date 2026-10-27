@@ -3,6 +3,7 @@ import Quickshell.Widgets
 import QtQuick
 import QtQuick.Effects
 import "../../theme"
+import "../icons"
 
 // Ventana activa, alimentada por ActiveWindowService.
 // Icono de la app (tintado como los de la bandeja) + nombre de la app +
@@ -54,7 +55,7 @@ Item {
         : (root.entry && root.entry.icon ? root.entry.icon : root.appId)
 
     readonly property string iconSource: root.appId !== ""
-        ? Quickshell.iconPath(root.iconName, "application-x-executable")
+        ? IconResolver.source(root.iconName, "application-x-executable")
         : ""
 
     function prettyAppId(id) {
