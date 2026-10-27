@@ -81,10 +81,16 @@ su desinstalación; además tendría que adivinar el nombre de la unidad
 ### D1. Detección
 
 `FileView` de Quickshell con `watchChanges: true` sobre
-`$XDG_CONFIG_HOME/kdeglobals`, más un `FileSystemWatcher` de QtQuick sobre el
-directorio de configuración por si KConfig sustituye el archivo de forma
-atómica. Es el mismo patrón que ya usa `MatugenPalette` con `colors.json`,
-que el motor accent-theme escribe de forma atómica.
+`$XDG_CONFIG_HOME/kdeglobals`. Es el mismo patrón que ya usa `MatugenPalette`
+con `colors.json`, que el motor accent-theme escribe de forma atómica:
+`watchChanges` aguanta la sustitución atómica de KConfig, comprobado con
+cuatro renombrados seguidos.
+
+Quickshell 0.3.2 no expone `FileSystemWatcher` de QtQuick ("FileSystemWatcher
+is not a type"), así que la red de seguridad es otro camino: un temporizador
+que vuelve a mirar el archivo cada 5 s. Así, aunque la vigilancia se perdiera,
+el cambio se seguiría detectando en vez de dejar al usuario con el tema viejo
+sin explicación.
 
 Ante cualquier aviso se rearranca un temporizador de 500 ms; al cumplirse se
 vuelve a leer el archivo y se compara el valor. El valor se lee **en el
@@ -107,15 +113,20 @@ y devuelve el tema que queda como referencia y si hay que reiniciar.
 El reinicio se decide en dos casos, según dónde corra la shell:
 
 - **Bajo systemd** (lo normal): se lee `/proc/self/cgroup` y se toma el
-  último componente, que es el nombre de la unidad. El reinicio se lanza con
+  último componente, que es el nombre de la unidad. Sólo el último: los
+  tramos anteriores incluyen `user@1000.service`, y reiniciar el gestor de
+  usuario cerraría la sesión entera; por eso se descartan también `user-*` e
+  `init.service`. El reinicio se lanza con
   `systemd-run --user --on-active=0.3 systemctl --user restart <unidad>`.
   `systemd-run` crea una unidad transitoria en `user.slice`, **fuera** del
   cgroup de la shell: así el reinicio no se mata a sí mismo a media faena.
   Si `systemd-run` no existe, se cae a `systemctl --user restart <unidad>`.
 - **Sin systemd** (arranque manual en modo desarrollo): se lee el `argv` del
-  proceso desde `/proc/$PPID/cmdline` y, cuando el PID actual muere, se
-  vuelve a ejecutar ese mismo `argv`. Así la shell reaparece igual que se
-  lanzó.
+  proceso desde `/proc/$PPID/cmdline` y el script mata al proceso actual
+  (`SIGTERM`), espera a que desaparezca y vuelve a ejecutar ese mismo `argv`.
+  Así la shell reaparece igual que se lanzó. El script tiene que matarla
+  porque nadie más lo hace: esperar sólo a que el PID se fuera, sin matarlo,
+  deja la shell sin reiniciar para siempre.
 
 Un flag `restarting` impide encolar dos reinicios.
 

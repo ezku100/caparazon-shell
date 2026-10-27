@@ -10,6 +10,26 @@
 
 **Spec:** `docs/superpowers/specs/2026-10-27-vigilante-tema-iconos-design.md` — el plan razona a partir del spec; quien ejecute, lee ambos.
 
+## Desviaciones respecto al plan
+
+El plan se escribió antes de tocar el código; al ejecutarlo aparecieron cuatro
+desviaciones, todas comprobadas contra el sistema real. El spec ya refleja el
+resultado final.
+
+1. **No hay `FileSystemWatcher` en Quickshell 0.3.2** ("FileSystemWatcher is
+   not a type"). La vigilancia queda en `FileView` con `watchChanges: true`,
+   que aguanta la sustitución atómica de KConfig, y la red de seguridad es un
+   temporizador de sondeo de 5 s en vez de un watcher sobre el directorio.
+2. **La unidad se deduce del último tramo del cgroup**, no de cualquier
+   `.service`: los tramos anteriores incluyen `user@1000.service`, y
+   reiniciar el gestor de usuario cerraría la sesión entera. Se descartan
+   `user-*` e `init.service`.
+3. **El relanzamiento manual mata al proceso actual** (`SIGTERM`) antes de
+   reejecutar el `argv`. El plan sólo esperaba a que el PID desapareciera y
+   nadie lo mataba, así que la shell no se reiniciaba nunca.
+4. **`TimeoutExpired.stdout` guarda bytes en POSIX** aunque se pida
+   `text=True`; el snippet de la tarea 3 tiene que decodificarlo.
+
 ## Restricciones globales
 
 - Cero dependencias nuevas: nada de instalar paquetes, ni de añadir imports fuera de `QtQuick`, `Quickshell`, `Quickshell.Io` y JavaScript plano.
@@ -276,6 +296,7 @@ Crear `tests/test_resource_monitor_output.py`:
 ```python
 """La línea del muestreo lleva los seis valores que la shell consume."""
 
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -287,15 +308,22 @@ SCRIPT = REPOSITORY_ROOT / "modules" / "bar" / "resource-monitor.sh"
 
 def test_the_sampler_emits_six_fields() -> None:
     """La primera línea del script tiene seis campos y ninguno es un icono."""
+    bash = shutil.which("bash")
+    if bash is None:
+        pytest.skip("bash no disponible")
+    runner = bash or "bash"
     with pytest.raises(subprocess.TimeoutExpired) as excinfo:
-        _ = subprocess.run(
-            ["bash", str(SCRIPT)],
+        _ = subprocess.run(  # noqa: S603
+            [runner, str(SCRIPT)],
             capture_output=True,
             text=True,
             timeout=3,
             check=False,
         )
-    first = excinfo.value.stdout.strip().splitlines()[0]
+    stdout = excinfo.value.stdout
+    assert stdout is not None
+    # Al agotarse el tiempo, TimeoutExpired guarda bytes aunque se pida texto.
+    first = stdout.decode().strip().splitlines()[0]
     fields = first.split()
     assert len(fields) == 6
     assert fields[5] in {"performance", "balanced", "power-saver"}
