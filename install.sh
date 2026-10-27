@@ -25,6 +25,10 @@ ACCENT_THEME_INSTALLED_DESCRIPTOR="$CONFIG_HOME/accent-theme/templates.d/caparaz
 ACCENT_THEME_PALETTE="$HOME/.cache/caparazon/colors.json"
 REQUIRED_THEME_DEPENDENCIES=(matugen python3 inotifywait flock kreadconfig6 git)
 THEME_APT_PACKAGES="matugen python3 inotify-tools util-linux libkf6config-bin git"
+MENU_SHORTCUT_ID="net.local.quickshell-2"
+MENU_SHORTCUT_KEY="Meta"
+MENU_SHORTCUT_SECTION="[services][${MENU_SHORTCUT_ID}.desktop]"
+MENU_SHORTCUT_PATTERN="^\[services\]\[${MENU_SHORTCUT_ID//./\\.}\.desktop\]$"
 
 usage() {
     cat <<EOF
@@ -94,6 +98,41 @@ existing_shell_dir() {
     [ -n "$path" ] || return 1
     [ -f "$path/shell.qml" ] || return 1
     printf '%s\n' "$path"
+}
+
+install_shortcut() {
+    local shell_path="$1"
+    local applications="$DATA_HOME/applications"
+    local desktop="$applications/$MENU_SHORTCUT_ID.desktop"
+    echo "Instalando el atajo global del menu"
+    mkdir -p "$applications"
+    sed -e "s|@SHELL_PATH@|$shell_path|g" \
+        "$REPO/integration/shortcuts/caparazon-menu.desktop.in" \
+        > "$desktop"
+    chmod 644 "$desktop"
+    bind_shortcut_key
+}
+
+bind_shortcut_key() {
+    local file="$CONFIG_HOME/kglobalshortcutsrc"
+    mkdir -p "$CONFIG_HOME"
+    touch "$file"
+    if grep -qF "$MENU_SHORTCUT_SECTION" "$file"; then
+        sed -i "/$MENU_SHORTCUT_PATTERN/,/^\[/ s|^_launch=.*|_launch=$MENU_SHORTCUT_KEY|" \
+            "$file"
+    else
+        printf '\n%s\n_launch=%s\n' "$MENU_SHORTCUT_SECTION" "$MENU_SHORTCUT_KEY" \
+            >> "$file"
+    fi
+}
+
+remove_shortcut() {
+    rm -f "$DATA_HOME/applications/$MENU_SHORTCUT_ID.desktop"
+    local file="$CONFIG_HOME/kglobalshortcutsrc"
+    if [ ! -f "$file" ]; then
+        return 0
+    fi
+    sed -i "/$MENU_SHORTCUT_PATTERN/,/^\[/ s|^_launch=.*|_launch=none|" "$file"
 }
 
 fetch_theme_engine() {
@@ -195,6 +234,7 @@ uninstall() {
     rm -f "$BIN_DIR/ezku-desktops-bootstrap.sh"
     rm -f "$BIN_DIR/ezku-desktops-daemon.py"
     rm -rf "$HOME/.local/share/kwin/scripts/ezkudesktops"
+    remove_shortcut
     uninstall_theme
     echo "Listo. El proceso de Quickshell sigue vivo: cierralo con"
     echo "  pkill -f 'quickshell -p $SHELL_DIR'"
@@ -207,17 +247,21 @@ case "${1:-instalar}" in
         if [ -n "$EXISTING_SHELL_DIR" ] && [ "$EXISTING_SHELL_DIR" != "$SHELL_DIR" ]; then
             echo "Reutilizando la shell de $EXISTING_SHELL_DIR"
             echo "No se crea una copia en $SHELL_DIR ni se toca el arranque automatico"
+            ACTIVE_SHELL_DIR="$EXISTING_SHELL_DIR"
         else
             install_shell
             install_autostart
+            ACTIVE_SHELL_DIR="$SHELL_DIR"
         fi
+        install_shortcut "$ACTIVE_SHELL_DIR"
         install_bridge
         install_theme
         echo
         echo "Listo. Para probarla ahora mismo:"
-        echo "  quickshell -p $SHELL_DIR"
+        echo "  quickshell -p $ACTIVE_SHELL_DIR"
         echo
         echo "En el siguiente inicio de sesion arrancara sola."
+        echo "Atajo global: $MENU_SHORTCUT_KEY abre el menu central."
         ;;
     desinstalar)
         uninstall

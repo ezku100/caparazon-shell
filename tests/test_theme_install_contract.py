@@ -209,6 +209,28 @@ def test_installer_does_not_duplicate_an_existing_shell(tmp_path: Path) -> None:
     assert str(existing) in autostart.read_text(encoding="utf-8")
 
 
+def test_installer_registers_the_global_menu_shortcut(tmp_path: Path) -> None:
+    if shutil.which("git") is None:
+        pytest.skip("git no disponible")
+    engine = make_fake_engine(tmp_path)
+    environ = isolated_environment(tmp_path, engine_repository=engine)
+
+    result = run_installer("instalar", environ)
+
+    assert result.returncode == 0, result.stderr
+    home = tmp_path / "home"
+    desktop = (
+        home / ".local" / "share" / "applications" / "net.local.quickshell-2.desktop"
+    )
+    assert desktop.is_file()
+    content = desktop.read_text(encoding="utf-8")
+    assert "ipc call menu toggle" in content
+    assert str(home / ".config" / "quickshell" / "caparazon") in content
+    shortcuts = (home / ".config" / "kglobalshortcutsrc").read_text(encoding="utf-8")
+    assert "[services][net.local.quickshell-2.desktop]" in shortcuts
+    assert "_launch=Meta" in shortcuts
+
+
 def test_template_publishes_every_required_token() -> None:
     template = cast(
         "dict[str, str]",

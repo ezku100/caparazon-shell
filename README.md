@@ -58,8 +58,9 @@ cd caparazon-shell
 ```
 
 El instalador copia la shell a `~/.config/quickshell/caparazon`, instala el
-puente de escritorios (`~/.local/bin` y el script de KWin) y registra el
-arranque automático en `~/.config/autostart`.
+puente de escritorios (`~/.local/bin` y el script de KWin), registra el
+arranque automático en `~/.config/autostart` y deja el atajo global listo:
+la tecla **Meta** abre el menú central.
 
 Si el arranque automático ya apunta a otra copia —por ejemplo, tu clon de
 trabajo—, el instalador la reutiliza: no copia la shell ni cambia el
@@ -105,9 +106,15 @@ quickshell -p ~/.config/quickshell/caparazon ipc call menu close
 
 | Tecla | Acción |
 |---|---|
+| `Meta` | Abrir o cerrar el menú central (atajo global) |
 | `←` `→` `↑` `↓` | Mover la selección de la cuadrícula |
 | `Enter` | Lanzar la app, pegar el emoji o copiar del portapapeles |
 | `Esc` | Cerrar el menú o limpiar el buscador |
+
+El atajo global se registra como un lanzador de servicio de KDE
+(`~/.local/share/applications/net.local.quickshell-2.desktop`) con la
+combinación anotada en `~/.config/kglobalshortcutsrc`, así que
+`./install.sh` lo deja funcionando sin tocar los ajustes del sistema.
 
 ## Estructura
 
