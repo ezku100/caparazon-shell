@@ -13,7 +13,6 @@ Item {
     property int gpu: 0
     property int swap: 0
     property int network: 0
-    property string networkIcon: "network-wired"
     property string powerProfile: "balanced"
 
     function clamp(value) {
@@ -27,7 +26,7 @@ Item {
         stdout: SplitParser {
             onRead: function(line) {
                 const fields = line.trim().split(/\s+/);
-                if (fields.length < 7)
+                if (fields.length < 6)
                     return;
 
                 root.cpu = clamp(fields[0]);
@@ -36,7 +35,6 @@ Item {
                 root.swap = clamp(fields[3]);
                 root.network = clamp(fields[4]);
                 root.powerProfile = fields[5] || "balanced";
-                root.networkIcon = fields[6] || "network-wired";
             }
         }
     }
