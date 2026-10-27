@@ -120,6 +120,16 @@ Singleton {
         return found.length > 0 ? found : root.source(root.genericIcon, "");
     }
 
+    // Igual que themed(), pero sin el respaldo por prefijo de iconPath: sirve
+    // para saber si el tema trae el icono exacto y no uno de nombre parecido.
+    function exactThemed(names) {
+        for (let i = 0; i < names.length; ++i) {
+            if (Quickshell.hasThemeIcon(names[i]))
+                return String(Quickshell.iconPath(names[i], ""));
+        }
+        return "";
+    }
+
     // Leer userIcons crea la dependencia que repinta las tarjetas cuando el
     // índice termina de llenarse.
     function indexed(name) {
