@@ -33,7 +33,7 @@ Item {
     FileView {
         path: root.cacheDir + "/caparazon/colors.json"
         watchChanges: true
-        printErrors: false
+        printErrors: true
         onFileChanged: reload()
 
         JsonAdapter {

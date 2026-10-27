@@ -1,0 +1,19 @@
+{
+  "surface": "{{colors.surface.dark.hex}}",
+  "surfaceContainerLowest": "{{colors.surface_container_lowest.dark.hex}}",
+  "surfaceContainerLow": "{{colors.surface_container_low.dark.hex}}",
+  "surfaceContainer": "{{colors.surface_container.dark.hex}}",
+  "surfaceContainerHigh": "{{colors.surface_container_high.dark.hex}}",
+  "surfaceContainerHighest": "{{colors.surface_container_highest.dark.hex}}",
+  "fgSurface": "{{colors.on_surface.dark.hex}}",
+  "fgSurfaceVariant": "{{colors.on_surface_variant.dark.hex}}",
+  "outline": "{{colors.outline.dark.hex}}",
+  "outlineVariant": "{{colors.outline_variant.dark.hex}}",
+  "primary": "{{colors.primary.dark.hex}}",
+  "fgPrimary": "{{colors.on_primary.dark.hex}}",
+  "secondary": "{{colors.secondary.dark.hex}}",
+  "tertiary": "{{colors.tertiary.dark.hex}}",
+  "error": "{{colors.error.dark.hex}}",
+  "errorContainer": "{{colors.error_container.dark.hex}}",
+  "fgErrorContainer": "{{colors.on_error_container.dark.hex}}"
+}

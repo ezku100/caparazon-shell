@@ -1,24 +1,38 @@
-#!/usr/bin/env bash
+#!/bin/bash
 # Caparazon — instalador de la shell de escritorio.
 #
-#   ./install.sh              instala la shell, el puente de escritorios y el
-#                             arranque automatico
+#   ./install.sh              instala la shell, el puente de escritorios, el
+#                             arranque automatico y el tema accent-theme
 #   ./install.sh desinstalar  quita lo que instalo este script
 set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
+CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}"
 SHELL_DIR="$CONFIG_HOME/quickshell/caparazon"
 AUTOSTART_DIR="$CONFIG_HOME/autostart"
 BIN_DIR="$HOME/.local/bin"
 KWIN_DIR="$HOME/.local/share/kwin/scripts/ezkudesktops/contents/code"
+
+ACCENT_THEME_REPO="${ACCENT_THEME_REPO:-https://github.com/ezku100/accent-theme.git}"
+ACCENT_THEME_SOURCE="${ACCENT_THEME_SOURCE:-$DATA_HOME/accent-theme/source}"
+ACCENT_THEME_BIN="$BIN_DIR/accent-theme"
+ACCENT_THEME_DESCRIPTOR="$REPO/integration/theme/accent-theme.toml"
+ACCENT_THEME_TOKENS="$REPO/integration/theme/required-tokens.txt"
+ACCENT_THEME_TEMPLATE_DIR="$CONFIG_HOME/accent-theme/templates/caparazon-shell"
+ACCENT_THEME_INSTALLED_DESCRIPTOR="$CONFIG_HOME/accent-theme/templates.d/caparazon-shell.toml"
+ACCENT_THEME_PALETTE="$HOME/.cache/caparazon/colors.json"
+REQUIRED_THEME_DEPENDENCIES=(matugen python3 inotifywait flock kreadconfig6 git)
+THEME_APT_PACKAGES="matugen python3 inotify-tools util-linux libkf6config-bin git"
 
 usage() {
     cat <<EOF
 Uso: $(basename "$0") [instalar|desinstalar]
 
   instalar     Copia la shell a $SHELL_DIR, instala el puente de
-               escritorios y registra el arranque automatico.
+               escritorios, registra el arranque automatico y conecta el
+               tema accent-theme con la paleta dinamica.
   desinstalar  Quita lo que instalo este script.
 EOF
 }
@@ -28,6 +42,19 @@ require_quickshell() {
         echo "AVISO: quickshell no esta en el PATH." >&2
         echo "       En PikaOS: sudo apt install quickshell" >&2
         echo "       Continuando con la instalacion de archivos." >&2
+    fi
+}
+
+require_theme_dependencies() {
+    local missing=()
+    local dependency
+    for dependency in "${REQUIRED_THEME_DEPENDENCIES[@]}"; do
+        command -v "$dependency" >/dev/null 2>&1 || missing+=("$dependency")
+    done
+    if [ "${#missing[@]}" -gt 0 ]; then
+        echo "ERROR: faltan dependencias del tema: ${missing[*]}" >&2
+        echo "       En PikaOS: sudo apt install $THEME_APT_PACKAGES" >&2
+        exit 1
     fi
 }
 
@@ -59,6 +86,97 @@ install_autostart() {
         > "$AUTOSTART_DIR/ezku-desktops-bridge.desktop"
 }
 
+fetch_theme_engine() {
+    echo "Obteniendo el motor accent-theme"
+    if [ -d "$ACCENT_THEME_SOURCE/.git" ]; then
+        git -C "$ACCENT_THEME_SOURCE" pull --ff-only
+    elif [ -d "$ACCENT_THEME_SOURCE" ]; then
+        echo "       usando el checkout local $ACCENT_THEME_SOURCE"
+    else
+        mkdir -p "$(dirname "$ACCENT_THEME_SOURCE")"
+        case "$ACCENT_THEME_REPO" in
+            http*) git clone --depth 1 "$ACCENT_THEME_REPO" "$ACCENT_THEME_SOURCE" ;;
+            *) git clone "$ACCENT_THEME_REPO" "$ACCENT_THEME_SOURCE" ;;
+        esac
+    fi
+}
+
+install_theme_engine() {
+    echo "Instalando el motor accent-theme"
+    bash "$ACCENT_THEME_SOURCE/install.sh" instalar
+}
+
+register_caparazon_theme() {
+    echo "Registrando la plantilla de Caparazon"
+    "$ACCENT_THEME_BIN" register --app caparazon-shell \
+        --descriptor "$ACCENT_THEME_DESCRIPTOR"
+    "$ACCENT_THEME_BIN" generate
+}
+
+link_xdg_cache() {
+    if [ "$CACHE_HOME" = "$HOME/.cache" ]; then
+        return 0
+    fi
+    mkdir -p "$CACHE_HOME" "$HOME/.cache/caparazon"
+    if [ -L "$CACHE_HOME/caparazon" ]; then
+        rm -f "$CACHE_HOME/caparazon"
+    elif [ -e "$CACHE_HOME/caparazon" ]; then
+        echo "AVISO: $CACHE_HOME/caparazon ya existe y no es un enlace." >&2
+        echo "       Enlaza a mano si lo quieres usar: $HOME/.cache/caparazon" >&2
+        return 0
+    fi
+    ln -s "$HOME/.cache/caparazon" "$CACHE_HOME/caparazon"
+}
+
+validate_palette() {
+    local palette="$ACCENT_THEME_PALETTE"
+    local missing_tokens=""
+    local token
+    if [ ! -f "$palette" ]; then
+        echo "ERROR: el motor no genero $palette" >&2
+        return 1
+    fi
+    while read -r token || [ -n "$token" ]; do
+        [ -z "$token" ] && continue
+        if ! grep -q "\"$token\"" "$palette"; then
+            missing_tokens="$missing_tokens $token"
+        fi
+    done < "$ACCENT_THEME_TOKENS"
+    if [ -n "$missing_tokens" ]; then
+        echo "ERROR: la paleta no contiene:$missing_tokens" >&2
+        return 1
+    fi
+    echo "Paleta validada en $palette"
+}
+
+install_theme() {
+    echo "Conectando el tema accent-theme"
+    require_theme_dependencies
+    fetch_theme_engine
+    install_theme_engine
+    register_caparazon_theme
+    link_xdg_cache
+    validate_palette
+}
+
+remove_caparazon_theme() {
+    rm -f "$ACCENT_THEME_INSTALLED_DESCRIPTOR"
+    rm -rf "$ACCENT_THEME_TEMPLATE_DIR"
+    rm -f "$ACCENT_THEME_PALETTE"
+    if [ -L "$CACHE_HOME/caparazon" ]; then
+        rm -f "$CACHE_HOME/caparazon"
+    fi
+}
+
+uninstall_theme() {
+    remove_caparazon_theme
+    if [ ! -f "$ACCENT_THEME_SOURCE/install.sh" ]; then
+        return 0
+    fi
+    echo "Desinstalando el motor accent-theme"
+    bash "$ACCENT_THEME_SOURCE/install.sh" desinstalar
+}
+
 uninstall() {
     echo "Quitando Caparazon"
     rm -rf "$SHELL_DIR"
@@ -67,6 +185,7 @@ uninstall() {
     rm -f "$BIN_DIR/ezku-desktops-bootstrap.sh"
     rm -f "$BIN_DIR/ezku-desktops-daemon.py"
     rm -rf "$HOME/.local/share/kwin/scripts/ezkudesktops"
+    uninstall_theme
     echo "Listo. El proceso de Quickshell sigue vivo: cierralo con"
     echo "  pkill -f 'quickshell -p $SHELL_DIR'"
 }
@@ -77,6 +196,7 @@ case "${1:-instalar}" in
         install_shell
         install_bridge
         install_autostart
+        install_theme
         echo
         echo "Listo. Para probarla ahora mismo:"
         echo "  quickshell -p $SHELL_DIR"

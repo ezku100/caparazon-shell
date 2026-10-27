@@ -1,0 +1,3 @@
+name = "caparazon-shell-matugen"
+input_path = "~/.config/accent-theme/templates/caparazon-shell/quickshell-matugen.json"
+output_path = "~/.cache/caparazon/colors.json"

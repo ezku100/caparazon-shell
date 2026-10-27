@@ -36,13 +36,17 @@ animación de despedida.
 - `quickshell` 0.3.x o superior.
 - Herramientas de KDE: `qdbus6`, `busctl`, `dbus-monitor`.
 - `wl-paste` (historial de portapapeles) y `gdbus` (puente con KWin).
-- Opcionales: `matugen` (tema dinámico), `wtype` o `ydotool` (pegar emojis),
+- Para el tema dinámico: `matugen`, `inotify-tools` (`inotifywait`),
+  `util-linux` (`flock`), `libkf6config-bin` (`kreadconfig6`), `git` y
+  `python3`.
+- Opcionales: `wtype` o `ydotool` (pegar emojis),
   `python3` con `PyGObject` (puente de escritorios).
 
 En PikaOS:
 
 ```bash
-sudo apt install quickshell qdbus6 dbus-tools
+sudo apt install quickshell qdbus6 dbus-tools \
+  matugen inotify-tools util-linux libkf6config-bin git python3
 ```
 
 ## Instalar
@@ -57,11 +61,20 @@ El instalador copia la shell a `~/.config/quickshell/caparazon`, instala el
 puente de escritorios (`~/.local/bin` y el script de KWin) y registra el
 arranque automático en `~/.config/autostart`.
 
+Además instala el motor de tema [`ezku100/accent-theme`](https://github.com/ezku100/accent-theme)
+(clon o `git pull` en `~/.local/share/accent-theme/source`), registra la
+plantilla de la shell y comprueba que la paleta generada contiene todos los
+tokens que la shell necesita. Si falta cualquier dependencia, el instalador
+se detiene indicando el comando `apt` exacto para instalarla.
+
 Para quitar todo lo que instaló:
 
 ```bash
 ./install.sh desinstalar
 ```
+
+La desinstalación devuelve el tema al servicio heredado
+`kitty-theme-watch.service` y deja intacta la configuración anterior.
 
 ## Arrancar y parar
 
@@ -128,6 +141,28 @@ lo que evita un proceso por monitor.
 `theme/MatugenPalette.qml` lee `~/.cache/caparazon/colors.json` y lo recarga
 cuando cambia. El archivo lo genera matugen a partir del `AccentColor` de
 `kdeglobals`; si no existe, la shell usa una paleta Material 3 de reserva.
+
+La paleta llega por el motor [`ezku100/accent-theme`](https://github.com/ezku100/accent-theme),
+que lee el acento de KDE y regenera todas las plantillas registradas cuando
+cambia. La shell publica su propia plantilla y su descriptor:
+
+```text
+integration/theme/quickshell-matugen.json   # tokens Material 3 que usa la shell
+integration/theme/accent-theme.toml         # entrada y salida de la plantilla
+integration/theme/required-tokens.txt       # tokens que la shell necesita
+```
+
+El motor copia la plantilla a `~/.config/accent-theme/templates/caparazon-shell/`
+y escribe el resultado en `~/.cache/caparazon/colors.json`. El instalador
+comprueba ese archivo al terminar: si falta algún token, falla con el nombre
+del token que falta en lugar de dejar la shell con la paleta de reserva sin
+avisar.
+
+Para ver el estado del motor:
+
+```bash
+~/.local/bin/accent-theme doctor
+```
 
 ## Desarrollo
 
