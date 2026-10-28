@@ -30,9 +30,14 @@ TOKEN_DECLARED = re.compile(
     re.MULTILINE,
 )
 
-# El hover enciende y el reposo apaga, con los tokens del dock.
+# El dock usa Theme.text en hover y Theme.textDim en reposo.
 DOCK_TINT = re.compile(
     r"[Hh]over\.hovered\s*\?\s*Theme\.text\b\s*:\s*Theme\.textDim\b"
+)
+
+# El menú de sesión usa el color de enfasis (acento) en hover y Theme.textDim en reposo.
+SESSION_MENU_TINT = re.compile(
+    r"[Hh]over\.hovered\s*\?\s*Theme\.m3Primary\b\s*:\s*Theme\.textDim\b"
 )
 
 
@@ -68,10 +73,10 @@ def test_the_dock_icons_are_dim_until_the_mouse_arrives() -> None:
 
 
 def test_the_session_menu_icons_share_the_dock_tint() -> None:
-    """El menu de sesion apaga sus iconos como el dock y los enciende al hover."""
+    """El menu de sesion apaga sus iconos con textDim y enciende con acento al hover."""
     contents = POWER_MENU.read_text(encoding="utf-8")
 
-    assert DOCK_TINT.search(contents)
+    assert SESSION_MENU_TINT.search(contents)
 
 
 def test_the_session_menu_icons_stay_big() -> None:

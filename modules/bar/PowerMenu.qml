@@ -241,10 +241,8 @@ PanelWindow {
                     required property var modelData
                     // Sin circulo de fondo el icono es el unico protagonista:
                     // en reposo se apaga con el mismo tinte que los iconos
-                    // inactivos del dock y al pasar el raton se enciende con
-                    // el color de superficie, sin invertir tonos.
                     property color iconColor: actionHover.hovered
-                        ? Theme.text
+                        ? Theme.m3Primary
                         : Theme.textDim
 
                     Behavior on iconColor {
@@ -295,7 +293,7 @@ PanelWindow {
 
                     IconImage {
                         anchors.centerIn: parent
-                        implicitSize: 88
+                        implicitSize: 104
                         source: IconResolver.firstOf(BarIcons.sessionNames(modelData.key))
                         layer.enabled: true
                         layer.effect: MultiEffect {
