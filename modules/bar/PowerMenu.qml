@@ -239,10 +239,10 @@ PanelWindow {
                     id: action
 
                     required property var modelData
-                    property real rippleX: width / 2
-                    property real rippleY: height / 2
+                    // Sin circulo de fondo el icono es el unico protagonista:
+                    // el hover se marca con color y escala, sin invertir tonos.
                     property color iconColor: actionHover.hovered
-                        ? Theme.m3Surface
+                        ? Theme.fgSurface
                         : Theme.m3Primary
 
                     Behavior on iconColor {
@@ -291,68 +291,9 @@ PanelWindow {
                         }
                     }
 
-                    Rectangle {
-                        id: circle
-                        anchors.fill: parent
-                        radius: width / 2
-                        color: actionMouse.pressed
-                            ? Qt.darker(Theme.m3Primary, 1.08)
-                            : actionHover.hovered
-                                ? Theme.m3Primary
-                                : Theme.chip
-                        border.width: actionHover.hovered || actionMouse.pressed ? 0 : 1
-                        border.color: Theme.hairline
-
-                        Behavior on color {
-                            ColorAnimation {
-                                duration: Theme.durFast
-                                easing.type: Easing.OutCubic
-                            }
-                        }
-                    }
-
-                    Rectangle {
-                        id: ripple
-                        x: action.rippleX - width / 2
-                        y: action.rippleY - height / 2
-                        width: 0
-                        height: 0
-                        radius: width / 2
-                        color: Theme.m3Surface
-                        opacity: 0
-                    }
-
-                    ParallelAnimation {
-                        id: rippleAnim
-                        NumberAnimation {
-                            target: ripple
-                            property: "width"
-                            from: 0
-                            to: 104
-                            duration: 460
-                            easing.type: Easing.OutCubic
-                        }
-                        NumberAnimation {
-                            target: ripple
-                            property: "height"
-                            from: 0
-                            to: 104
-                            duration: 460
-                            easing.type: Easing.OutCubic
-                        }
-                        NumberAnimation {
-                            target: ripple
-                            property: "opacity"
-                            from: 0.26
-                            to: 0
-                            duration: 460
-                            easing.type: Easing.OutCubic
-                        }
-                    }
-
                     IconImage {
-                        anchors.centerIn: circle
-                        implicitSize: 52
+                        anchors.centerIn: parent
+                        implicitSize: 88
                         source: IconResolver.firstOf(BarIcons.sessionNames(modelData.key))
                         layer.enabled: true
                         layer.effect: MultiEffect {
@@ -370,11 +311,6 @@ PanelWindow {
                         id: actionMouse
                         anchors.fill: parent
                         cursorShape: Qt.PointingHandCursor
-                        onPressed: function(mouse) {
-                            action.rippleX = Math.max(56, Math.min(action.width - 56, mouse.x));
-                            action.rippleY = Math.max(56, Math.min(action.height - 56, mouse.y));
-                            rippleAnim.restart();
-                        }
                         onClicked: root.beginAction(modelData.key)
                     }
                 }
