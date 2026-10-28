@@ -61,8 +61,10 @@ Item {
 
     // Red de seguridad: si el watcher de archivo se pierde, el temporizador
     // vuelve a leer colors.json cada segundo.
+    // El motor publica colors.json de forma atómica y `watchChanges` avisa en
+    // cuanto cambia; este temporizador es solo una red de seguridad.
     Timer {
-        interval: 1000
+        interval: 5000
         repeat: true
         running: true
         onTriggered: colorsFile.reload()

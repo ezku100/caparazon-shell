@@ -78,8 +78,8 @@ Para quitar todo lo que instaló:
 ./install.sh desinstalar
 ```
 
-La desinstalación devuelve el tema al servicio heredado
-`kitty-theme-watch.service` y deja intacta la configuración anterior.
+La desinstalación quita el registro del motor y deja intacta la configuración
+anterior.
 
 ## Arrancar y parar
 
@@ -161,12 +161,17 @@ verdad; el reinicio tarda un segundo y vacía el historial del portapapeles.
 ## Tema
 
 `theme/MatugenPalette.qml` lee `~/.cache/caparazon/colors.json` y lo recarga
-cuando cambia. El archivo lo genera matugen a partir del `AccentColor` de
-`kdeglobals`; si no existe, la shell usa una paleta Material 3 de reserva.
+cuando cambia (`watchChanges`). El archivo lo genera matugen a partir del
+`AccentColor` de `kdeglobals`; si no existe, la shell usa una paleta Material 3
+de reserva.
 
-La paleta llega por el motor [`ezku100/accent-theme`](https://github.com/ezku100/accent-theme),
-que lee el acento de KDE y regenera todas las plantillas registradas cuando
-cambia. La shell publica su propia plantilla y su descriptor:
+El motor [`ezku100/accent-theme`](https://github.com/ezku100/accent-theme) es
+el único que regenera la paleta: lee el acento de KDE y regenera todas las
+plantillas registradas cuando cambia. La shell no ejecuta su propio vigilante;
+solo lee el resultado. El motor publica `colors.json` de forma atómica
+(escribe `colors.staging.json` y lo renombra), así que la shell nunca ve un
+archivo a medias y el `FileView` se entera al instante. La shell publica su
+propia plantilla y su descriptor:
 
 ```text
 integration/theme/quickshell-matugen.json   # tokens Material 3 que usa la shell

@@ -226,24 +226,6 @@ install_theme() {
     validate_palette
 }
 
-install_accent_watcher() {
-    echo "Instalando vigilante de color de acento"
-    mkdir -p "$BIN_DIR"
-    cp "$REPO/scripts/accent-watcher.sh" "$BIN_DIR/accent-watcher.sh"
-    chmod +x "$BIN_DIR/accent-watcher.sh"
-    mkdir -p "$HOME/.config/systemd/user"
-    cp "$REPO/scripts/accent-watcher.service" "$HOME/.config/systemd/user/accent-watcher.service"
-    systemctl --user daemon-reload 2>/dev/null || true
-    systemctl --user enable --now accent-watcher.service 2>/dev/null || true
-}
-
-remove_accent_watcher() {
-    systemctl --user disable --now accent-watcher.service 2>/dev/null || true
-    rm -f "$HOME/.config/systemd/user/accent-watcher.service"
-    rm -f "$BIN_DIR/accent-watcher.sh"
-    systemctl --user daemon-reload 2>/dev/null || true
-}
-
 remove_caparazon_theme() {
     rm -f "$ACCENT_THEME_INSTALLED_DESCRIPTOR"
     rm -rf "$ACCENT_THEME_TEMPLATE_DIR"
@@ -272,7 +254,6 @@ uninstall() {
     rm -rf "$HOME/.local/share/kwin/scripts/ezkudesktops"
     remove_shortcut
     uninstall_theme
-    remove_accent_watcher
     echo "Listo. El proceso de Quickshell sigue vivo: cierralo con"
     echo "  pkill -f 'quickshell -p $SHELL_DIR'"
 }
@@ -294,7 +275,6 @@ case "${1:-instalar}" in
         refresh_shortcut_hint
         install_bridge
         install_theme
-        install_accent_watcher
         echo
         echo "Listo. Para probarla ahora mismo:"
         echo "  quickshell -p $ACTIVE_SHELL_DIR"
