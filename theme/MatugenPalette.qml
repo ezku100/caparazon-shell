@@ -31,13 +31,25 @@ Item {
     readonly property color fgErrorContainer: adapter.fgErrorContainer
 
     FileView {
+        id: colorsFile
         path: root.cacheDir + "/caparazon/colors.json"
         watchChanges: true
         printErrors: true
-        onFileChanged: reload()
+        onFileChanged: adapter.reload()
+    }
 
-        JsonAdapter {
-            id: adapter
+    // Red de seguridad: si el watcher de archivo se pierde o el archivo se
+    // escribe de forma atómica (temp + rename) y el aviso no llega, el
+    // temporizador vuelve a leerlo cada 5 segundos.
+    Timer {
+        interval: 5000
+        repeat: true
+        running: true
+        onTriggered: colorsFile.reload()
+    }
+
+    JsonAdapter {
+        id: adapter
             property string surface: "#141218"
             property string surfaceContainerLowest: "#0f0d13"
             property string surfaceContainerLow: "#1d1b20"
