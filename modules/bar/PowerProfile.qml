@@ -2,6 +2,8 @@ import Quickshell
 import Quickshell.Widgets
 import QtQuick
 import QtQuick.Effects
+import "../icons"
+import "../icons/BarIcons.js" as BarIcons
 import "../../theme"
 
 // Selector compacto del perfil de energía. La rueda del mouse cambia entre
@@ -28,11 +30,7 @@ Item {
     readonly property color iconColor: root.tone >= 0.5
         ? Theme.m3OnPrimary
         : Theme.text
-    readonly property string glyph: root.displayProfile === "power-saver"
-        ? "\u{F06C}" // hoja
-        : root.displayProfile === "performance"
-            ? "\u{F0E7}" // rayo
-            : ""
+    // Los iconos del perfil salen del tema activo (ver BarIcons.js).
 
     implicitWidth: 28
     implicitHeight: 26
@@ -88,24 +86,10 @@ Item {
         cursorShape: Qt.PointingHandCursor
     }
 
-    Text {
-        anchors.centerIn: parent
-        visible: root.glyph !== ""
-        text: root.glyph
-        color: root.iconColor
-        font.family: Theme.fontIcon
-        font.pixelSize: 16
-
-        Behavior on color {
-            ColorAnimation { duration: Theme.dur; easing.type: Easing.OutCubic }
-        }
-    }
-
     IconImage {
         anchors.centerIn: parent
-        visible: root.glyph === ""
         implicitSize: 16
-        source: Quickshell.iconPath("power-profile-balanced-symbolic")
+        source: IconResolver.firstOf(BarIcons.powerProfileNames(root.displayProfile))
         layer.enabled: true
         layer.effect: MultiEffect {
             colorization: 1.0

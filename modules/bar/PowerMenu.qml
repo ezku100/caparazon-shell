@@ -1,7 +1,10 @@
 import Quickshell
 import Quickshell.Wayland
+import Quickshell.Widgets
 import QtQuick
 import QtQuick.Effects
+import "../icons"
+import "../icons/BarIcons.js" as BarIcons
 import "../../theme"
 
 // Menú de sesión tipo Android: acciones circulares sin tarjeta ni etiquetas.
@@ -226,10 +229,10 @@ PanelWindow {
 
             Repeater {
                 model: [
-                    { key: "lock",     icon: "\u{F033E}", delay: 0 },
-                    { key: "logout",   icon: "\u{F0343}", delay: 55 },
-                    { key: "shutdown", icon: "\u{F0425}", delay: 110 },
-                    { key: "reboot",   icon: "\u{F0709}", delay: 165 }
+                    { key: "lock",     delay: 0 },
+                    { key: "logout",   delay: 55 },
+                    { key: "shutdown", delay: 110 },
+                    { key: "reboot",   delay: 165 }
                 ]
 
                 delegate: Item {
@@ -238,6 +241,16 @@ PanelWindow {
                     required property var modelData
                     property real rippleX: width / 2
                     property real rippleY: height / 2
+                    property color iconColor: actionHover.hovered
+                        ? Theme.m3Surface
+                        : Theme.m3Primary
+
+                    Behavior on iconColor {
+                        ColorAnimation {
+                            duration: Theme.durFast
+                            easing.type: Easing.OutCubic
+                        }
+                    }
 
                     width: 128
                     height: 128
@@ -337,20 +350,14 @@ PanelWindow {
                         }
                     }
 
-                    Text {
+                    IconImage {
                         anchors.centerIn: circle
-                        text: modelData.icon
-                        color: actionHover.hovered
-                            ? Theme.m3Surface
-                            : Theme.m3Primary
-                        font.family: Theme.fontIcon
-                        font.pixelSize: 52
-
-                        Behavior on color {
-                            ColorAnimation {
-                                duration: Theme.durFast
-                                easing.type: Easing.OutCubic
-                            }
+                        implicitSize: 52
+                        source: IconResolver.firstOf(BarIcons.sessionNames(modelData.key))
+                        layer.enabled: true
+                        layer.effect: MultiEffect {
+                            colorization: 1.0
+                            colorizationColor: action.iconColor
                         }
                     }
 

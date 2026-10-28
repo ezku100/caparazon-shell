@@ -28,7 +28,12 @@ README = REPOSITORY_ROOT / "README.md"
 INSTALL = REPOSITORY_ROOT / "install.sh"
 
 
-@pytest.mark.parametrize("path", QML_FILES, ids=lambda p: p.name)
+def file_id(path: Path) -> str:
+    """Nombre del fichero como identificador del caso."""
+    return path.name
+
+
+@pytest.mark.parametrize("path", QML_FILES, ids=file_id)
 def test_the_bar_no_longer_draws_nerd_font_glyphs(path: Path) -> None:
     """Un glifo de Nerd Font vuelve a romper el objetivo del cambio."""
     contents = path.read_text(encoding="utf-8")
@@ -37,7 +42,7 @@ def test_the_bar_no_longer_draws_nerd_font_glyphs(path: Path) -> None:
     assert "Theme.fontIcon" not in contents
 
 
-@pytest.mark.parametrize("path", QML_FILES, ids=lambda p: p.name)
+@pytest.mark.parametrize("path", QML_FILES, ids=file_id)
 def test_the_bar_resolves_its_icons_by_theme_name(path: Path) -> None:
     """El icono sale del tema activo, como el resto de la barra."""
     contents = path.read_text(encoding="utf-8")

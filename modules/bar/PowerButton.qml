@@ -1,4 +1,8 @@
+import Quickshell.Widgets
 import QtQuick
+import QtQuick.Effects
+import "../icons"
+import "../icons/BarIcons.js" as BarIcons
 import "../../components"
 import "../../theme"
 
@@ -35,12 +39,15 @@ HoverChip {
         cursorShape: Qt.PointingHandCursor
     }
 
-    Text {
+    IconImage {
         anchors.centerIn: parent
-        font.family: Theme.fontIcon
-        font.pixelSize: 15
-        color: Theme.text
-        text: "\u{F0425}"
+        implicitSize: 15
+        source: IconResolver.firstOf(BarIcons.powerButtonNames())
+        layer.enabled: true
+        layer.effect: MultiEffect {
+            colorization: 1.0
+            colorizationColor: Theme.text
+        }
     }
 
     MouseArea {

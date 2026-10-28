@@ -67,7 +67,6 @@ QtObject {
 
     // ── Tipografía ───────────────────────────────────────────────────────
     readonly property string fontUI:   "Noto Sans Display"
-    readonly property string fontIcon: "JetBrainsMono Nerd Font"
     readonly property string fontJP:   "Noto Sans CJK JP"
     readonly property int fontPx:      13
 }
