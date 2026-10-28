@@ -12,6 +12,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import threading
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from generate_theme import get_accent_rgb, hsv_to_hex
@@ -49,9 +50,9 @@ def main():
     if proc.returncode != 0:
         print(f"matugen falló: {proc.stderr.strip()[:300]}")
         sys.exit(1)
-    # Escribe colors.json INMEDIATAMENTE tras matugen, antes de cualquier otro
-    # paso (cava, millennium, hooks legacy, etc.) para que la shell recargue
-    # los colores tan pronto como matugen termine.
+
+    # Escribe colors.json INMEDIATAMENTE tras matugen para que la shell
+    # recargue los colores tan pronto como matugen termine.
     colors_path = os.path.join(CACHE_DIR, "colors.json")
     try:
         fd, tmp_path = tempfile.mkstemp(dir=CACHE_DIR, suffix=".tmp")
@@ -60,8 +61,24 @@ def main():
         os.replace(tmp_path, colors_path)
     except OSError as e:
         print(f"no se pudo escribir colors.json: {e}")
-    mc = _matugen_dark(proc.stdout, accent)
 
+    mc = _matugen_dark(proc.stdout, accent)
+    env = _hook_env(accent, mc)
+
+    # Todo lo que viene después (cava, millennium, 15 hooks legacy,
+    # kitty, ghostty, zen) se ejecuta en segundo plano para no bloquear
+    # la actualización de la shell. colors.json ya está escrito.
+    thread = threading.Thread(
+        target=_apply_side_effects,
+        args=(accent, mc, env),
+        daemon=True,
+    )
+    thread.start()
+
+
+def _apply_side_effects(accent, mc, env):
+    """Aplica cambios en otras apps (cava, millennium, hooks, kitty, etc.).
+    Se ejecuta en segundo plano para no bloquear la shell."""
     try:
         inject_cava()
     except Exception as e:
@@ -71,7 +88,7 @@ def main():
     except Exception as e:
         print(f"millennium: {e}")
     try:
-        run_legacy_hooks(_hook_env(accent, mc))
+        run_legacy_hooks(env)
     except Exception as e:
         print(f"hooks: {e}")
 
