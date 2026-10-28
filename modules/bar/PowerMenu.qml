@@ -293,7 +293,7 @@ PanelWindow {
 
                     IconImage {
                         anchors.centerIn: parent
-                        implicitSize: 104
+                        implicitSize: 150
                         source: IconResolver.firstOf(BarIcons.sessionNames(modelData.key))
                         layer.enabled: true
                         layer.effect: MultiEffect {
