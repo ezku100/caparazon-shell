@@ -1,7 +1,11 @@
 import Quickshell
 import Quickshell.Services.Pipewire
+import Quickshell.Widgets
 import QtQuick
+import QtQuick.Effects
 import QtQuick.Shapes
+import "../icons"
+import "../icons/BarIcons.js" as BarIcons
 import "../../components"
 import "../../theme"
 
@@ -26,12 +30,9 @@ HoverChip {
         : 0
     readonly property color overdriveColor: Qt.darker(Theme.m3Primary, 1.6)
 
-    readonly property string iconGlyph: root.microphone
-        ? (root.muted || root.level <= 0.001 ? "\u{F036D}" : "\u{F036C}")
-        : (root.muted || root.level <= 0.001 ? "\u{F0581}"
-            : root.level < 0.40 ? "\u{F0580}"
-            : root.level < 0.75 ? "\u{F057F}"
-            : "\u{F057E}")
+    // El icono sale del tema activo; los umbrales viven en BarIcons.js.
+    readonly property string iconSource: IconResolver.firstOf(
+        BarIcons.volumeNames(root.muted, root.level, root.microphone))
 
     // El chip conserva su tamaño (28×26) para no desplazar nada.
     radius: 13
@@ -103,12 +104,15 @@ HoverChip {
         }
     }
 
-    Text {
+    IconImage {
         anchors.centerIn: parent
-        color: root.muted ? Theme.textDim : Theme.text
-        font.family: Theme.fontIcon
-        font.pixelSize: 15
-        text: root.iconGlyph
+        implicitSize: 15
+        source: root.iconSource
+        layer.enabled: true
+        layer.effect: MultiEffect {
+            colorization: 1.0
+            colorizationColor: root.muted ? Theme.textDim : Theme.text
+        }
     }
 
     MouseArea {

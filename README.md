@@ -36,12 +36,6 @@ animación de despedida.
 - `quickshell` 0.3.x o superior.
 - Herramientas de KDE: `qdbus6`, `busctl`, `dbus-monitor`.
 - `wl-paste` (historial de portapapeles) y `gdbus` (puente con KWin).
-- **JetBrainsMono Nerd Font**: el menú de apagado dibuja sus iconos con glifos
-  de esta fuente. No está en los repos de Debian (la versión empaquetada no
-  trae los glifos parcheados): descarga el release de
-  [Nerd Fonts](https://github.com/ryanoasis/nerd-fonts/releases), copia los
-  `.ttf` a `~/.local/share/fonts` y ejecuta `fc-cache -f`. Sin ella se ven
-  cuadros, pero el resto de la shell funciona igual.
 - Para el tema dinámico: `matugen`, `inotify-tools` (`inotifywait`),
   `util-linux` (`flock`), `libkf6config-bin` (`kreadconfig6`), `git` y
   `python3`.
