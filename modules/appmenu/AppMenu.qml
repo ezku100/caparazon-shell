@@ -22,10 +22,10 @@ PanelWindow {
     property bool closing: false
 
     readonly property int animDuration: 220
-    readonly property int cardWidth: Math.min(920,
-        Math.max(680, Math.round((screen ? screen.width : 1920) * 0.64)))
-    readonly property int cardHeight: Math.min(660,
-        Math.max(500, Math.round((screen ? screen.height : 1080) * 0.68)))
+    readonly property int cardWidth: Math.min(860,
+        Math.max(640, Math.round((screen ? screen.width : 1920) * 0.60)))
+    readonly property int cardHeight: Math.min(620,
+        Math.max(460, Math.round((screen ? screen.height : 1080) * 0.62)))
     // Columna reservada para el rail (margen + barra). La barra mide
     // railWidth - 2 * railInset de ancho; baja railInset para pegarla más al
     // borde del menú o sube railWidth para hacerla más ancha.
@@ -999,7 +999,7 @@ PanelWindow {
                                     text: root.preview(modelData.text)
                                     color: Theme.text
                                     font.family: Theme.fontUI
-                                    font.pixelSize: 12
+                                    font.pixelSize: 11
                                     elide: Text.ElideRight
                                     maximumLineCount: 1
                                 }
