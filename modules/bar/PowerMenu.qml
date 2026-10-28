@@ -225,7 +225,7 @@ PanelWindow {
         Row {
             id: actionsRow
             anchors.centerIn: parent
-            spacing: 24
+            spacing: 36
 
             Repeater {
                 model: [
