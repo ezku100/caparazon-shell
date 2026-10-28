@@ -240,10 +240,12 @@ PanelWindow {
 
                     required property var modelData
                     // Sin circulo de fondo el icono es el unico protagonista:
-                    // el hover se marca con color y escala, sin invertir tonos.
+                    // en reposo se apaga con el mismo tinte que los iconos
+                    // inactivos del dock y al pasar el raton se enciende con
+                    // el color de superficie, sin invertir tonos.
                     property color iconColor: actionHover.hovered
-                        ? Theme.fgSurface
-                        : Theme.m3Primary
+                        ? Theme.text
+                        : Theme.textDim
 
                     Behavior on iconColor {
                         ColorAnimation {
