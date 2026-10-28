@@ -35,20 +35,10 @@ Item {
         path: root.cacheDir + "/caparazon/colors.json"
         watchChanges: true
         printErrors: true
-        onFileChanged: colorsFile.reload()
-    }
+        onFileChanged: adapter.reload()
 
-    // Red de seguridad: si el watcher de archivo se pierde o el aviso no
-    // llega, el temporizador vuelve a leerlo cada segundo.
-    Timer {
-        interval: 1000
-        repeat: true
-        running: true
-        onTriggered: colorsFile.reload()
-    }
-
-    JsonAdapter {
-        id: adapter
+        JsonAdapter {
+            id: adapter
             property string surface: "#141218"
             property string surfaceContainerLowest: "#0f0d13"
             property string surfaceContainerLow: "#1d1b20"
@@ -67,5 +57,14 @@ Item {
             property string errorContainer: "#8c1d18"
             property string fgErrorContainer: "#f9dedc"
         }
+    }
+
+    // Red de seguridad: si el watcher de archivo se pierde, el temporizador
+    // vuelve a leer colors.json cada segundo.
+    Timer {
+        interval: 1000
+        repeat: true
+        running: true
+        onTriggered: colorsFile.reload()
     }
 }
