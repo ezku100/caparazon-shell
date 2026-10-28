@@ -969,11 +969,12 @@ PanelWindow {
 
                         delegate: Item {
                             width: clipboardList.width
-                            height: 56
+                            height: 140
 
                             Rectangle {
                                 anchors.fill: parent
                                 radius: 12
+                                clip: true
                                 color: clipHover.hovered ? Theme.chipHover : "transparent"
 
                                 Behavior on color {
@@ -982,33 +983,50 @@ PanelWindow {
                                         easing.type: Easing.OutCubic
                                     }
                                 }
-                            }
 
-                            Column {
-                                anchors {
-                                    left: parent.left
-                                    right: parent.right
-                                    leftMargin: 14
-                                    rightMargin: 14
-                                    verticalCenter: parent.verticalCenter
-                                }
-                                spacing: 2
-
-                                Text {
-                                    width: parent.width
-                                    text: root.preview(modelData.text)
-                                    color: Theme.text
-                                    font.family: Theme.fontUI
-                                    font.pixelSize: 11
-                                    elide: Text.ElideRight
-                                    maximumLineCount: 1
+                                Image {
+                                    id: clipImage
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    anchors.top: parent.top
+                                    anchors.topMargin: 8
+                                    width: 96
+                                    height: 96
+                                    source: modelData.text
+                                    fillMode: Image.PreserveAspectFit
+                                    visible: modelData.text.endsWith(".png")
+                                        || modelData.text.endsWith(".jpg")
+                                        || modelData.text.endsWith(".jpeg")
+                                        || modelData.text.endsWith(".webp")
                                 }
 
-                                Text {
-                                    text: root.formatTime(modelData.ts)
-                                    color: Theme.textDim
-                                    font.family: Theme.fontUI
-                                    font.pixelSize: 10
+                                Column {
+                                    anchors {
+                                        left: parent.left
+                                        right: parent.right
+                                        leftMargin: 14
+                                        rightMargin: 14
+                                        verticalCenter: parent.verticalCenter
+                                        top: clipImage.visible ? clipImage.bottom : undefined
+                                        topMargin: clipImage.visible ? 6 : 0
+                                    }
+                                    spacing: 2
+
+                                    Text {
+                                        width: parent.width
+                                        text: root.preview(modelData.text)
+                                        color: Theme.text
+                                        font.family: Theme.fontUI
+                                        font.pixelSize: 11
+                                        elide: Text.ElideRight
+                                        maximumLineCount: 1
+                                    }
+
+                                    Text {
+                                        text: root.formatTime(modelData.ts)
+                                        color: Theme.textDim
+                                        font.family: Theme.fontUI
+                                        font.pixelSize: 10
+                                    }
                                 }
                             }
 
