@@ -8,6 +8,8 @@ Item {
 
     property bool compact: false
 
+    signal activated()
+
     implicitWidth: row.implicitWidth
     implicitHeight: Theme.barHeight
 
@@ -48,5 +50,12 @@ Item {
             font.pixelSize: 12
             text: root.clockLocale.toString(clock.date, "ddd d MMM")
         }
+    }
+
+    MouseArea {
+        anchors.fill: parent
+        acceptedButtons: Qt.LeftButton
+        cursorShape: Qt.PointingHandCursor
+        onClicked: root.activated()
     }
 }

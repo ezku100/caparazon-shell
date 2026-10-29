@@ -6,6 +6,7 @@ import QtQuick.Effects
 import "../../theme"
 import "../../components"
 import "../appmenu"
+import "../secondmenu"
 
 // Caparazón — barra superior.
 // Panel layer-shell anclado arriba, forma "nacida del borde" y acabado
@@ -17,7 +18,9 @@ PanelWindow {
     screen: modelData
     property var powerMenuState: null
     property var appMenuState: null
+    property var secondMenuState: null
     property var clipboardHistory: null
+    property var notificationHistory: null
     property var trayMenuState: null
     property var notificationServer: null
     property var workspacesService: null
@@ -50,11 +53,24 @@ PanelWindow {
         closeTrayMenu();
         if (!appMenuState)
             return;
+        if (secondMenuState && secondMenuState.opened)
+            secondMenuState.close();
         if (appMenuState.opened) {
             appMenuState.close();
             return;
         }
         appMenuState.open(bar.screen);
+    }
+
+    function openSecondMenu() {
+        closeTrayMenu();
+        if (!secondMenuState)
+            return;
+        if (secondMenuState.opened) {
+            secondMenuState.close();
+            return;
+        }
+        secondMenuState.open(bar.screen);
     }
 
     function openPowerMenu() {
@@ -257,7 +273,7 @@ PanelWindow {
                 anchors.centerIn: parent
                 spacing: 8
 
-                Clock { compact: bar.compactBar }
+                Clock { compact: bar.compactBar; onActivated: bar.openSecondMenu() }
                 NotificationChip { server: bar.notificationServer }
                 MediaChip {}
             }
@@ -390,6 +406,17 @@ PanelWindow {
             screen: bar.screen
             menuState: bar.appMenuState
             clipboardHistory: bar.clipboardHistory
+        }
+    }
+
+    Loader {
+        active: bar.secondMenuState
+            && bar.secondMenuState.activeScreen === bar.screen
+            && (bar.secondMenuState.opened || bar.secondMenuState.closing)
+        sourceComponent: SecondMenu {
+            screen: bar.screen
+            menuState: bar.secondMenuState
+            notificationHistory: bar.notificationHistory
         }
     }
 }

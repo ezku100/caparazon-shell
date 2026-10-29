@@ -66,6 +66,28 @@ ShellRoot {
         }
     }
 
+    // Historial de notificaciones para el menú secundario: el servidor sólo
+    // conserva la última (el chip cierra las anteriores), así que aquí se
+    // guardan las más recientes, de la más nueva a la más vieja.
+    ListModel {
+        id: notificationHistoryModel
+    }
+
+    Connections {
+        target: notifServer
+        function onNotification(notification) {
+            notificationHistoryModel.insert(0, {
+                appName: String(notification.appName || ""),
+                summary: String(notification.summary || ""),
+                body: String(notification.body || ""),
+                appIcon: String(notification.appIcon || ""),
+                stamp: Date.now()
+            });
+            while (notificationHistoryModel.count > 30)
+                notificationHistoryModel.remove(notificationHistoryModel.count - 1);
+        }
+    }
+
     // Estado global del menú de energía: una sola capa para todas las
     // pantallas, pero los botones sólo se dibujan en la pantalla activa.
     property QtObject powerMenuState: QtObject {
@@ -103,6 +125,8 @@ ShellRoot {
         property string category: "all"
 
         function open(screen) {
+            if (secondMenuState.opened)
+                secondMenuState.close();
             activeScreen = screen;
             lastScreen = screen;
             closing = false;
@@ -124,10 +148,51 @@ ShellRoot {
         }
     }
 
+    // Estado global del menú secundario (calendario). Es independiente del
+    // de apps: abrir uno cierra al otro.
+    property QtObject secondMenuState: QtObject {
+        property bool opened: false
+        property bool closing: false
+        property var activeScreen: null
+        property var lastScreen: null
+        property string category: "calendario"
+
+        function open(screen) {
+            if (appMenuState.opened)
+                appMenuState.close();
+            activeScreen = screen;
+            lastScreen = screen;
+            closing = false;
+            opened = true;
+        }
+
+        function close() {
+            if (!opened)
+                return;
+            opened = false;
+            closing = true;
+        }
+
+        function finishClose() {
+            closing = false;
+            activeScreen = null;
+        }
+    }
+
     // Pantalla donde abre el menú cuando se invoca por teclado: la última en
     // la que se abrió (si sigue conectada) o, si no, la primera.
     function appMenuScreen() {
         const last = shellRoot.appMenuState.lastScreen;
+        for (let i = 0; i < Quickshell.screens.length; ++i) {
+            if (Quickshell.screens[i] === last)
+                return last;
+        }
+        return Quickshell.screens.length > 0 ? Quickshell.screens[0] : null;
+    }
+
+    // Pantalla donde abre el menú secundario por teclado.
+    function secondMenuScreen() {
+        const last = shellRoot.secondMenuState.lastScreen;
         for (let i = 0; i < Quickshell.screens.length; ++i) {
             if (Quickshell.screens[i] === last)
                 return last;
@@ -161,6 +226,21 @@ ShellRoot {
         }
     }
 
+    // Igual que activeOutputQuery, pero para el menú secundario (calendario).
+    Process {
+        id: secondOutputQuery
+        command: ["busctl", "--user", "call", "org.kde.KWin", "/KWin",
+                  "org.kde.KWin", "activeOutputName"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const match = /"([^"]*)"/.exec(text);
+                const screen = (match && shellRoot.screenByName(match[1]))
+                    || shellRoot.secondMenuScreen();
+                shellRoot.secondMenuState.open(screen);
+            }
+        }
+    }
+
     // Control por línea de comandos / atajos de KDE:
     //   quickshell -p <ruta> ipc call menu toggle   (también: open, close)
     IpcHandler {
@@ -180,6 +260,27 @@ ShellRoot {
 
         function close(): void {
             shellRoot.appMenuState.close();
+        }
+    }
+
+    // Control del menú secundario (calendario).
+    IpcHandler {
+        target: "menu2"
+
+        function toggle(): void {
+            if (shellRoot.secondMenuState.opened)
+                shellRoot.secondMenuState.close();
+            else
+                secondOutputQuery.running = true;
+        }
+
+        function open(): void {
+            if (!shellRoot.secondMenuState.opened)
+                secondOutputQuery.running = true;
+        }
+
+        function close(): void {
+            shellRoot.secondMenuState.close();
         }
     }
 
@@ -212,7 +313,9 @@ ShellRoot {
             workspacesService: workspacesSvc
             powerMenuState: shellRoot.powerMenuState
             appMenuState: shellRoot.appMenuState
+            secondMenuState: shellRoot.secondMenuState
             clipboardHistory: clipboardHistoryService
+            notificationHistory: notificationHistoryModel
             trayMenuState: shellRoot.trayMenuState
             notificationServer: notifServer
             activeWindowAppId: activeWindowService.appId

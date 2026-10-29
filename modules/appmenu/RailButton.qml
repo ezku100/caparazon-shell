@@ -43,9 +43,9 @@ Item {
         layer.enabled: root.tint
         layer.effect: MultiEffect {
             colorization: 1.0
-            colorizationColor: hover.hovered
-                ? Theme.text
-                : Theme.textDim
+            colorizationColor: root.selected
+                ? Theme.m3OnPrimary
+                : (hover.hovered ? Theme.text : Theme.textDim)
         }
     }
 
