@@ -72,6 +72,19 @@ plantilla de la shell y comprueba que la paleta generada contiene todos los
 tokens que la shell necesita. Si falta cualquier dependencia, el instalador
 se detiene indicando el comando `apt` exacto para instalarla.
 
+## Actualizar
+
+```bash
+cd caparazon-shell
+git pull --ff-only
+./install.sh
+```
+
+Esto trae las mejoras del repositorio y las copia a
+`~/.config/quickshell/caparazon`. Si el arranque automatico apunta a tu
+clon de trabajo, solo necesitas el `git pull`: el instalador reutiliza
+la shell que ya tienes registrada.
+
 Para quitar todo lo que instaló:
 
 ```bash

@@ -64,6 +64,10 @@ require_theme_dependencies() {
 
 install_shell() {
     echo "Instalando la shell en $SHELL_DIR"
+    if [ -d "$REPO/.git" ]; then
+        echo "Actualizando el repositorio local"
+        git -C "$REPO" pull --ff-only
+    fi
     mkdir -p "$SHELL_DIR"
     cp -r "$REPO/shell.qml" "$REPO/modules" "$REPO/theme" \
         "$REPO/components" "$REPO/assets" "$SHELL_DIR/"
