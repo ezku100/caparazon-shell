@@ -26,7 +26,7 @@ INTROSPECT = f"""<node>
   </interface>
 </node>"""
 
-state = {"current": None, "desktops": [], "active": {}, "perOutput": {}, "focusedScreen": "", "occupiedPerOutput": {}}
+state = {"current": None, "desktops": [], "active": {}, "windows": [], "perOutput": {}, "focusedScreen": "", "occupiedPerOutput": {}}
 
 
 def save():
@@ -140,6 +140,8 @@ def on_method(conn, sender, path, iface, method, params, invocation):
                 state["current"] = data["current"]
             if isinstance(data.get("occupied"), list):
                 state["occupied"] = data["occupied"][:24]
+            if isinstance(data.get("windows"), list):
+                state["windows"] = data["windows"][:64]
             if isinstance(data.get("active"), dict):
                 cls = str(data["active"].get("class") or "")[:128]
                 state["active"] = {

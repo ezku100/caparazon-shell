@@ -83,4 +83,34 @@ Item {
                 kwinLoader.running = true;
         }
     }
+
+    // Fuente adicional de ventanas abiertas: el cache que escribe el demonio
+    // ezku-desktops (ya cargado en KWin). Se usa cuando journalctl --user no
+    // recibe los logs de kwin_wayland, así el dock sigue mostrando las apps
+    // abiertas aunque fallen los journals.
+    FileView {
+        id: desktopCacheFile
+        path: Quickshell.env("HOME") + "/.cache/ezku-desktops.json"
+        watchChanges: true
+        printErrors: false
+        onFileChanged: reload()
+        JsonAdapter {
+            id: desktopCacheAdapter
+            property var windows: []
+        }
+    }
+
+    Timer {
+        id: desktopCachePoll
+        interval: 2000
+        running: true
+        repeat: true
+        onTriggered: {
+            var ids = desktopCacheAdapter.windows;
+            if (Array.isArray(ids) && ids.length > 0)
+                root.windowAppIds = ids;
+            else if (root.windowAppIds.length === 0)
+                desktopCacheFile.reload();
+        }
+    }
 }

@@ -120,6 +120,7 @@ function push() {
         } catch (e) {}
         callDBus("org.ezku.Desktops", "/Desktops", "org.ezku.Desktops",
             "PushState", JSON.stringify({ current: cur, desktops: list, occupied: occ, active: act,
+                                          windows: windowAppIds(),
                                           perOutput: perOutput, focusedScreen: focusedScreen, occupiedPerOutput: occByOutput }));
     } catch (e) { /* demonio aún no corre; reintentará en el próximo cambio */ }
 }
@@ -151,6 +152,22 @@ function deskIds(c) {
         if (single) { out.push(single); }
     } catch (e) {}
     return out;
+}
+
+// appId de cada ventana normal (no dock, no pager, no saltar barra de tareas).
+// Se reusa para escritorio ocupado y para la lista de ventanas abiertas del dock.
+function windowAppIds() {
+    var ids = [];
+    var list = windowList();
+    for (var j = 0; j < list.length; j++) {
+        var c = list[j];
+        try {
+            if (!c || c.deleted || !c.normalWindow || c.skipTaskbar) { continue; }
+        } catch (e) { continue; }
+        var appId = String(c.desktopFileName || c.resourceClass || c.resourceName || "");
+        if (appId) { ids.push(appId); }
+    }
+    return ids;
 }
 
 function watchClient(c) {
