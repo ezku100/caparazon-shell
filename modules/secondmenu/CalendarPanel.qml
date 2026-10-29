@@ -137,7 +137,7 @@ Item {
 
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
-                    text: root.clockLocale.toString(clock.date, "HH:mm")
+                    text: root.clockLocale.toString(clock.date, "hh:mm AP")
                     color: Theme.text
                     font.family: Theme.fontUI
                     font.pixelSize: 44
@@ -148,7 +148,7 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     visible: weather.ready
                     text: isNaN(weather.temperature)
-                        ? "" : Math.round(weather.temperature) + "°"
+                        ? "" : Math.round(weather.temperature) + "°C"
                     color: Theme.textDim
                     font.family: Theme.fontUI
                     font.pixelSize: 20
@@ -386,7 +386,7 @@ Item {
 
                             Text {
                                 anchors.horizontalCenter: parent.horizontalCenter
-                                text: modelData.max + "° / " + modelData.min + "°"
+                                text: modelData.max + "°C / " + modelData.min + "°C"
                                 color: Theme.textDim
                                 font.family: Theme.fontUI
                                 font.pixelSize: 10
