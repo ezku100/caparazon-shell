@@ -4,6 +4,8 @@ import QtQuick
 import QtQuick.Effects
 import QtQuick.Shapes
 import "../../theme"
+import "../icons"
+import "DockEntries.js" as DockEntries
 
 PanelWindow {
     id: dock
@@ -88,6 +90,16 @@ PanelWindow {
         }
     }
 
+    // Cuando Quickshell termina de escanear los .desktop (o se instala uno
+    // nuevo mientras la shell está activa), las búsquedas en caché pueden
+    // haberse quedado vacías: se borran para que se resuelvan de nuevo.
+    Connections {
+        target: DesktopEntries
+        function onApplicationsChanged() {
+            dock.appEntryCache = {};
+        }
+    }
+
     readonly property var pinnedApps: pinsAdapter.pinned || []
     property var appEntryCache: ({})
 
@@ -120,7 +132,8 @@ PanelWindow {
                 key: "running:" + id,
                 name: entry && entry.name ? entry.name : displayName(raw),
                 entryId: entry ? entry.id + ".desktop" : id + ".desktop",
-                icon: entry && entry.icon ? entry.icon : id,
+                icon: entry && entry.icon ? entry.icon : raw,
+                iconCandidates: DockEntries.iconCandidates(entry, raw),
                 focusId: id,
                 matches: [raw],
                 command: [],
@@ -410,20 +423,7 @@ PanelWindow {
     }
 
     function entryMatchesAppId(entry, id) {
-        const candidates = [entry.startupClass, entry.id, entry.name];
-        for (let i = 0; i < candidates.length; ++i) {
-            const key = normalizeId(candidates[i]);
-            if (!key)
-                continue;
-            if (key === id)
-                return true;
-            // Ej.: appId "veadotube-mini" con .desktop "Veadotube.desktop".
-            if (key.length >= 5 && id.indexOf(key) === 0
-                && (id.length === key.length
-                    || /[._-]/.test(id.charAt(key.length))))
-                return true;
-        }
-        return false;
+        return DockEntries.matchesAppId(entry, id);
     }
 
     // El appId de una ventana no siempre coincide con el id del .desktop ni
@@ -438,7 +438,7 @@ PanelWindow {
         if (dock.appEntryCache[id] !== undefined)
             return dock.appEntryCache[id];
 
-        const candidates = [raw, id, id + ".desktop"];
+        const candidates = [raw, id];
         for (let i = 0; i < candidates.length; ++i) {
             const entry = DesktopEntries.byId(candidates[i]);
             if (entry) {
@@ -460,13 +460,15 @@ PanelWindow {
             : [];
         for (let i = 0; i < entries.length; ++i) {
             const entry = entries[i];
-            if (entry && entryMatchesAppId(entry, id)) {
-                dock.appEntryCache[id] = entry;
+            if (entry && DockEntries.matchesAppId(entry, raw)) {
+                if (entries.length > 0)
+                    dock.appEntryCache[id] = entry;
                 return entry;
             }
         }
 
-        dock.appEntryCache[id] = null;
+        if (entries.length > 0)
+            dock.appEntryCache[id] = null;
         return null;
     }
 

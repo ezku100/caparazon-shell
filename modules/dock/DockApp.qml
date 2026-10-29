@@ -22,8 +22,23 @@ Item {
     readonly property color dotColor: root.focused
         ? Theme.m3Primary
         : Theme.textDim
-    readonly property string iconSource: IconResolver.source(root.app.icon,
-        "application-x-executable")
+readonly property var iconCandidates: root.app.iconCandidates
+    ? root.app.iconCandidates
+    : [root.app.icon]
+
+readonly property string iconSource: iconSourceFromCandidates()
+
+// Prueba cada candidato de icono en orden: el de la entrada de .desktop,
+// el appId tal cual (los nombres de tema distinguen mayúsculas) y, por
+// último, el icono genérico.
+function iconSourceFromCandidates() {
+    for (let i = 0; i < root.iconCandidates.length; ++i) {
+        const found = IconResolver.resolved(String(root.iconCandidates[i] || ""));
+        if (found.length > 0)
+            return found;
+    }
+    return String(Quickshell.iconPath("application-x-executable", ""));
+}
 
     implicitWidth: 44
     implicitHeight: 44
