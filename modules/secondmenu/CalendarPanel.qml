@@ -13,6 +13,8 @@ Item {
 
     property var notificationHistory: null
 
+    signal notificationActivated(string entry)
+
     readonly property var clockLocale: Qt.locale("es_MX")
 
     property int viewYear: new Date().getFullYear()
@@ -128,14 +130,30 @@ Item {
                 }
             }
 
-            Text {
+            Row {
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
-                text: root.clockLocale.toString(clock.date, "HH:mm")
-                color: Theme.text
-                font.family: Theme.fontUI
-                font.pixelSize: 44
-                font.weight: Font.Light
+                spacing: 8
+
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: root.clockLocale.toString(clock.date, "HH:mm")
+                    color: Theme.text
+                    font.family: Theme.fontUI
+                    font.pixelSize: 44
+                    font.weight: Font.Light
+                }
+
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible: weather.ready
+                    text: isNaN(weather.temperature)
+                        ? "" : Math.round(weather.temperature) + "°"
+                    color: Theme.textDim
+                    font.family: Theme.fontUI
+                    font.pixelSize: 20
+                    font.weight: Font.Light
+                }
             }
         }
 
@@ -150,6 +168,7 @@ Item {
                 width: 208
                 height: parent.height
                 model: root.notificationHistory
+                onNotificationActivated: root.notificationActivated(entry)
             }
 
             Rectangle {

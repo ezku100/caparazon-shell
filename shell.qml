@@ -81,6 +81,7 @@ ShellRoot {
                 summary: String(notification.summary || ""),
                 body: String(notification.body || ""),
                 appIcon: String(notification.appIcon || ""),
+                desktopEntry: String(notification.desktopEntry || ""),
                 stamp: Date.now()
             });
             while (notificationHistoryModel.count > 30)

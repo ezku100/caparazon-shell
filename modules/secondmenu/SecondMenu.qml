@@ -1,4 +1,5 @@
 import Quickshell
+import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Widgets
 import QtQuick
@@ -30,12 +31,23 @@ PanelWindow {
     readonly property string category: menuState ? menuState.category : "calendario"
 
     readonly property var categories: [
-        { key: "calendario", icon: "x-office-calendar", label: "Calendario" }
+        { key: "calendario", icon: "notifications", label: "Calendario" }
     ]
 
     function close() {
         if (root.menuState)
             root.menuState.close();
+    }
+
+    readonly property string openAppScript: String(Qt.resolvedUrl("openapp.sh"))
+        .replace(/^file:\/\//, "")
+
+    function openNotificationApp(entry) {
+        if (!entry || entry.length === 0)
+            return;
+        openAppProc.command = ["bash", root.openAppScript, entry];
+        openAppProc.running = true;
+        root.close();
     }
 
     visible: root.opened || root.closing
@@ -209,7 +221,12 @@ PanelWindow {
                 id: panel
                 anchors.fill: parent
                 notificationHistory: root.notificationHistory
+                onNotificationActivated: root.openNotificationApp(entry)
             }
         }
+    }
+
+    Process {
+        id: openAppProc
     }
 }
