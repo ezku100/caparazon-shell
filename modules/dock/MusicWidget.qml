@@ -10,6 +10,10 @@ import "../../theme"
 Item {
     id: root
 
+    // Se emite al pulsar la carátula o el título: el dock abre con esto el
+    // menú secundario en la categoría Música.
+    signal activated()
+
     readonly property var players: Mpris.players && Mpris.players.values
         ? Mpris.players.values
         : []
@@ -220,6 +224,7 @@ Item {
     }
 
     Row {
+        id: row
         anchors.fill: parent
         anchors.leftMargin: 8
         anchors.rightMargin: 8
@@ -353,6 +358,7 @@ Item {
         }
 
         Row {
+            id: controls
             anchors.verticalCenter: parent.verticalCenter
             width: 68
             spacing: 1
@@ -377,5 +383,20 @@ Item {
                 onActivated: if (root.player) root.player.next()
             }
         }
+    }
+
+    // Clic en la carátula o el título para abrir el menú secundario (Música).
+    // Queda declarado después de la fila para que esté por encima de la
+    // carátula y el texto; su ancho se detiene antes de los controles para
+    // que los botones sigan recibiendo sus clics con normalidad.
+    MouseArea {
+        id: openMenuArea
+        x: 0
+        y: 0
+        height: root.height
+        width: Math.max(0, row.x + controls.x - row.spacing)
+        acceptedButtons: Qt.LeftButton
+        cursorShape: Qt.PointingHandCursor
+        onClicked: root.activated()
     }
 }

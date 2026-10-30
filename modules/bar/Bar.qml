@@ -70,7 +70,7 @@ PanelWindow {
             secondMenuState.close();
             return;
         }
-        secondMenuState.open(bar.screen);
+        secondMenuState.open(bar.screen, "calendario");
     }
 
     function openPowerMenu() {

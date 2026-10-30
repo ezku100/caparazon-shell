@@ -14,6 +14,20 @@ PanelWindow {
     property string activeAppId: ""
     property var windowAppIds: []
     property var trayMenuState: null
+    property var secondMenuState: null
+
+    // Abre el menú secundario directamente en la categoría Música (o lo
+    // cierra si ya estaba abierto en esa misma categoría).
+    function openMusicMenu() {
+        if (!dock.secondMenuState)
+            return;
+        if (dock.secondMenuState.opened
+                && dock.secondMenuState.category === "musica") {
+            dock.secondMenuState.close();
+            return;
+        }
+        dock.secondMenuState.open(dock.screen, "musica");
+    }
 
     // Arranque de fábrica. El estado real vive en ~/.config/caparazon/dock.json
     // y esta lista sólo se usa cuando ese archivo todavía no existe.
@@ -368,6 +382,7 @@ PanelWindow {
 
                 MusicWidget {
                     id: musicWidget
+                    onActivated: dock.openMusicMenu()
                 }
 
                 Repeater {

@@ -158,11 +158,15 @@ ShellRoot {
         property var lastScreen: null
         property string category: "calendario"
 
-        function open(screen) {
+        // La categoría es opcional: si no se indica se conserva la última.
+        // El reloj pide "calendario" y el widget de música del dock "musica".
+        function open(screen, wantedCategory) {
             if (appMenuState.opened)
                 appMenuState.close();
             activeScreen = screen;
             lastScreen = screen;
+            if (wantedCategory)
+                category = wantedCategory;
             closing = false;
             opened = true;
         }
@@ -337,6 +341,7 @@ ShellRoot {
             activeAppId: activeWindowService.appId
             windowAppIds: activeWindowService.windowAppIds
             trayMenuState: shellRoot.trayMenuState
+            secondMenuState: shellRoot.secondMenuState
         }
     }
 }
