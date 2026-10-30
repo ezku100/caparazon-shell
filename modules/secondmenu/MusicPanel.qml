@@ -512,6 +512,29 @@ Item {
                         // centra; al reproducir, el vinilo sale y el álbum se mueve.
                         readonly property real shift: root.playing ? 0 : stage.coverSize * 0.22
 
+                        // Rueda sobre el álbum: cambia entre reproductores. Va en
+                        // este bloque y no en la imagen para que también funcione
+                        // cuando no hay carátula (la imagen oculta no recibe
+                        // eventos de rueda).
+                        HoverHandler {
+                            id: discsHover
+                            cursorShape: Qt.ArrowCursor
+                        }
+
+                        WheelHandler {
+                            acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+                            onWheel: function(event) {
+                                if (root.candidates.length < 2) return;
+                                if (root.wheelAccum * event.angleDelta.y < 0)
+                                    root.wheelAccum = 0;
+                                root.wheelAccum += event.angleDelta.y;
+                                if (Math.abs(root.wheelAccum) >= 120) {
+                                    root.cyclePlayer(root.wheelAccum > 0 ? -1 : 1);
+                                    root.wheelAccum = 0;
+                                }
+                            }
+                        }
+
                         // Vinilo: detrás del álbum, sobresale por la derecha
                         Item {
                             id: vinyl
@@ -657,21 +680,6 @@ Item {
                                 onStatusChanged: {
                                     if (status === Image.Error)
                                         root.artFailed(source);
-                                }
-
-                                // Rueda sobre el cover: cambia entre reproductores
-                                WheelHandler {
-                                    acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
-                                    onWheel: function(event) {
-                                        if (root.candidates.length < 2) return;
-                                        if (root.wheelAccum * event.angleDelta.y < 0)
-                                            root.wheelAccum = 0;
-                                        root.wheelAccum += event.angleDelta.y;
-                                        if (Math.abs(root.wheelAccum) >= 120) {
-                                            root.cyclePlayer(root.wheelAccum > 0 ? -1 : 1);
-                                            root.wheelAccum = 0;
-                                        }
-                                    }
                                 }
                             }
 

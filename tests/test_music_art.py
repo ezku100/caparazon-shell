@@ -104,3 +104,23 @@ def test_the_dock_uses_the_shared_resolver() -> None:
     assert 'import "../music/ArtUrls.js" as ArtUrls' in widget
     assert "ArtUrls.artCandidates(player)" in widget
     assert "ytIdFromPage" not in widget
+
+
+def test_the_music_panel_switches_player_with_the_wheel() -> None:
+    """La rueda sobre el álbum cambia de reproductor."""
+    panel = contents(MUSIC_PANEL)
+
+    assert "WheelHandler" in panel
+    assert "root.cyclePlayer(" in panel
+
+
+def test_the_wheel_handler_is_not_inside_the_cover_image() -> None:
+    """Sin carátula la imagen está oculta y no recibe la rueda.
+
+    El handler va en el bloque del álbum, que siempre es visible.
+    """
+    panel = contents(MUSIC_PANEL)
+
+    image_block = panel.split("id: coverImage", 1)[1].split("id: coverBox", 1)[0]
+    assert "WheelHandler" not in image_block
+    assert "WheelHandler" in panel.split("id: discs", 1)[1].split("id: vinyl", 1)[0]
