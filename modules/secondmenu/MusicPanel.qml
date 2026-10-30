@@ -450,13 +450,23 @@ Item {
                         width: stage.coverSize * 1.44
                         height: stage.coverSize
 
+                        // Pausado: el vinilo se esconde tras el álbum y el álbum se
+                        // centra; al reproducir, el vinilo sale y el álbum se mueve.
+                        readonly property real shift: root.playing ? 0 : stage.coverSize * 0.22
+
                         // Vinilo: detrás del álbum, sobresale por la derecha
                         Item {
                             id: vinyl
                             width: stage.vinylSize
                             height: stage.vinylSize
-                            x: stage.coverSize * 0.98 - width / 2
+                            x: discs.shift + (root.playing
+                                ? stage.coverSize * 0.98 - width / 2
+                                : (stage.coverSize - width) / 2)
                             y: (stage.coverSize - height) / 2
+
+                            Behavior on x {
+                                NumberAnimation { duration: 480; easing.type: Easing.OutCubic }
+                            }
 
                             // Cuerpo del disco: se pinta una sola vez y gira como textura.
                             // El brillo cónico (dos destellos) es asimétrico a propósito:
@@ -558,6 +568,12 @@ Item {
                         // Álbum, encima del vinilo
                         ClippingRectangle {
                             id: coverBox
+                            x: discs.shift
+
+                            Behavior on x {
+                                NumberAnimation { duration: 480; easing.type: Easing.OutCubic }
+                            }
+
                             width: stage.coverSize
                             height: stage.coverSize
                             radius: 14
