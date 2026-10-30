@@ -31,7 +31,8 @@ PanelWindow {
     readonly property string category: menuState ? menuState.category : "calendario"
 
     readonly property var categories: [
-        { key: "calendario", icon: "notifications", label: "Calendario" }
+        { key: "calendario", icon: "notifications", label: "Calendario" },
+        { key: "musica", icon: "audio", label: "Música" }
     ]
 
     function close() {
@@ -69,7 +70,8 @@ PanelWindow {
         if (root.opened) {
             root.closing = false;
             closeTimer.stop();
-            panel.resetToToday();
+            if (root.category === "calendario" && panelLoader.item && typeof panelLoader.item.resetToToday === "function")
+                panelLoader.item.resetToToday();
         } else {
             root.closing = true;
             closeTimer.restart();
@@ -217,11 +219,26 @@ PanelWindow {
                 bottomMargin: 18
             }
 
-            CalendarPanel {
-                id: panel
+            Loader {
+                id: panelLoader
                 anchors.fill: parent
-                notificationHistory: root.notificationHistory
-                onNotificationActivated: root.openNotificationApp(entry)
+                sourceComponent: root.category === "musica" ? musicComponent : calendarComponent
+            }
+
+            Component {
+                id: calendarComponent
+                CalendarPanel {
+                    anchors.fill: parent
+                    notificationHistory: root.notificationHistory
+                    onNotificationActivated: root.openNotificationApp(entry)
+                }
+            }
+
+            Component {
+                id: musicComponent
+                MusicPanel {
+                    anchors.fill: parent
+                }
             }
         }
     }
