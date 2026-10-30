@@ -4,6 +4,7 @@ import Quickshell.Widgets
 import QtQuick
 import QtQuick.Shapes
 import "../../theme"
+import "../music/ArtUrls.js" as ArtUrls
 
 // Widget compacto de reproducción dentro del dock.
 // El cover gira solo mientras el reproductor está reproduciendo.
@@ -90,54 +91,9 @@ Item {
     // manda cada reproductor y si la imagen falla al cargar.
     readonly property bool debugArt: false
 
-    // Los navegadores a veces mandan rutas sin esquema; Image necesita URL.
-    function normalizeArt(url) {
-        const value = String(url || "").trim();
-        if (value === "")
-            return "";
-        return value.indexOf("/") === 0 ? "file://" + value : value;
-    }
-
-    // Miniatura de un vídeo de YouTube a partir de su ID (mqdefault es 16:9
-    // sin franjas negras y existe para todos los vídeos).
-    function ytThumb(id) {
-        return "https://i.ytimg.com/vi/" + id + "/mqdefault.jpg";
-    }
-
-    // ID de vídeo a partir de la propia URL de carátula (i.ytimg.com/vi/ID/...).
-    function ytIdFromArt(url) {
-        const match = /(?:i\.ytimg\.com|img\.youtube\.com)\/vi(?:_webp)?\/([A-Za-z0-9_-]{11})\//
-            .exec(String(url || ""));
-        return match ? match[1] : "";
-    }
-
-    // ID de vídeo a partir de la URL de la pestaña (xesam:url).
-    function ytIdFromPage(url) {
-        const match = /(?:youtube\.com\/watch\?(?:[^#]*&)?v=|youtu\.be\/|youtube\.com\/shorts\/)([A-Za-z0-9_-]{11})/
-            .exec(String(url || ""));
-        return match ? match[1] : "";
-    }
-
     // Carátulas a probar, en orden: la que manda el reproductor y, si es de
-    // YouTube o la pestaña lo es, una miniatura que siempre existe.
-    readonly property var artCandidates: {
-        const list = [];
-        if (!player)
-            return list;
-        const direct = normalizeArt(player.trackArtUrl);
-        if (direct !== "")
-            list.push(direct);
-        const meta = player.metadata || ({});
-        const ids = [ytIdFromArt(direct), ytIdFromPage(meta["xesam:url"])];
-        for (let i = 0; i < ids.length; ++i) {
-            if (ids[i] === "")
-                continue;
-            const thumb = ytThumb(ids[i]);
-            if (list.indexOf(thumb) === -1)
-                list.push(thumb);
-        }
-        return list;
-    }
+    // YouTube o la pestaña lo es, la miniatura del vídeo.
+    readonly property var artCandidates: ArtUrls.artCandidates(player)
 
     // Posición dentro de artCandidates; avanza cuando una imagen falla.
     property int artIndex: 0

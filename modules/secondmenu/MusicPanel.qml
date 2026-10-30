@@ -3,6 +3,7 @@ import Quickshell.Services.Mpris
 import Quickshell.Widgets
 import QtQuick
 import "../../theme"
+import "../music/ArtUrls.js" as ArtUrls
 
 /*
   Categoría Música del menú secundario.
@@ -28,23 +29,80 @@ Item {
         }
         return list;
     }
+
+    // Reproductor elegido manualmente (rueda o botones); null = automático.
+    property var pinnedPlayer: null
+
     readonly property var player: {
+        if (pinnedPlayer && candidates.indexOf(pinnedPlayer) !== -1)
+            return pinnedPlayer;
+        // Automático: el último que está sonando de verdad...
         for (let i = candidates.length - 1; i >= 0; --i) {
-            if (candidates[i].isPlaying) return candidates[i];
+            if (candidates[i].isPlaying)
+                return candidates[i];
         }
-        return candidates.length ? candidates[candidates.length - 1] : null;
+        // ...y si no hay reproducción, el último con una pista pausada.
+        return candidates.length > 0 ? candidates[candidates.length - 1] : null;
+    }
+
+    // Cambia de reproductor: delta=-1 anterior, +1 siguiente.
+    function cyclePlayer(delta) {
+        const count = candidates.length;
+        if (count < 2)
+            return;
+        let index = candidates.indexOf(player);
+        if (index < 0)
+            index = count - 1;
+        pinnedPlayer = candidates[(index + delta + count) % count];
+    }
+
+    // Si el elegido está en pausa y empieza a sonar otro, vuelve al automático.
+    readonly property string playingSignature: {
+        let key = "";
+        for (let i = 0; i < candidates.length; ++i) {
+            if (candidates[i].isPlaying)
+                key += i + ",";
+        }
+        return key;
+    }
+
+    onPlayingSignatureChanged: {
+        if (!pinnedPlayer || pinnedPlayer.isPlaying)
+            return;
+        for (let i = 0; i < candidates.length; ++i) {
+            if (candidates[i] !== pinnedPlayer && candidates[i].isPlaying) {
+                pinnedPlayer = null;
+                return;
+            }
+        }
     }
 
     readonly property bool hasPlayer: player !== null
     readonly property bool playing: hasPlayer && player.isPlaying
 
-    function normalizeArt(url) {
-        const v = String(url || "").trim();
-        if (!v) return "";
-        return v.startsWith("/") ? "file://" + v : v;
+    // Carátulas a probar, en orden: la que manda el reproductor y, si no la
+    // hay, la miniatura del vídeo. Los navegadores no mandan mpris:artUrl
+    // cuando suena YouTube: sólo dan la URL del vídeo.
+    readonly property var artCandidates: ArtUrls.artCandidates(player)
+    property int artIndex: 0
+    // Acumulador para el cambio de reproductor con rueda del ratón sobre el cover
+    property real wheelAccum: 0
+
+    readonly property string artKey: artCandidates.join("|")
+    onArtKeyChanged: artIndex = 0
+
+    readonly property string artUrl: artIndex < artCandidates.length
+        ? artCandidates[artIndex]
+        : ""
+
+    // Si una carátula no carga, se pasa a la siguiente.
+    function artFailed(url) {
+        if (String(url || "") !== root.artUrl)
+            return;
+        if (root.artIndex < root.artCandidates.length - 1)
+            root.artIndex += 1;
     }
 
-    readonly property string artUrl: player ? normalizeArt(player.trackArtUrl) : ""
     readonly property string rawTitle: player ? (player.trackTitle || "") : ""
     readonly property string rawArtist: player ? (player.trackArtist || "") : ""
     readonly property string rawAlbum: player ? (player.trackAlbum || "") : ""
@@ -534,6 +592,11 @@ Item {
                                     asynchronous: true
                                     cache: false
                                     visible: status === Image.Ready && root.artUrl !== ""
+
+                                    onStatusChanged: {
+                                        if (status === Image.Error)
+                                            root.artFailed(source);
+                                    }
                                 }
                             }
 
@@ -590,6 +653,26 @@ Item {
                                 asynchronous: true
                                 cache: false
                                 visible: status === Image.Ready && root.artUrl !== ""
+
+                                onStatusChanged: {
+                                    if (status === Image.Error)
+                                        root.artFailed(source);
+                                }
+
+                                // Rueda sobre el cover: cambia entre reproductores
+                                WheelHandler {
+                                    acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+                                    onWheel: function(event) {
+                                        if (root.candidates.length < 2) return;
+                                        if (root.wheelAccum * event.angleDelta.y < 0)
+                                            root.wheelAccum = 0;
+                                        root.wheelAccum += event.angleDelta.y;
+                                        if (Math.abs(root.wheelAccum) >= 120) {
+                                            root.cyclePlayer(root.wheelAccum > 0 ? -1 : 1);
+                                            root.wheelAccum = 0;
+                                        }
+                                    }
+                                }
                             }
 
                             Text {
@@ -603,11 +686,11 @@ Item {
                         }
                     }
 
-                    // Título y artista
-                    Column {
+                    // Título y artista (cambio de reproductor en la esquina inferior)
+                    Row {
                         anchors.horizontalCenter: parent.horizontalCenter
                         width: Math.min(stage.width - 16, 360)
-                        spacing: 2
+                        spacing: 4
 
                         Text {
                             width: parent.width
@@ -619,31 +702,34 @@ Item {
                             font.weight: Font.DemiBold
                             elide: Text.ElideRight
                         }
+                    }
 
-                        Text {
-                            width: parent.width
-                            horizontalAlignment: Text.AlignHCenter
-                            text: root.trackArtist
-                                + (root.rawAlbum ? "  ·  " + root.rawAlbum : "")
-                            color: Theme.textDim
-                            font.family: Theme.fontUI
-                            font.pixelSize: 11
-                            elide: Text.ElideRight
-                        }
+                    // Artista
+                    Text {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        width: parent.width
+                        horizontalAlignment: Text.AlignHCenter
+                        text: root.trackArtist
+                            + (root.rawAlbum ? "  ·  " + root.rawAlbum : "")
+                        color: Theme.textDim
+                        font.family: Theme.fontUI
+                        font.pixelSize: 11
+                        elide: Text.ElideRight
+                    }
 
-                        Text {
-                            width: parent.width
-                            horizontalAlignment: Text.AlignHCenter
-                            visible: root.hasPlayer && !root.hasLyrics
-                            text: lyricsService.status === "loading" ? "Buscando letra…"
-                                : lyricsService.status === "error" ? "No se pudo consultar la letra"
-                                : lyricsService.status === "empty" ? "Sin letra en LRCLIB"
-                                : ""
-                            color: Theme.textDim
-                            opacity: 0.7
-                            font.family: Theme.fontUI
-                            font.pixelSize: 10
-                        }
+                    Text {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        width: parent.width
+                        horizontalAlignment: Text.AlignHCenter
+                        visible: root.hasPlayer && !root.hasLyrics
+                        text: lyricsService.status === "loading" ? "Buscando letra…"
+                            : lyricsService.status === "error" ? "No se pudo consultar la letra"
+                            : lyricsService.status === "empty" ? "Sin letra en LRCLIB"
+                            : ""
+                        color: Theme.textDim
+                        opacity: 0.7
+                        font.family: Theme.fontUI
+                        font.pixelSize: 10
                     }
                 }
             }
