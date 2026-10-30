@@ -1,7 +1,6 @@
 import Quickshell
 import Quickshell.Widgets
 import QtQuick
-import QtQuick.Effects
 import "../../theme"
 import "../icons"
 import "CalendarMath.js" as Cal
@@ -79,7 +78,7 @@ Item {
             width: layout.width
             height: 56
 
-            Rectangle {
+            ClippingRectangle {
                 id: avatarBox
                 anchors.left: parent.left
                 anchors.verticalCenter: parent.verticalCenter
@@ -87,7 +86,6 @@ Item {
                 height: 48
                 radius: 24
                 color: Theme.m3Primary
-                clip: true
 
                 Image {
                     id: avatarImage
@@ -99,7 +97,7 @@ Item {
 
                 Text {
                     anchors.centerIn: parent
-                    visible: avatarImage.status !== Image.Ready
+                    visible: profile.avatarSource.length === 0 || avatarImage.status !== Image.Ready
                     text: (profile.userName || "?").charAt(0).toUpperCase()
                     color: Theme.m3OnPrimary
                     font.family: Theme.fontUI
