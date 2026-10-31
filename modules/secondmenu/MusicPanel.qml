@@ -23,8 +23,8 @@ Item {
     id: root
 
     // ── Reproductor MPRIS ─────────────────────────────────────────────
-    readonly property var players: Mpris.players && Mpris.players.values ? Mpris.players.values : []
-    readonly property var candidates: {
+    readonly property list<MprisPlayer> players: Mpris.players && Mpris.players.values ? Mpris.players.values : []
+    readonly property list<MprisPlayer> candidates: {
         const list = [];
         for (let i = 0; i < players.length; ++i) {
             const p = players[i];
@@ -34,9 +34,9 @@ Item {
     }
 
     // Reproductor elegido manualmente (rueda o botones); null = automático.
-    property var pinnedPlayer: null
+    property MprisPlayer pinnedPlayer: null
 
-    readonly property var player: {
+    readonly property MprisPlayer player: {
         if (pinnedPlayer && candidates.indexOf(pinnedPlayer) !== -1)
             return pinnedPlayer;
         // Automático: el último que está sonando de verdad...
@@ -86,7 +86,7 @@ Item {
     // Carátulas a probar, en orden: la que manda el reproductor y, si no la
     // hay, la miniatura del vídeo. Los navegadores no mandan mpris:artUrl
     // cuando suena YouTube: sólo dan la URL del vídeo.
-    readonly property var artCandidates: ArtUrls.artCandidates(player)
+    readonly property list<string> artCandidates: ArtUrls.artCandidates(player)
     property int artIndex: 0
     // Acumulador para el cambio de reproductor con rueda del ratón sobre el cover
     property real wheelAccum: 0
@@ -1214,6 +1214,62 @@ Item {
             visible: root.compact
             active: root.compact
             playing: root.playing
+        }
+    }
+
+    // ── Botón de siguiente canción (modo compacto) ─────────────────────
+    // En modo compacto la tarjeta de controles está oculta, así que aquí
+    // hace falta una forma discreta de cambiar de pista.
+    Item {
+        id: nextTrackButton
+        anchors.top: parent.top
+        anchors.right: compactButton.left
+        anchors.topMargin: 8
+        anchors.rightMargin: 6
+        width: 28
+        height: 28
+        z: 10
+
+        visible: root.compact && root.hasPlayer
+        opacity: nextHover.hovered ? 1.0 : 0.45
+
+        Behavior on opacity {
+            NumberAnimation { duration: 120 }
+        }
+
+        Rectangle {
+            anchors.fill: parent
+            radius: width / 2
+            color: Theme.chip
+            border.width: 1
+            border.color: Theme.hairline
+        }
+
+        IconImage {
+            anchors.centerIn: parent
+            implicitSize: 15
+            source: IconResolver.firstOf([
+                "media-skip-forward-symbolic",
+                "media-skip-forward"
+            ])
+            layer.enabled: true
+            layer.effect: MultiEffect {
+                colorization: 1.0
+                colorizationColor: nextHover.hovered
+                    ? Theme.text
+                    : Theme.textDim
+            }
+        }
+
+        HoverHandler {
+            id: nextHover
+            cursorShape: Qt.PointingHandCursor
+        }
+
+        MouseArea {
+            anchors.fill: parent
+            acceptedButtons: Qt.LeftButton
+            onClicked: if (root.player) root.player.next()
         }
     }
 

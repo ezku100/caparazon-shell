@@ -13,9 +13,12 @@
 // Número de barras del espectro, el mismo que pide cava.
 var BARS = 32;
 
-// Cuánto se acerca cada barra a su objetivo en cada frame: 0 es congelado
-// y 1 es sin suavizado.
-var FACTOR = 0.45;
+// Cuánto sube una barra hacia un pico nuevo y cuánto baja después. Subir
+// rápido hace que los golpes se noten; bajar despacio deja ver la cola, como
+// en un VU. Con un único factor las barras llegaban tarde al golpe y el
+// espectro parecía no seguir el ritmo.
+var ATTACK = 0.6;
+var RELEASE = 0.35;
 
 // Un byte de cava (0..255) como nivel 0..1. Lo que no sea un número vale 0
 // y lo que se salga del rango se recorta.
@@ -63,28 +66,58 @@ function asLevels(source) {
     return values;
 }
 
+// Mezcla cada barra con sus vecinas. Sin esto cada bin va por libre y las
+// barras parpadean solas; mezcladas se mueven a bandas, como en un
+// analizador de espectro.
+function groupTargets(targets) {
+    var count = targets.length;
+    var grouped = [];
+    for (var i = 0; i < count; ++i) {
+        var left = targets[i > 0 ? i - 1 : 0];
+        var right = targets[i < count - 1 ? i + 1 : count - 1];
+        grouped.push(left * 0.25 + targets[i] * 0.5 + right * 0.25);
+    }
+    return grouped;
+}
+
 // Los niveles del siguiente frame. `spec` son los bytes que publica el
 // sampler, `previous` los niveles del frame anterior. Sin reproducción el
 // objetivo es cero, así que las barras decaen en vez de quedarse congeladas.
-function nextLevels(spec, previous, playing, barCount, factor) {
+// `attack` es lo que sube hacia un pico y `release` lo que baja después.
+function nextLevels(spec, previous, playing, barCount, attack, release) {
     var count = Number(barCount);
     if (!isFinite(count) || count <= 0)
         count = BARS;
     count = Math.floor(count);
 
-    var step = Number(factor);
-    if (!isFinite(step) || step <= 0 || step > 1)
-        step = FACTOR;
+    var rise = Number(attack);
+    if (!isFinite(rise) || rise <= 0 || rise > 1)
+        rise = ATTACK;
+
+    var fall = Number(release);
+    if (!isFinite(fall) || fall <= 0 || fall > 1)
+        fall = RELEASE;
 
     var source = asLevels(spec);
     var before = asLevels(previous);
-    var levels = [];
 
+    var targets = [];
     for (var i = 0; i < count; ++i) {
         var target = 0;
         if (playing && i < source.length)
             target = levelFromByte(source[i]);
-        levels.push(smooth(before[i], target, step));
+        targets.push(target);
+    }
+
+    var grouped = groupTargets(targets);
+    var levels = [];
+
+    for (var j = 0; j < count; ++j) {
+        var current = before[j];
+        if (!isFinite(current))
+            current = 0;
+
+        levels.push(smooth(current, grouped[j], grouped[j] > current ? rise : fall));
     }
 
     return levels;

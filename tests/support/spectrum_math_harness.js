@@ -31,7 +31,8 @@ try {
 
 const {
     BARS,
-    FACTOR,
+    ATTACK,
+    RELEASE,
     levelFromByte,
     smooth,
     nextLevels,
@@ -126,19 +127,57 @@ const cases = [
         id: "levels-decay-when-paused",
         detail: "en pausa las barras decaen hacia cero",
         run: () => nextLevels([], [1, 1], false, 2, 0.45).map((v) => rounded(v)).join("|"),
-        expected: "0.55|0.55",
+        expected: "0.65|0.65",
+    },
+    {
+        id: "levels-attack-is-faster-than-release",
+        detail: "subir rápido y bajar despacio: el golpe se ve y la cola dura",
+        run: () => {
+            const up = nextLevels([255], [0], true, 1, 0.8)[0];
+            const down = nextLevels([], [up], false, 1, 0.8)[0];
+            return `${rounded(up)}|${rounded(down)}`;
+        },
+        expected: "0.8|0.52",
+    },
+    {
+        id: "levels-explicit-release",
+        detail: "el release se puede ajustar aparte",
+        run: () => rounded(nextLevels([], [1], false, 1, 0.8, 0.5)[0]),
+        expected: 0.5,
+    },
+    {
+        id: "levels-bad-release",
+        detail: "un release inválido usa el de por defecto",
+        run: () => rounded(nextLevels([], [1], false, 1, 0.8, -1)[0]),
+        expected: rounded(1 - RELEASE),
     },
     {
         id: "levels-short-spec",
         detail: "si faltan bytes, las barras sobrantes están a cero",
         run: () => nextLevels([255], [], true, 3, 0.45).map((v) => rounded(v)).join("|"),
-        expected: "0.45|0|0",
+        expected: "0.3375|0.1125|0",
+    },
+    {
+        id: "levels-group-neighbours",
+        detail: "una barra mezcla su energía con las vecinas",
+        run: () => nextLevels([255, 0, 0], [0, 0, 0], true, 3, 1).map((v) => rounded(v)).join("|"),
+        expected: "0.75|0.25|0",
+    },
+    {
+        id: "levels-group-keeps-bands-together",
+        detail: "barras contiguas con energía parecida se mueven juntas",
+        run: () => {
+            const levels = nextLevels([200, 210, 200], [0, 0, 0], true, 3, 1);
+            const spread = Math.max.apply(null, levels) - Math.min.apply(null, levels);
+            return rounded(spread);
+        },
+        expected: 0.009804,
     },
     {
         id: "levels-bad-factor",
-        detail: "un factor inválido usa el de por defecto",
+        detail: "un attack inválido usa el de por defecto",
         run: () => rounded(nextLevels([255], [], true, 1, 0)[0]),
-        expected: rounded(FACTOR),
+        expected: rounded(ATTACK),
     },
     {
         id: "levels-default-bars",
@@ -156,7 +195,7 @@ const cases = [
         id: "levels-array-like-previous",
         detail: "los niveles previos también pueden llegar como lista de QML",
         run: () => nextLevels([], { 0: 1, 1: 1, length: 2 }, false, 2, 0.45).map((v) => rounded(v)).join("|"),
-        expected: "0.55|0.55",
+        expected: "0.65|0.65",
     },
     {
         id: "mix-starts-at-from",

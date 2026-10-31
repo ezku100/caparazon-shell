@@ -105,6 +105,42 @@ def test_the_spectrum_reads_the_waves_as_a_list_of_ints() -> None:
     assert "property var spec" not in spectrum
 
 
+def test_the_spectrum_moves_with_attack_and_release() -> None:
+    """Sube rápido a los golpes y baja despacio: así sigue el ritmo."""
+    spectrum = contents(SPECTRUM)
+
+    assert "SpectrumMath.ATTACK" in spectrum
+    assert "SpectrumMath.RELEASE" in spectrum
+    assert "interval: 33" in spectrum
+
+
+def test_the_compact_mode_has_a_discreet_next_button() -> None:
+    """En compacto, donde no hay tarjeta de controles, hay botón de siguiente."""
+    panel = contents(MUSIC_PANEL)
+
+    assert "id: nextTrackButton" in panel
+    assert "root.player.next()" in panel
+    assert "visible: root.compact && root.hasPlayer" in panel
+
+
+def test_the_music_panel_avoids_generic_var_properties() -> None:
+    """Las listas y el reproductor van tipados.
+
+    Guardados en una `property var`, QML los devuelve como QVariant y su
+    conversión a JavaScript revienta Quickshell 0.3.2 al recargar.
+    """
+    panel = contents(MUSIC_PANEL)
+
+    assert "property var players" not in panel
+    assert "property var candidates" not in panel
+    assert "property var player" not in panel
+    assert "property var pinnedPlayer" not in panel
+    assert "property var artCandidates" not in panel
+    assert "property list<MprisPlayer> players" in panel
+    assert "property MprisPlayer player" in panel
+    assert "property list<string> artCandidates" in panel
+
+
 def test_the_spectrum_starts_and_stops_the_sampler() -> None:
     """El sampler sólo vive mientras el espectro está activo."""
     spectrum = contents(SPECTRUM)

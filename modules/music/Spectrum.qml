@@ -25,8 +25,11 @@ Item {
 
     property int barCount: SpectrumMath.BARS
 
-    // Niveles suavizados del último frame, de 0 a 1.
-    property var levels: []
+    // Niveles suavizados del último frame, de 0 a 1. Es `list<real>` y no
+    // `property var` por el mismo motivo que la lista de bytes: guardado en
+    // una `var`, QML lo devuelve como QVariant y su conversión a JavaScript
+    // revienta Quickshell 0.3.2 al recargar.
+    property list<real> levels: []
 
     implicitHeight: 64
 
@@ -82,14 +85,15 @@ Item {
         }
     }
 
-    // A ~12 fps, como publica el sampler.
+    // A 30 fps, como publica el sampler: a 12 el espectro se veía a saltos y
+    // no parecía seguir el ritmo.
     Timer {
         running: root.active
-        interval: 83
+        interval: 33
         repeat: true
         onTriggered: root.levels = SpectrumMath.nextLevels(
             wavesAdapter.spec, root.levels, root.playing,
-            root.barCount, SpectrumMath.FACTOR)
+            root.barCount, SpectrumMath.ATTACK, SpectrumMath.RELEASE)
     }
 
     Row {

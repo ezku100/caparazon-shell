@@ -19,7 +19,7 @@ import sys
 import time
 
 BARS = 32
-RATE = 12
+RATE = 30
 
 
 def paths(datadir):
@@ -51,7 +51,7 @@ def running(pattern):
 
 def cava_config(fifo):
     """La configuración de cava que usa el sampler."""
-    return ("[general]\nframerate = 10\nbars = 32\n"
+    return ("[general]\nframerate = 30\nbars = 32\n"
             "autosens = 1\nsensitivity = 100\nsleep_timer = 3\n"
             "[output]\nmethod = raw\nchannels = mono\n"
             "mono_option = average\n"
