@@ -2,7 +2,10 @@ import Quickshell
 import Quickshell.Services.Mpris
 import Quickshell.Widgets
 import QtQuick
+import QtQuick.Effects
 import "../../theme"
+import "../icons"
+import "../music"
 import "../music/ArtUrls.js" as ArtUrls
 
 /*
@@ -469,6 +472,18 @@ Item {
         }
     }
 
+    // ── Modo compacto ────────────────────────────────────────────────
+    // Recordado entre aperturas: el servicio guarda la elección.
+    MusicSettings {
+        id: compactSettings
+    }
+
+    readonly property bool compact: compactSettings.compact
+
+    function toggleCompact() {
+        compactSettings.compact = !compactSettings.compact;
+    }
+
     // ── Layout ────────────────────────────────────────────────────────
     Column {
         id: layout
@@ -479,7 +494,9 @@ Item {
         Item {
             id: body
             width: layout.width
-            height: layout.height - controlsCard.height - layout.spacing
+            height: layout.height
+                - (root.compact ? spectrum.height : controlsCard.height)
+                - layout.spacing
 
             // Escenario del álbum: ocupa todo el ancho si no hay letra.
             Item {
@@ -487,7 +504,9 @@ Item {
                 anchors.left: parent.left
                 anchors.top: parent.top
                 anchors.bottom: parent.bottom
-                width: root.hasLyrics ? Math.round(body.width * 0.5) : body.width
+                width: root.hasLyrics && !root.compact
+                    ? Math.round(body.width * 0.5)
+                    : body.width
 
                 Behavior on width {
                     NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
@@ -754,7 +773,7 @@ Item {
                 color: Theme.chip
                 clip: true
                 opacity: root.hasLyrics ? 1 : 0
-                visible: opacity > 0
+                visible: opacity > 0 && !root.compact
 
                 Behavior on opacity {
                     NumberAnimation { duration: 180 }
@@ -947,6 +966,7 @@ Item {
             height: 100
             radius: 16
             color: Theme.chip
+            visible: !root.compact
 
             Column {
                 anchors.fill: parent
@@ -1173,6 +1193,70 @@ Item {
                     }
                 }
             }
+        }
+
+        // ── Espectro: el pie del panel en modo compacto ───────────────
+        Spectrum {
+            id: spectrum
+            width: layout.width
+            height: root.compact ? 64 : 0
+            visible: root.compact
+            active: root.compact
+            playing: root.playing
+        }
+    }
+
+    // ── Botón de modo compacto ────────────────────────────────────────
+    // Tipo pantalla completa: al pulsarlo, el panel se queda con el álbum y
+    // el espectro. Es discreto, pero siempre está ahí para volver.
+    Item {
+        id: compactButton
+        anchors.top: parent.top
+        anchors.right: parent.right
+        anchors.topMargin: 8
+        anchors.rightMargin: 8
+        width: 28
+        height: 28
+        z: 10
+
+        opacity: compactHover.hovered ? 1.0 : 0.55
+
+        Behavior on opacity {
+            NumberAnimation { duration: 120 }
+        }
+
+        Rectangle {
+            anchors.fill: parent
+            radius: width / 2
+            color: Theme.chip
+            border.width: 1
+            border.color: Theme.hairline
+        }
+
+        IconImage {
+            anchors.centerIn: parent
+            implicitSize: 16
+            source: IconResolver.firstOf(root.compact
+                ? ["window-restore-symbolic", "window-restore"]
+                : ["view-fullscreen-symbolic", "view-fullscreen"])
+            layer.enabled: true
+            layer.effect: MultiEffect {
+                colorization: 1.0
+                colorizationColor: compactHover.hovered
+                    ? Theme.text
+                    : Theme.textDim
+            }
+        }
+
+        HoverHandler {
+            id: compactHover
+            cursorShape: Qt.PointingHandCursor
+        }
+
+        MouseArea {
+            anchors.fill: parent
+            acceptedButtons: Qt.LeftButton
+            onClicked: root.toggleCompact()
         }
     }
 }

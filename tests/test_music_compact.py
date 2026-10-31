@@ -86,3 +86,57 @@ def test_the_spectrum_follows_the_theme() -> None:
 
     assert "Theme.m3Primary" in spectrum
     assert "Theme.m3Tertiary" in spectrum
+
+
+def test_the_panel_hides_the_controls_in_compact_mode() -> None:
+    """En compacto desaparecen la barra de progreso y los botones."""
+    panel = contents(MUSIC_PANEL)
+
+    assert "root.compact" in panel
+    assert "controlsCard" in panel
+    assert "visible: !root.compact" in panel
+
+
+def test_the_panel_hides_the_lyrics_in_compact_mode() -> None:
+    """En compacto desaparece la letra."""
+    panel = contents(MUSIC_PANEL)
+
+    lyrics_block = panel.split("id: lyricsCard", 1)[1].split("id: lyricsList", 1)[0]
+    assert "root.compact" in lyrics_block
+
+
+def test_the_panel_puts_the_spectrum_at_the_bottom() -> None:
+    """El espectro es el pie del panel, no va entre el álbum y el título."""
+    panel = contents(MUSIC_PANEL)
+
+    assert "Spectrum {" in panel
+    assert "active: root.compact" in panel
+    discs_block = panel.split("id: discs", 1)[1].split("id: lyricsCard", 1)[0]
+    assert "Spectrum {" not in discs_block
+
+
+def test_the_panel_has_the_compact_button() -> None:
+    """El botón ⛶ alterna el modo y usa un icono del tema."""
+    panel = contents(MUSIC_PANEL)
+
+    assert "toggleCompact" in panel
+    assert "view-fullscreen" in panel
+    assert "window-restore" in panel
+    assert "IconResolver.firstOf(" in panel
+
+
+def test_the_panel_uses_the_settings_service() -> None:
+    """El modo del panel sale del servicio que lo recuerda."""
+    panel = contents(MUSIC_PANEL)
+
+    assert 'import "../music"' in panel
+    assert "MusicSettings {" in panel
+    assert "compactSettings.compact" in panel
+
+
+def test_the_panel_keeps_the_album_visible_in_compact_mode() -> None:
+    """El álbum no se sustituye: sigue ahí con el vinilo."""
+    panel = contents(MUSIC_PANEL)
+
+    assert "id: discs" in panel
+    assert "id: vinyl" in panel
