@@ -55,3 +55,35 @@ def test_the_state_files_live_in_the_datadir(tmp_path: Path) -> None:
     assert conf == str(tmp_path / "cava.conf")
     assert fifo == str(tmp_path / "cava.fifo")
     assert waves == str(tmp_path / "waves.json")
+
+
+def test_normalize_lifts_a_quiet_frame_to_full_scale() -> None:
+    """Con el volumen bajo el pico tiene que llegar arriba."""
+    frame, reference = load_module().normalize([10, 20, 5], 0.0)
+
+    assert max(frame) == 255
+    assert reference == 20
+
+
+def test_normalize_keeps_the_shape_of_the_frame() -> None:
+    frame, _ = load_module().normalize([10, 20, 5], 0.0)
+
+    assert frame == [128, 255, 64]
+
+
+def test_normalize_treats_silence_as_zero() -> None:
+    """Sin música no se amplifica el ruido de fondo."""
+    frame, reference = load_module().normalize([3, 1, 0], 200.0)
+
+    assert frame == [0, 0, 0]
+    assert reference == 0.0
+
+
+def test_normalize_holds_the_reference_across_frames() -> None:
+    """Un golpe fuerte mantiene la escala un momento: evita el bombeo."""
+    module = load_module()
+    _, reference = module.normalize([200, 100], 0.0)
+    quiet, reference = module.normalize([40, 20], reference)
+
+    assert reference > 40
+    assert max(quiet) < 255

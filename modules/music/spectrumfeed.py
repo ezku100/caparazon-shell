@@ -20,6 +20,26 @@ import time
 
 BARS = 32
 RATE = 30
+# cava mide la salida real, así que con el volumen bajo el espectro se encoge.
+# Se normaliza contra un pico que decae despacio: el nivel se ve lleno a
+# cualquier volumen sin amplificar el silencio (ruido de fondo).
+NOISE_FLOOR = 6
+PEAK_DECAY = 0.98
+
+
+def normalize(frame, reference):
+    """Escala el frame para que su banda más fuerte llegue arriba.
+
+    Devuelve ``(frame_escalado, referencia_nueva)``. Si el frame entero está
+    por debajo del suelo de ruido es silencio: barras a cero y referencia
+    reiniciada, para que al volver el sonido el nivel se recupere al momento.
+    """
+    peak = max(frame, default=0)
+    if peak < NOISE_FLOOR:
+        return [0] * len(frame), 0.0
+    reference = max(float(peak), reference * PEAK_DECAY)
+    scale = 255.0 / reference
+    return [min(255, int(round(value * scale))) for value in frame], reference
 
 
 def paths(datadir):
@@ -92,6 +112,7 @@ def main(datadir):
         buf = b""
         period = 1.0 / RATE
         nxt = time.time()
+        reference = 0.0
         while True:
             chunk = os.read(fd, 4096)
             if not chunk:
@@ -99,13 +120,13 @@ def main(datadir):
                 continue
             buf += chunk
             if len(buf) >= BARS and time.time() >= nxt:
-                frame = buf[-BARS:]
+                frame, reference = normalize(buf[-BARS:], reference)
                 buf = b""
                 nxt = time.time() + period
                 try:
                     with open(waves + ".tmp", "w") as f:
                         json.dump({"ts": time.time(),
-                                   "spec": list(frame)}, f)
+                                   "spec": frame}, f)
                     os.replace(waves + ".tmp", waves)
                 except OSError:
                     pass

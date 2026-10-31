@@ -36,6 +36,10 @@ Item {
     // Reproductor elegido manualmente (rueda o botones); null = automático.
     property MprisPlayer pinnedPlayer: null
 
+    // 0 = contenido escondido, 1 = visible. La rueda lo reinicia para que el
+    // cambio de reproductor entre con un desvanecido y un desliz corto.
+    property real switchPhase: 1
+
     readonly property MprisPlayer player: {
         if (pinnedPlayer && candidates.indexOf(pinnedPlayer) !== -1)
             return pinnedPlayer;
@@ -57,6 +61,19 @@ Item {
         if (index < 0)
             index = count - 1;
         pinnedPlayer = candidates[(index + delta + count) % count];
+        switchAnimation.restart();
+    }
+
+    SequentialAnimation {
+        id: switchAnimation
+        NumberAnimation {
+            target: root
+            property: "switchPhase"
+            from: 0
+            to: 1
+            duration: 220
+            easing.type: Easing.OutCubic
+        }
     }
 
     // Si el elegido está en pausa y empieza a sonar otro, vuelve al automático.
@@ -518,8 +535,11 @@ Item {
                 readonly property real vinylSize: coverSize * 0.92
 
                 Column {
+                    id: stageContent
                     anchors.centerIn: parent
                     spacing: 12
+                    opacity: 0.35 + 0.65 * root.switchPhase
+                    transform: Translate { y: (1 - root.switchPhase) * 6 }
 
                     Item {
                         id: discs

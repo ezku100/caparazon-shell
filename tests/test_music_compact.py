@@ -228,3 +228,12 @@ def test_the_album_click_does_not_eat_the_wheel() -> None:
 
     discs_block = panel.split("id: discs", 1)[1].split("id: lyricsCard", 1)[0]
     assert "WheelHandler" in discs_block
+
+
+def test_switching_players_with_the_wheel_animates_the_card() -> None:
+    """La rueda cambia de reproductor con un desvanecido y un desliz corto."""
+    panel = contents(MUSIC_PANEL)
+
+    assert "property real switchPhase: 1" in panel
+    assert "switchAnimation.restart()" in panel
+    assert "opacity: 0.35 + 0.65 * root.switchPhase" in panel
