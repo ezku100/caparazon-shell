@@ -140,3 +140,20 @@ def test_the_panel_keeps_the_album_visible_in_compact_mode() -> None:
 
     assert "id: discs" in panel
     assert "id: vinyl" in panel
+
+
+def test_the_album_toggles_playback_on_click() -> None:
+    """Un clic en el álbum pausa o reanuda, en los dos modos."""
+    panel = contents(MUSIC_PANEL)
+
+    discs_block = panel.split("id: discs", 1)[1].split("id: lyricsCard", 1)[0]
+    assert "togglePlaying()" in discs_block
+    assert "canTogglePlaying" in discs_block
+
+
+def test_the_album_click_does_not_eat_the_wheel() -> None:
+    """El clic convive con la rueda que cambia de reproductor."""
+    panel = contents(MUSIC_PANEL)
+
+    discs_block = panel.split("id: discs", 1)[1].split("id: lyricsCard", 1)[0]
+    assert "WheelHandler" in discs_block

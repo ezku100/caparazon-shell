@@ -537,7 +537,6 @@ Item {
                         // eventos de rueda).
                         HoverHandler {
                             id: discsHover
-                            cursorShape: Qt.ArrowCursor
                         }
 
                         WheelHandler {
@@ -710,6 +709,18 @@ Item {
                                 font.family: Theme.fontUI
                                 font.pixelSize: 40
                             }
+                        }
+
+                        // Clic en el álbum: pausa o reanuda. En modo compacto
+                        // es la única forma de parar la música, porque los
+                        // botones de transporte están ocultos. Convive con la
+                        // rueda, que cambia de reproductor.
+                        MouseArea {
+                            anchors.fill: parent
+                            enabled: root.hasPlayer && root.player.canTogglePlaying
+                            acceptedButtons: Qt.LeftButton
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.player.togglePlaying()
                         }
                     }
 
