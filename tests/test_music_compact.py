@@ -238,3 +238,14 @@ def test_switching_players_with_the_wheel_animates_the_card() -> None:
     assert "switchAnimation.restart()" in panel
     assert "opacity: 0.15 + 0.85 * root.switchPhase" in panel
     assert "transform: Translate" not in panel
+
+
+def test_the_lyrics_status_does_not_move_the_compact_card() -> None:
+    """La línea de estado de la letra sólo existe con la tarjeta de letra.
+
+    En compacto no hay letra que mostrar, y esa línea aparecía en las pistas
+    sin letra empujando la tarjeta hacia arriba respecto a las demás.
+    """
+    panel = contents(MUSIC_PANEL)
+
+    assert "visible: !root.compact && root.hasPlayer && !root.hasLyrics" in panel

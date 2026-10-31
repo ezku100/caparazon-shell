@@ -779,7 +779,7 @@ Item {
                         anchors.horizontalCenter: parent.horizontalCenter
                         width: parent.width
                         horizontalAlignment: Text.AlignHCenter
-                        visible: root.hasPlayer && !root.hasLyrics
+                        visible: !root.compact && root.hasPlayer && !root.hasLyrics
                         text: lyricsService.status === "loading" ? "Buscando letra…"
                             : lyricsService.status === "error" ? "No se pudo consultar la letra"
                             : lyricsService.status === "empty" ? "Sin letra en LRCLIB"
