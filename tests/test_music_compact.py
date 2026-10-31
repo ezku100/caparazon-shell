@@ -48,3 +48,41 @@ def test_the_settings_write_atomically() -> None:
 
     assert ".tmp" in settings
     assert "mv " in settings
+
+
+def test_the_spectrum_component_exists() -> None:
+    """El espectro es un componente propio y reutilizable."""
+    assert SPECTRUM.is_file()
+
+
+def test_the_spectrum_uses_the_shared_math() -> None:
+    """El dibujo no reimplementa el suavizado."""
+    spectrum = contents(SPECTRUM)
+
+    assert 'import "SpectrumMath.js" as SpectrumMath' in spectrum
+    assert "SpectrumMath.nextLevels(" in spectrum
+
+
+def test_the_spectrum_reads_the_waves_file() -> None:
+    """El espectro lee el JSON que publica el sampler."""
+    spectrum = contents(SPECTRUM)
+
+    assert "waves.json" in spectrum
+    assert "FileView" in spectrum
+    assert "watchChanges: true" in spectrum
+
+
+def test_the_spectrum_starts_and_stops_the_sampler() -> None:
+    """El sampler sólo vive mientras el espectro está activo."""
+    spectrum = contents(SPECTRUM)
+
+    assert "spectrumfeed.py" in spectrum
+    assert "spectrumfeed[.]py" in spectrum
+
+
+def test_the_spectrum_follows_the_theme() -> None:
+    """El degradado sale de los colores del tema."""
+    spectrum = contents(SPECTRUM)
+
+    assert "Theme.m3Primary" in spectrum
+    assert "Theme.m3Tertiary" in spectrum
