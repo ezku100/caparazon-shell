@@ -27,3 +27,15 @@ def test_the_fallback_timer_is_not_faster_than_five_seconds() -> None:
 
     assert intervals
     assert min(intervals) >= 5000
+
+
+def test_the_palette_reloads_through_the_file_view() -> None:
+    """`JsonAdapter` no tiene `reload()` en Quickshell 0.3.2.
+
+    Llamarlo dejaba la paleta con los colores viejos hasta reiniciar la
+    shell; el método vive en el `FileView` que vigila el archivo.
+    """
+    contents = PALETTE.read_text(encoding="utf-8")
+
+    assert "adapter.reload()" not in contents
+    assert "onFileChanged: colorsFile.reload()" in contents

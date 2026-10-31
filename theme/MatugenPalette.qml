@@ -35,7 +35,7 @@ Item {
         path: root.cacheDir + "/caparazon/colors.json"
         watchChanges: true
         printErrors: true
-        onFileChanged: adapter.reload()
+        onFileChanged: colorsFile.reload()
 
         JsonAdapter {
             id: adapter
