@@ -236,4 +236,5 @@ def test_switching_players_with_the_wheel_animates_the_card() -> None:
 
     assert "property real switchPhase: 1" in panel
     assert "switchAnimation.restart()" in panel
-    assert "opacity: 0.35 + 0.65 * root.switchPhase" in panel
+    assert "opacity: 0.15 + 0.85 * root.switchPhase" in panel
+    assert "transform: Translate" not in panel

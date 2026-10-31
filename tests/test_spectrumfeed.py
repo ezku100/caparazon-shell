@@ -9,6 +9,7 @@ el sampler del plugin.
 from __future__ import annotations
 
 import importlib.util
+import os
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -87,3 +88,27 @@ def test_normalize_holds_the_reference_across_frames() -> None:
 
     assert reference > 40
     assert max(quiet) < 255
+
+
+def test_normalize_raises_the_reference_gradually() -> None:
+    """Un golpe fuerte no debe cambiar la escala de golpe: da tirones."""
+    module = load_module()
+    _, reference = module.normalize([200] * 32, 100.0)
+
+    assert 100 < reference < 200
+
+
+def test_read_frame_takes_exactly_one_frame() -> None:
+    """El sampler publica un frame por lectura, sin acumular dos de golpe."""
+    module = load_module()
+    read_fd, write_fd = os.pipe()
+    try:
+        os.write(write_fd, bytes(range(64)))
+        first = module.read_frame(read_fd, 32)
+        second = module.read_frame(read_fd, 32)
+    finally:
+        os.close(read_fd)
+        os.close(write_fd)
+
+    assert first == bytes(range(32))
+    assert second == bytes(range(32, 64))

@@ -37,7 +37,7 @@ Item {
     property MprisPlayer pinnedPlayer: null
 
     // 0 = contenido escondido, 1 = visible. La rueda lo reinicia para que el
-    // cambio de reproductor entre con un desvanecido y un desliz corto.
+    // cambio de reproductor entre con un desvanecido (sin mover la tarjeta).
     property real switchPhase: 1
 
     readonly property MprisPlayer player: {
@@ -538,8 +538,8 @@ Item {
                     id: stageContent
                     anchors.centerIn: parent
                     spacing: 12
-                    opacity: 0.35 + 0.65 * root.switchPhase
-                    transform: Translate { y: (1 - root.switchPhase) * 6 }
+                    opacity: 0.15 + 0.85 * root.switchPhase
+                    scale: 0.97 + 0.03 * root.switchPhase
 
                     Item {
                         id: discs

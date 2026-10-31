@@ -21,10 +21,11 @@ import time
 BARS = 32
 RATE = 30
 # cava mide la salida real, así que con el volumen bajo el espectro se encoge.
-# Se normaliza contra un pico que decae despacio: el nivel se ve lleno a
-# cualquier volumen sin amplificar el silencio (ruido de fondo).
+# Se normaliza contra un pico de referencia que se mueve despacio en los dos
+# sentidos (12 % por frame): el nivel se ve lleno a cualquier volumen sin
+# amplificar el silencio ni dar tirones cuando entra un golpe fuerte.
 NOISE_FLOOR = 6
-PEAK_DECAY = 0.98
+REFERENCE_RATE = 0.12
 
 
 def normalize(frame, reference):
@@ -37,7 +38,10 @@ def normalize(frame, reference):
     peak = max(frame, default=0)
     if peak < NOISE_FLOOR:
         return [0] * len(frame), 0.0
-    reference = max(float(peak), reference * PEAK_DECAY)
+    if reference <= 0.0:
+        reference = float(peak)
+    else:
+        reference += (peak - reference) * REFERENCE_RATE
     scale = 255.0 / reference
     return [min(255, int(round(value * scale))) for value in frame], reference
 
@@ -71,7 +75,7 @@ def running(pattern):
 
 def cava_config(fifo):
     """La configuración de cava que usa el sampler."""
-    return ("[general]\nframerate = 30\nbars = 32\n"
+    return (f"[general]\nframerate = {RATE}\nbars = 32\n"
             "autosens = 1\nsensitivity = 100\nsleep_timer = 3\n"
             "[output]\nmethod = raw\nchannels = mono\n"
             "mono_option = average\n"
@@ -94,6 +98,17 @@ def ensure_cava(conf, fifo):
                      stderr=subprocess.DEVNULL)
 
 
+def read_frame(fd, size):
+    """Lee exactamente un frame del FIFO; None si no hay datos todavía."""
+    data = b""
+    while len(data) < size:
+        chunk = os.read(fd, size - len(data))
+        if not chunk:
+            return None
+        data += chunk
+    return data
+
+
 def main(datadir):
     """Publica los frames de cava en waves.json hasta que la maten."""
     conf, fifo, waves = paths(datadir)
@@ -109,27 +124,19 @@ def main(datadir):
     ensure_cava(conf, fifo)
     fd = os.open(fifo, os.O_RDONLY)
     try:
-        buf = b""
-        period = 1.0 / RATE
-        nxt = time.time()
         reference = 0.0
         while True:
-            chunk = os.read(fd, 4096)
-            if not chunk:
+            frame = read_frame(fd, BARS)
+            if frame is None:
                 time.sleep(0.05)
                 continue
-            buf += chunk
-            if len(buf) >= BARS and time.time() >= nxt:
-                frame, reference = normalize(buf[-BARS:], reference)
-                buf = b""
-                nxt = time.time() + period
-                try:
-                    with open(waves + ".tmp", "w") as f:
-                        json.dump({"ts": time.time(),
-                                   "spec": frame}, f)
-                    os.replace(waves + ".tmp", waves)
-                except OSError:
-                    pass
+            spec, reference = normalize(frame, reference)
+            try:
+                with open(waves + ".tmp", "w") as f:
+                    json.dump({"ts": time.time(), "spec": spec}, f)
+                os.replace(waves + ".tmp", waves)
+            except OSError:
+                pass
     finally:
         os.close(fd)
 
