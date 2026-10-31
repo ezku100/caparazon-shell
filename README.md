@@ -178,8 +178,9 @@ y los controles del reproductor MPRIS activo. La rueda del ratón cambia de
 reproductor y un clic sobre el álbum pausa o reanuda.
 
 El botón ⛶ activa el **modo compacto**: deja el álbum con el vinilo girando,
-el título y el artista, y pone al pie un espectro que sigue al tema. La
-elección se recuerda en `~/.cache/caparazon/music-panel.json`, así que se
+el título y el artista, y pone al pie un espectro que sigue al tema. Como la
+tarjeta de controles se oculta, junto a ⛶ aparece un botón de siguiente pista.
+La elección se recuerda en `~/.cache/caparazon/music-panel.json`, así que se
 mantiene al cerrar el submenú o cambiar de categoría.
 
 El espectro lo dibuja `modules/music/Spectrum.qml` a partir de
