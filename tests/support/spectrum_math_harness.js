@@ -147,6 +147,18 @@ const cases = [
         expected: BARS,
     },
     {
+        id: "levels-array-like-spec",
+        detail: "una lista con length pero sin Array.isArray también vale (así llega de QML)",
+        run: () => rounded(nextLevels({ 0: 255, 1: 255, length: 2 }, [0, 0], true, 2, 0.45)[0]),
+        expected: 0.45,
+    },
+    {
+        id: "levels-array-like-previous",
+        detail: "los niveles previos también pueden llegar como lista de QML",
+        run: () => nextLevels([], { 0: 1, 1: 1, length: 2 }, false, 2, 0.45).map((v) => rounded(v)).join("|"),
+        expected: "0.55|0.55",
+    },
+    {
         id: "mix-starts-at-from",
         detail: "la primera barra es el color primario",
         run: () => roundedColor(mixColor(PRIMARY, TERTIARY, 0, 8)),

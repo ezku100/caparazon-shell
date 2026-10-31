@@ -41,6 +41,28 @@ function smooth(current, target, factor) {
     return from + (to - from) * factor;
 }
 
+// El espectro puede llegar como array de JavaScript (en node) o como la lista
+// que QML expone para un `property var` del JsonAdapter: esa lista tiene
+// length y se indexa igual, pero `Array.isArray()` devuelve false y el
+// suavizado se quedaba sin datos (barras planas). Por eso se acepta
+// cualquier colección con length numérico.
+function asLevels(source) {
+    if (source === null || source === undefined)
+        return [];
+    if (typeof source === "string")
+        return [];
+
+    var length = Number(source.length);
+    if (!isFinite(length) || length <= 0)
+        return [];
+
+    var values = [];
+    for (var i = 0; i < Math.floor(length); ++i)
+        values.push(source[i]);
+
+    return values;
+}
+
 // Los niveles del siguiente frame. `spec` son los bytes que publica el
 // sampler, `previous` los niveles del frame anterior. Sin reproducción el
 // objetivo es cero, así que las barras decaen en vez de quedarse congeladas.
@@ -54,8 +76,8 @@ function nextLevels(spec, previous, playing, barCount, factor) {
     if (!isFinite(step) || step <= 0 || step > 1)
         step = FACTOR;
 
-    var source = Array.isArray(spec) ? spec : [];
-    var before = Array.isArray(previous) ? previous : [];
+    var source = asLevels(spec);
+    var before = asLevels(previous);
     var levels = [];
 
     for (var i = 0; i < count; ++i) {
