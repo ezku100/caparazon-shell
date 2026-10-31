@@ -65,7 +65,10 @@ Item {
         command: ["pkill", "-f", "spectrumfeed[.]py"]
     }
 
-    // Los bytes que publica el sampler.
+    // Los bytes que publica el sampler. La lista es `list<int>` y no
+    // `property var` a propósito: con `var` el JsonAdapter entrega una
+    // QVariantList y al convertirla a JavaScript Quickshell 0.3.2
+    // reventaba (QJSEngine::create) cada vez que recargaba la shell.
     FileView {
         id: waves
         path: Quickshell.env("HOME") + "/.cache/caparazon/waves.json"
@@ -75,7 +78,7 @@ Item {
 
         JsonAdapter {
             id: wavesAdapter
-            property var spec: []
+            property list<int> spec: []
         }
     }
 

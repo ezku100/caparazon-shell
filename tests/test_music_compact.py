@@ -93,6 +93,18 @@ def test_the_spectrum_reads_the_waves_file() -> None:
     assert "watchChanges: true" in spectrum
 
 
+def test_the_spectrum_reads_the_waves_as_a_list_of_ints() -> None:
+    """La lista del adapter es `list<int>`.
+
+    Con `property var` el JsonAdapter entrega una QVariantList y al pasarla a
+    JavaScript Quickshell 0.3.2 revienta (QJSEngine::create) en cada recarga.
+    """
+    spectrum = contents(SPECTRUM)
+
+    assert "property list<int> spec" in spectrum
+    assert "property var spec" not in spectrum
+
+
 def test_the_spectrum_starts_and_stops_the_sampler() -> None:
     """El sampler sólo vive mientras el espectro está activo."""
     spectrum = contents(SPECTRUM)
