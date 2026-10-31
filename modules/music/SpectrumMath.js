@@ -17,7 +17,7 @@ var BARS = 32;
 // rápido hace que los golpes se noten; bajar despacio deja ver la cola, como
 // en un VU. Con un único factor las barras llegaban tarde al golpe y el
 // espectro parecía no seguir el ritmo.
-var ATTACK = 0.6;
+var ATTACK = 0.45;
 var RELEASE = 0.35;
 
 // Un byte de cava (0..255) como nivel 0..1. Lo que no sea un número vale 0

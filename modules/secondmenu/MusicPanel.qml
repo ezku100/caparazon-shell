@@ -1217,6 +1217,61 @@ Item {
         }
     }
 
+    // ── Botón de canción anterior (modo compacto) ──────────────────────
+    // Mismo criterio que el de siguiente: discreto y solo en compacto.
+    Item {
+        id: previousTrackButton
+        anchors.top: parent.top
+        anchors.right: nextTrackButton.left
+        anchors.topMargin: 8
+        anchors.rightMargin: 6
+        width: 28
+        height: 28
+        z: 10
+
+        visible: root.compact && root.hasPlayer
+        opacity: previousHover.hovered ? 1.0 : 0.45
+
+        Behavior on opacity {
+            NumberAnimation { duration: 120 }
+        }
+
+        Rectangle {
+            anchors.fill: parent
+            radius: width / 2
+            color: Theme.chip
+            border.width: 1
+            border.color: Theme.hairline
+        }
+
+        IconImage {
+            anchors.centerIn: parent
+            implicitSize: 15
+            source: IconResolver.firstOf([
+                "media-skip-backward-symbolic",
+                "media-skip-backward"
+            ])
+            layer.enabled: true
+            layer.effect: MultiEffect {
+                colorization: 1.0
+                colorizationColor: previousHover.hovered
+                    ? Theme.text
+                    : Theme.textDim
+            }
+        }
+
+        HoverHandler {
+            id: previousHover
+            cursorShape: Qt.PointingHandCursor
+        }
+
+        MouseArea {
+            anchors.fill: parent
+            acceptedButtons: Qt.LeftButton
+            onClicked: if (root.player) root.player.previous()
+        }
+    }
+
     // ── Botón de siguiente canción (modo compacto) ─────────────────────
     // En modo compacto la tarjeta de controles está oculta, así que aquí
     // hace falta una forma discreta de cambiar de pista.

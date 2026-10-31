@@ -114,13 +114,15 @@ def test_the_spectrum_moves_with_attack_and_release() -> None:
     assert "interval: 33" in spectrum
 
 
-def test_the_compact_mode_has_a_discreet_next_button() -> None:
-    """En compacto, donde no hay tarjeta de controles, hay botón de siguiente."""
+def test_the_compact_mode_has_discreet_track_buttons() -> None:
+    """En compacto, donde no hay tarjeta de controles, hay botones de pista."""
     panel = contents(MUSIC_PANEL)
 
     assert "id: nextTrackButton" in panel
     assert "root.player.next()" in panel
-    assert "visible: root.compact && root.hasPlayer" in panel
+    assert "id: previousTrackButton" in panel
+    assert "root.player.previous()" in panel
+    assert panel.count("visible: root.compact && root.hasPlayer") >= 2
 
 
 def test_the_music_panel_avoids_generic_var_properties() -> None:
