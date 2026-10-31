@@ -25,18 +25,21 @@ Item {
 
     onCompactChanged: save()
 
+    // Cambia el modo compacto desde el panel. Si el valor no cambia no hace
+    // nada, así la carga inicial no reescribe el fichero.
+    function setCompact(value) {
+        if (root.compact === value)
+            return;
+
+        root.compact = value;
+    }
+
     function save() {
         if (!loaded)
             return;
 
-        persist.command = [
-            "bash", "-c",
-            "printf '%s\\n' \"$1\" > \"$2\".tmp && mv \"$2\".tmp \"$2\"",
-            "bash",
-            JSON.stringify({ compact: root.compact }),
-            root.settingsPath
-        ];
-        persist.running = true;
+        adapter.compact = root.compact;
+        file.writeAdapter();
     }
 
     // Crea el fichero si no existe, para que el FileView no falle al leer.
@@ -53,10 +56,6 @@ Item {
         onExited: file.reload()
     }
 
-    Process {
-        id: persist
-    }
-
     FileView {
         id: file
         path: root.settingsPath
@@ -70,13 +69,14 @@ Item {
         }
     }
 
-    // Al terminar la primera carga se aplica lo que había guardado. El orden
-    // importa: primero el valor, luego `loaded`, para que el cambio no se
-    // guarde de vuelta.
+    // `loaded` es una señal que se emite cuando el fichero ya está leído y el
+    // adapter relleno. La propiedad homónima se pone a true al *empezar* la
+    // carga asíncrona, así que leer el adapter con ella devolvía el valor por
+    // defecto.
     Connections {
         target: file
-        function onLoadedChanged() {
-            if (!file.loaded || root.loaded)
+        function onLoaded() {
+            if (root.loaded)
                 return;
 
             root.compact = adapter.compact;

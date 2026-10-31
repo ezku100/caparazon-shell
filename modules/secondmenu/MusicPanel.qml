@@ -481,7 +481,7 @@ Item {
     readonly property bool compact: compactSettings.compact
 
     function toggleCompact() {
-        compactSettings.compact = !compactSettings.compact;
+        compactSettings.setCompact(!compactSettings.compact);
     }
 
     // ── Layout ────────────────────────────────────────────────────────

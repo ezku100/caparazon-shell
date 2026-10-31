@@ -42,12 +42,33 @@ def test_the_settings_expose_and_persist_compact() -> None:
     assert "function save(" in settings
 
 
-def test_the_settings_write_atomically() -> None:
-    """Se escribe a un .tmp y se renombra, como el resto del repo."""
+def test_the_settings_write_through_the_file_view() -> None:
+    """Se guarda con `writeAdapter`: Quickshell escribe de forma atómica."""
     settings = contents(MUSIC_SETTINGS)
 
-    assert ".tmp" in settings
-    assert "mv " in settings
+    assert "file.writeAdapter()" in settings
+    assert "persist" not in settings
+
+
+def test_the_settings_apply_the_saved_value_after_the_load() -> None:
+    """Se lee con la señal `loaded`, que llega con el adapter ya relleno.
+
+    La propiedad `loaded` se pone a true al empezar la carga asíncrona, así
+    que escuchar `onLoadedChanged` devolvía el valor por defecto.
+    """
+    settings = contents(MUSIC_SETTINGS)
+
+    assert "function onLoaded()" in settings
+    assert "onLoadedChanged" not in settings
+
+
+def test_the_panel_toggles_through_set_compact() -> None:
+    """El panel usa `setCompact` para no reescribir en la carga inicial."""
+    panel = contents(MUSIC_PANEL)
+    settings = contents(MUSIC_SETTINGS)
+
+    assert "function setCompact(" in settings
+    assert "compactSettings.setCompact(" in panel
 
 
 def test_the_spectrum_component_exists() -> None:

@@ -171,6 +171,21 @@ así que al cambiarlo en KDE la shell seguiría con los iconos viejos.
 Caparazón vigila `kdeglobals` y se reinicia sola en cuanto el tema cambia de
 verdad; el reinicio tarda un segundo y vacía el historial del portapapeles.
 
+## Música
+
+La categoría **Música** del submenú muestra la carátula, el título, el artista
+y los controles del reproductor MPRIS activo. La rueda del ratón cambia de
+reproductor y un clic sobre el álbum pausa o reanuda.
+
+El botón ⛶ activa el **modo compacto**: deja el álbum con el vinilo girando,
+el título y el artista, y pone al pie un espectro que sigue al tema. La
+elección se recuerda en `~/.cache/caparazon/music-panel.json`, así que se
+mantiene al cerrar el submenú o cambiar de categoría.
+
+El espectro lo dibuja `modules/music/Spectrum.qml` a partir de
+`~/.cache/caparazon/waves.json`, que publica `modules/music/spectrumfeed.py`
+leyendo `cava`. El sampler sólo vive mientras el modo compacto está activo.
+
 ## Tema
 
 `theme/MatugenPalette.qml` lee `~/.cache/caparazon/colors.json` y lo recarga
