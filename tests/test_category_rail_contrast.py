@@ -72,7 +72,10 @@ def test_the_selected_category_icon_keeps_the_default_tint() -> None:
 def test_the_selected_category_pill_keeps_the_accent() -> None:
     """La píldora de selección sigue siendo la de acento."""
     contents = RAIL_BUTTON.read_text(encoding="utf-8")
-    pill = re.search(r"color:\s*root\.selected\s*\n?\s*\?\s*(Theme\.\w+)", contents)
+    pill = re.search(
+        r"color:\s*(Theme\.\w+)\s*\n\s*opacity:\s*root\.selected",
+        contents,
+    )
 
     assert pill is not None
     assert pill.group(1) == "Theme.m3Primary"

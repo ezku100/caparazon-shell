@@ -61,10 +61,14 @@ Item {
         anchors.fill: parent
         anchors.margins: 4
         radius: 16
-        color: root.active ? Theme.chipHover : "transparent"
+        // El tono no se anima: en Qt "transparent" es negro con alfa 0, así que
+        // interpolar el color hacia él pasa por tonos oscuros y el chip se ve
+        // negro a mitad de fundido. Se anima la opacidad, que sí es lineal.
+        color: Theme.chipHover
+        opacity: root.active ? 1 : 0
 
-        Behavior on color {
-            ColorAnimation {
+        Behavior on opacity {
+            NumberAnimation {
                 duration: root.active ? Theme.durFast : 0
                 easing.type: Easing.OutCubic
             }
@@ -93,6 +97,7 @@ Item {
     }
 
     Text {
+        id: label
         anchors {
             top: iconBox.bottom
             topMargin: 7

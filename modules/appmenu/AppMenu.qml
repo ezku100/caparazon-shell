@@ -751,7 +751,8 @@ PanelWindow {
                     Rectangle {
                         anchors.fill: parent
                         radius: 13
-                        color: clearHover.hovered ? Theme.chipHover : "transparent"
+                        color: Theme.chipHover
+                        opacity: clearHover.hovered ? 1 : 0
                     }
 
                     Text {
@@ -854,11 +855,14 @@ PanelWindow {
                             anchors.fill: parent
                             anchors.margins: 3
                             radius: 12
-                            color: emojiHover.hovered ? Theme.chipHover : "transparent"
+                            // Se anima la opacidad, no el color: "transparent"
+                            // es negro con alfa 0 y el fundido ennegrecía el chip.
+                            color: Theme.chipHover
+                            opacity: emojiHover.hovered ? 1 : 0
 
-                            Behavior on color {
-                                ColorAnimation {
-                                    duration: emojiHover.hovered ? Theme.durFast : 0
+                            Behavior on opacity {
+                                NumberAnimation {
+                                    duration: Theme.durFast
                                     easing.type: Easing.OutCubic
                                 }
                             }
@@ -923,9 +927,8 @@ PanelWindow {
                             Rectangle {
                                 anchors.fill: parent
                                 radius: 13
-                                color: clearHistoryHover.hovered
-                                    ? Theme.chipHover
-                                    : "transparent"
+                                color: Theme.chipHover
+                                opacity: clearHistoryHover.hovered ? 1 : 0
                             }
 
                             Text {
@@ -975,11 +978,12 @@ PanelWindow {
                                 anchors.fill: parent
                                 radius: 12
                                 clip: true
-                                color: clipHover.hovered ? Theme.chipHover : "transparent"
+                                color: Theme.chipHover
+                                opacity: clipHover.hovered ? 1 : 0
 
-                                Behavior on color {
-                                    ColorAnimation {
-                                        duration: clipHover.hovered ? Theme.durFast : 0
+                                Behavior on opacity {
+                                    NumberAnimation {
+                                        duration: Theme.durFast
                                         easing.type: Easing.OutCubic
                                     }
                                 }

@@ -19,18 +19,28 @@ Item {
     implicitWidth: 36
     implicitHeight: 32
 
+    // La selección y el hover se pintan en dos capas: así el tono cambia de
+    // golpe (m3Primary / chipHover) y lo que se anima es la opacidad. Animar
+    // el color pasando por "transparent" ennegrecía el fondo a mitad de fundido.
     Rectangle {
         anchors.fill: parent
         radius: 11
-        color: root.selected
-            ? Theme.m3Primary
-            : (hover.hovered ? Theme.chipHover : "transparent")
+        color: Theme.m3Primary
+        opacity: root.selected ? 1 : 0
 
-        Behavior on color {
-            ColorAnimation {
-                duration: (root.selected || hover.hovered) ? Theme.durFast : 0
-                easing.type: Easing.OutCubic
-            }
+        Behavior on opacity {
+            NumberAnimation { duration: Theme.durFast; easing.type: Easing.OutCubic }
+        }
+    }
+
+    Rectangle {
+        anchors.fill: parent
+        radius: 11
+        color: Theme.chipHover
+        opacity: !root.selected && hover.hovered ? 1 : 0
+
+        Behavior on opacity {
+            NumberAnimation { duration: Theme.durFast; easing.type: Easing.OutCubic }
         }
     }
 
