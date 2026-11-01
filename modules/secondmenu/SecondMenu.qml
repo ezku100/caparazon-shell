@@ -183,8 +183,6 @@ PanelWindow {
             height: parent.height - 2 * root.railInset
             radius: 18
             color: Theme.chip
-            border.width: 1
-            border.color: Theme.hairline
 
             Column {
                 anchors {
