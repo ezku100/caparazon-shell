@@ -858,7 +858,7 @@ PanelWindow {
 
                             Behavior on color {
                                 ColorAnimation {
-                                    duration: Theme.durFast
+                                    duration: emojiHover.hovered ? Theme.durFast : 0
                                     easing.type: Easing.OutCubic
                                 }
                             }
@@ -979,7 +979,7 @@ PanelWindow {
 
                                 Behavior on color {
                                     ColorAnimation {
-                                        duration: Theme.durFast
+                                        duration: clipHover.hovered ? Theme.durFast : 0
                                         easing.type: Easing.OutCubic
                                     }
                                 }

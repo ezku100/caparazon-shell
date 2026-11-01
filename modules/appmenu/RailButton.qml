@@ -27,7 +27,10 @@ Item {
             : (hover.hovered ? Theme.chipHover : "transparent")
 
         Behavior on color {
-            ColorAnimation { duration: Theme.durFast; easing.type: Easing.OutCubic }
+            ColorAnimation {
+                duration: (root.selected || hover.hovered) ? Theme.durFast : 0
+                easing.type: Easing.OutCubic
+            }
         }
     }
 

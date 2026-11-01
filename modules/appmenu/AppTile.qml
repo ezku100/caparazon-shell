@@ -64,7 +64,10 @@ Item {
         color: root.active ? Theme.chipHover : "transparent"
 
         Behavior on color {
-            ColorAnimation { duration: Theme.durFast; easing.type: Easing.OutCubic }
+            ColorAnimation {
+                duration: root.active ? Theme.durFast : 0
+                easing.type: Easing.OutCubic
+            }
         }
     }
 
@@ -108,7 +111,10 @@ Item {
         maximumLineCount: 1
 
         Behavior on color {
-            ColorAnimation { duration: Theme.durFast; easing.type: Easing.OutCubic }
+            ColorAnimation {
+                duration: root.active ? Theme.durFast : 0
+                easing.type: Easing.OutCubic
+            }
         }
     }
 
@@ -159,7 +165,7 @@ Item {
         target: appIcon
         property: "rotation"
         to: 0
-        duration: 120
+        duration: 0
         easing.type: Easing.OutCubic
     }
 
