@@ -20,6 +20,7 @@ import pytest
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 APP_MENU = REPOSITORY_ROOT / "modules" / "appmenu" / "AppMenu.qml"
 SECOND_MENU = REPOSITORY_ROOT / "modules" / "secondmenu" / "SecondMenu.qml"
+RAIL_BUTTON = REPOSITORY_ROOT / "modules" / "appmenu" / "RailButton.qml"
 
 RAIL_PROPERTIES = re.compile(r"id:\s*rail\b[^\n]*\n(.*?)\n\s*Column\s*\{", re.DOTALL)
 
@@ -56,3 +57,22 @@ def test_the_category_rail_has_no_border(menu: Path) -> None:
 
     assert "border.width" not in properties
     assert "border.color" not in properties
+
+
+def test_the_selected_category_icon_keeps_the_default_tint() -> None:
+    """La selección no re-tiñe el icono: se queda en su gris de siempre."""
+    contents = RAIL_BUTTON.read_text(encoding="utf-8")
+    tint = re.search(r"colorizationColor:(.*?)\n\s*\}", contents, re.DOTALL)
+
+    assert tint is not None
+    assert "selected" not in tint.group(1)
+    assert "Theme.textDim" in tint.group(1)
+
+
+def test_the_selected_category_pill_keeps_the_accent() -> None:
+    """La píldora de selección sigue siendo la de acento."""
+    contents = RAIL_BUTTON.read_text(encoding="utf-8")
+    pill = re.search(r"color:\s*root\.selected\s*\n?\s*\?\s*(Theme\.\w+)", contents)
+
+    assert pill is not None
+    assert pill.group(1) == "Theme.m3Primary"
