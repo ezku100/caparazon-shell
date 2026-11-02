@@ -9,14 +9,16 @@ dependencies = []
 dev = [
     "basedpyright>=1.21",
     "pytest>=8",
+    "python-dateutil>=2.9",
     "ruff>=0.8",
+    "types-python-dateutil>=2.9",
 ]
 
 [tool.basedpyright]
 typeCheckingMode = "all"
 pythonVersion = "3.11"
 pythonPlatform = "Linux"
-include = ["tests"]
+include = ["tests", "modules/secondmenu/gcal.py"]
 exclude = [
     "**/__pycache__",
     "**/.venv",
@@ -30,8 +32,8 @@ reportPrivateUsage = "error"
 [tool.ruff]
 target-version = "py311"
 line-length = 88
-src = ["tests"]
-include = ["tests/**/*.py"]
+src = [".", "tests"]
+include = ["tests/**/*.py", "modules/secondmenu/gcal.py"]
 extend-exclude = [".venv"]
 
 [tool.ruff.lint]
@@ -50,6 +52,20 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
+"modules/secondmenu/gcal.py" = [
+    "DTZ001",
+    "DTZ007",
+    "EM101",
+    "EM102",
+    "INP001",
+    "PLC0415",
+    "PLR0913",
+    "S310",
+    "S603",
+    "S607",
+    "T201",
+    "TRY003",
+]
 "tests/**/*.py" = [
     "S101",
     "ARG",
@@ -66,6 +82,7 @@ docstring-code-format = true
 [tool.pytest.ini_options]
 minversion = "8.0"
 testpaths = ["tests"]
+pythonpath = ["."]
 addopts = [
     "-ra",
     "--strict-config",
