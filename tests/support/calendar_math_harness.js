@@ -28,7 +28,16 @@ try {
     process.exit(1);
 }
 
-const { monthDays, firstWeekday, monthName, monthLabel, monthGrid } = context;
+const {
+    monthDays,
+    firstWeekday,
+    monthName,
+    monthLabel,
+    monthGrid,
+    dayKey,
+    isSameDay,
+    colorsForDay,
+} = context;
 
 function gridShape() {
     const grid = monthGrid(2026, 10);
@@ -128,6 +137,73 @@ const cases = [
         detail: "la etiqueta une mes y año",
         run: () => monthLabel(2026, 10),
         expected: "octubre 2026",
+    },
+    {
+        id: "clave-dia",
+        detail: "dayKey rellena mes y día con dos dígitos",
+        run: () => dayKey(2026, 3, 7),
+        expected: "2026-03-07",
+    },
+    {
+        id: "clave-dia-dos-digitos",
+        detail: "dayKey no toca los meses y días de dos dígitos",
+        run: () => dayKey(2026, 11, 23),
+        expected: "2026-11-23",
+    },
+    {
+        id: "mismo-dia-si",
+        detail: "isSameDay compara año, mes y día",
+        run: () => isSameDay(
+            { year: 2026, month: 11, day: 3 },
+            { year: 2026, month: 11, day: 3 },
+        ),
+        expected: true,
+    },
+    {
+        id: "mismo-dia-no",
+        detail: "isSameDay distingue días distintos",
+        run: () => isSameDay(
+            { year: 2026, month: 11, day: 3 },
+            { year: 2026, month: 11, day: 4 },
+        ),
+        expected: false,
+    },
+    {
+        id: "colores-orden-config",
+        detail: "colorsForDay devuelve colores distintos en el orden de la configuración",
+        run: () => {
+            const byDay = {
+                "2026-11-03": [
+                    { calendar_id: "casa", color: "#34A853" },
+                    { calendar_id: "trabajo", color: "#4285F4" },
+                    { calendar_id: "trabajo", color: "#4285F4" },
+                ],
+            };
+            return JSON.stringify(
+                colorsForDay(byDay, 2026, 11, 3, ["trabajo", "casa"]),
+            );
+        },
+        expected: '["#4285F4","#34A853"]',
+    },
+    {
+        id: "colores-dia-vacio",
+        detail: "un día sin eventos no tiene colores",
+        run: () => JSON.stringify(colorsForDay({}, 2026, 11, 3, [])),
+        expected: "[]",
+    },
+    {
+        id: "colores-sin-orden",
+        detail: "sin orden configurado, los colores salen en el orden de los eventos",
+        run: () => {
+            const byDay = {
+                "2026-11-03": [
+                    { calendar_id: "casa", color: "#34A853" },
+                    { calendar_id: "trabajo", color: "#4285F4" },
+                ],
+            };
+            return JSON.stringify(colorsForDay(byDay, 2026, 11, 3, []));
+        },
+        expected: '["#34A853","#4285F4"]',
     },
 ];
 

@@ -70,3 +70,54 @@ function isToday(year, month, day) {
         && (now.getMonth() + 1) === month
         && now.getDate() === day;
 }
+
+// Clave de día en formato ISO: "AAAA-MM-DD". Es la misma clave que usa el
+// script de calendarios, así que ambos lados hablan el mismo idioma.
+function dayKey(year, month, day) {
+    var mm = month < 10 ? "0" + month : "" + month;
+    var dd = day < 10 ? "0" + day : "" + day;
+    return year + "-" + mm + "-" + dd;
+}
+
+// Compara dos días con la forma { year, month, day }.
+function isSameDay(a, b) {
+    if (!a || !b)
+        return false;
+    return a.year === b.year && a.month === b.month && a.day === b.day;
+}
+
+// Colores de los calendarios con eventos ese día, sin repetir y en el orden
+// de la configuración; los que no estén en él se cuelgan al final.
+function colorsForDay(byDay, year, month, day, order) {
+    var events = (byDay && byDay[dayKey(year, month, day)]) || [];
+    if (!events || events.length === 0)
+        return [];
+
+    var colors = [];
+    var seen = Object.create(null);
+    var ids = order && order.length ? order.slice() : [];
+
+    for (var i = 0; i < ids.length; ++i) {
+        var id = ids[i];
+        if (seen[id])
+            continue;
+        for (var j = 0; j < events.length; ++j) {
+            if (events[j].calendar_id === id) {
+                seen[id] = true;
+                if (events[j].color && colors.indexOf(events[j].color) === -1)
+                    colors.push(events[j].color);
+                break;
+            }
+        }
+    }
+
+    for (var k = 0; k < events.length; ++k) {
+        var event = events[k];
+        if (seen[event.calendar_id])
+            continue;
+        seen[event.calendar_id] = true;
+        if (event.color && colors.indexOf(event.color) === -1)
+            colors.push(event.color);
+    }
+    return colors;
+}
