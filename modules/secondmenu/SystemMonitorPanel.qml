@@ -174,9 +174,9 @@ Item {
         anchors.fill: parent
         spacing: 12
 
-        // Cabecera del panel. La fila lleva altura explícita: sus textos se
-        // centran con anclas y eso deja el implicitHeight en cero, con lo que
-        // el título no se dibujaba y el contenido subía dentro de la tarjeta.
+        // Cabecera del panel. La fila lleva altura explícita: el título se
+        // centra con anclas y eso deja el implicitHeight en cero, con lo que
+        // no se dibujaba y el contenido subía dentro de la tarjeta.
         Row {
             id: header
             width: parent.width
@@ -189,17 +189,6 @@ Item {
                 font.family: Theme.fontUI
                 font.pixelSize: 15
                 font.weight: Font.DemiBold
-            }
-
-            Text {
-                anchors.verticalCenter: parent.verticalCenter
-                anchors.right: parent.right
-                text: root.series.length > 1
-                    ? root.series.length + " muestras"
-                    : "recopilando datos"
-                color: Theme.textDim
-                font.family: Theme.fontUI
-                font.pixelSize: 12
             }
         }
 
