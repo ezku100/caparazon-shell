@@ -174,9 +174,13 @@ Item {
         anchors.fill: parent
         spacing: 12
 
+        // Cabecera del panel. La fila lleva altura explícita: sus textos se
+        // centran con anclas y eso deja el implicitHeight en cero, con lo que
+        // el título no se dibujaba y el contenido subía dentro de la tarjeta.
         Row {
             id: header
             width: parent.width
+            height: 22
 
             Text {
                 anchors.verticalCenter: parent.verticalCenter

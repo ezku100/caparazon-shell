@@ -166,6 +166,15 @@ def test_the_bar_forwards_the_temperature_to_the_ring() -> None:
     assert "temperature: bar.resources ? bar.resources.temperature : 0" in contents
 
 
+def test_the_panel_header_keeps_its_height() -> None:
+    """La cabecera lleva altura explícita o colapsa a cero y no se dibuja."""
+    contents = SYSTEM_PANEL.read_text(encoding="utf-8")
+    header = contents[contents.index("id: header"):contents.index("id: selector")]
+
+    assert "height: 22" in header
+    assert "Monitor del sistema" in header
+
+
 def test_the_metric_tabs_leave_room_inside_the_capsule() -> None:
     """Las pestañas del selector dejan aire arriba y abajo."""
     contents = SYSTEM_PANEL.read_text(encoding="utf-8")
