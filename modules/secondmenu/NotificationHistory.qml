@@ -12,6 +12,10 @@ Item {
 
     property var model: null
 
+    // El panel de la categoría Calendario pone su propio título (el
+    // conmutador Notificaciones/Eventos), así que aquí puede ocultarse.
+    property bool showTitle: true
+
     signal notificationActivated(string entry)
 
     readonly property int count: model ? model.count : 0
@@ -46,10 +50,11 @@ Item {
             width: parent.width
             height: 14
 
-            Text {
-                anchors.left: parent.left
-                anchors.verticalCenter: parent.verticalCenter
-                text: "Notificaciones"
+                Text {
+                    anchors.left: parent.left
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible: root.showTitle
+                    text: "Notificaciones"
                 color: Theme.text
                 font.family: Theme.fontUI
                 font.pixelSize: 12
