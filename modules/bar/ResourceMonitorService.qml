@@ -21,7 +21,10 @@ Item {
     readonly property int historySize: 120
     property var samples: []
 
-    // Medidores apagados desde la barra (por clave: cpu, ram, gpu, ...).
+    // Medidores apagados desde la barra (por clave: cpu, ram, gpu, ...). Se
+    // guardan en disco para que sigan apagados tras reiniciar la shell.
+    readonly property string metersPath: Quickshell.env("HOME")
+        + "/.config/caparazon-shell/meters.json"
     property var hiddenMeters: []
 
     function clamp(value) {
@@ -46,11 +49,57 @@ Item {
             next.splice(index, 1);
         else
             next.push(key);
-        root.hiddenMeters = next;
+        root.saveMeters(next);
     }
 
     function restoreMeters() {
-        root.hiddenMeters = [];
+        root.saveMeters([]);
+    }
+
+    function saveMeters(meters) {
+        metersAdapter.hidden = meters;
+        metersFile.writeAdapter();
+    }
+
+    // El adaptador carga de forma asíncrona: al terminar se copia lo guardado
+    // en memoria, que es lo que consultan los anillos de la barra.
+    function adoptStoredMeters() {
+        const stored = metersAdapter.hidden;
+        const meters = [];
+        if (stored) {
+            for (let index = 0; index < stored.length; index++)
+                meters.push(String(stored[index]));
+        }
+        root.hiddenMeters = meters;
+    }
+
+    FileView {
+        id: metersFile
+        path: root.metersPath
+        watchChanges: true
+        atomicWrites: true
+        printErrors: false
+        onFileChanged: reload()
+        onLoaded: root.adoptStoredMeters()
+
+        JsonAdapter {
+            id: metersAdapter
+            property var hidden: []
+        }
+    }
+
+    // Crea la carpeta y el archivo con la forma esperada antes de leerlo.
+    Process {
+        id: metersInit
+        running: true
+        command: [
+            "bash", "-c",
+            "mkdir -p \"$1\"; [ -f \"$2\" ] || printf '%s\\n' '{\"hidden\":[]}' > \"$2\"",
+            "bash",
+            Quickshell.env("HOME") + "/.config/caparazon-shell",
+            root.metersPath
+        ]
+        onExited: metersFile.reload()
     }
 
     Process {

@@ -106,11 +106,23 @@ def test_the_service_keeps_the_history_and_the_hidden_meters() -> None:
 
     assert "property int temperature: 0" in contents
     assert "property var samples: []" in contents
-    assert "property var hiddenMeters: []" in contents
+    assert "property var hiddenMeters:" in contents
     assert "function pushSample(sample)" in contents
     assert "function toggleMeter(key)" in contents
     assert "function isHidden(key)" in contents
     assert "function restoreMeters()" in contents
+
+
+def test_the_hidden_meters_survive_a_restart() -> None:
+    """Los medidores apagados se guardan en disco y se releen al arrancar."""
+    contents = RESOURCE_SERVICE.read_text(encoding="utf-8")
+
+    assert "meters.json" in contents
+    assert "FileView {" in contents
+    assert "JsonAdapter {" in contents
+    assert "property var hidden: []" in contents
+    assert "writeAdapter()" in contents
+    assert "metersFile.reload()" in contents
 
 
 def test_the_service_reads_the_temperature_from_the_sampler() -> None:
