@@ -25,6 +25,7 @@ ACCENT_THEME_INSTALLED_DESCRIPTOR="$CONFIG_HOME/accent-theme/templates.d/caparaz
 ACCENT_THEME_PALETTE="$HOME/.cache/caparazon/colors.json"
 REQUIRED_THEME_DEPENDENCIES=(matugen python3 inotifywait flock kreadconfig6 git)
 THEME_APT_PACKAGES="matugen python3 inotify-tools util-linux libkf6config-bin git"
+CALENDAR_APT_PACKAGES="python3 python3-dateutil"
 MENU_SHORTCUT_ID="net.local.quickshell-2"
 MENU_SHORTCUT_KEY="Meta"
 MENU_SHORTCUT_SECTION="[services][${MENU_SHORTCUT_ID}.desktop]"
@@ -58,6 +59,14 @@ require_theme_dependencies() {
     if [ "${#missing[@]}" -gt 0 ]; then
         echo "ERROR: faltan dependencias del tema: ${missing[*]}" >&2
         echo "       En PikaOS: sudo apt install $THEME_APT_PACKAGES" >&2
+        exit 1
+    fi
+}
+
+require_calendar_dependencies() {
+    if ! python3 -c "import dateutil" >/dev/null 2>&1; then
+        echo "ERROR: falta python3-dateutil para el calendario de Google." >&2
+        echo "       En PikaOS: sudo apt install $CALENDAR_APT_PACKAGES" >&2
         exit 1
     fi
 }
@@ -265,6 +274,7 @@ uninstall() {
 case "${1:-instalar}" in
     instalar)
         require_quickshell
+        require_calendar_dependencies
         EXISTING_SHELL_DIR="$(existing_shell_dir || true)"
         if [ -n "$EXISTING_SHELL_DIR" ] && [ "$EXISTING_SHELL_DIR" != "$SHELL_DIR" ]; then
             echo "Reutilizando la shell de $EXISTING_SHELL_DIR"

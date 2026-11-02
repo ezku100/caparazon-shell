@@ -187,6 +187,34 @@ El espectro lo dibuja `modules/music/Spectrum.qml` a partir de
 `~/.cache/caparazon/waves.json`, que publica `modules/music/spectrumfeed.py`
 leyendo `cava`. El sampler sólo vive mientras el modo compacto está activo.
 
+## Calendario
+
+La categoría **Calendario** del submenú puede mostrar los eventos de uno o varios
+calendarios de Google. Se vinculan con la **dirección secreta de iCal** que da
+Google en Ajustes → Integrar calendarios, y se pegan desde el propio menú: el
+botón **G** de la esquina de la rejilla abre el diálogo de vinculación.
+
+No hay OAuth ni cuenta de Google en la shell: sólo se guarda la dirección
+secreta, en `~/.config/caparazon/calendar.json` con permisos 600. El script
+`modules/secondmenu/gcal.py` es el único dueño de esa credencial; descarga el
+ICS, cachea el resultado 15 minutos y publica un JSON normalizado que
+`CalendarService.qml` consume. Si no hay red, se muestran los eventos que ya
+estaban cacheados.
+
+La columna izquierda alterna entre **Notificaciones** y **Eventos** con las
+flechitas ‹ ›, y la elección se recuerda en
+`~/.cache/caparazon/secondmenu.json`. En la vista de eventos, la rejilla marca
+con puntos de color los días que tienen algo y al elegir un día aparece la lista
+de sus eventos: punto del color del calendario, hora, nombre del calendario y
+título.
+
+Hace falta `python3-dateutil` para expandir las recurrencias (reglas
+semanales, mensuales y exclusiones):
+
+```bash
+sudo apt install python3-dateutil
+```
+
 ## Tema
 
 `theme/MatugenPalette.qml` lee `~/.cache/caparazon/colors.json` y lo recarga
