@@ -113,6 +113,14 @@ def test_the_service_keeps_the_history_and_the_hidden_meters() -> None:
     assert "function restoreMeters()" in contents
 
 
+def test_toggling_a_meter_updates_the_bar_immediately() -> None:
+    """El clic actualiza la memoria antes de escribir el archivo."""
+    contents = RESOURCE_SERVICE.read_text(encoding="utf-8")
+    save = contents[contents.index("function saveMeters"):contents.index("FileView {")]
+
+    assert "root.hiddenMeters = meters" in save
+
+
 def test_the_hidden_meters_survive_a_restart() -> None:
     """Los medidores apagados se guardan en disco y se releen al arrancar."""
     contents = RESOURCE_SERVICE.read_text(encoding="utf-8")

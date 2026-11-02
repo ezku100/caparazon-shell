@@ -56,7 +56,10 @@ Item {
         root.saveMeters([]);
     }
 
+    // El estado en memoria se actualiza al instante: la interfaz no debe
+    // esperar a que el archivo se relea. El archivo solo lo recuerda.
     function saveMeters(meters) {
+        root.hiddenMeters = meters;
         metersAdapter.hidden = meters;
         metersFile.writeAdapter();
     }
