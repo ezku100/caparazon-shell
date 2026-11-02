@@ -1,4 +1,4 @@
-"""La línea del muestreo lleva los seis valores que la shell consume."""
+"""La línea del muestreo lleva los siete valores que la shell consume."""
 
 from __future__ import annotations
 
@@ -12,8 +12,8 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = REPOSITORY_ROOT / "modules" / "bar" / "resource-monitor.sh"
 
 
-def test_the_sampler_emits_six_fields() -> None:
-    """La primera línea del script tiene seis campos y ninguno es un icono."""
+def test_the_sampler_emits_seven_fields() -> None:
+    """La primera línea del script tiene siete campos y ninguno es un icono."""
     bash = shutil.which("bash")
     if bash is None:
         pytest.skip("bash no disponible")
@@ -31,5 +31,6 @@ def test_the_sampler_emits_six_fields() -> None:
     # Al agotarse el tiempo, TimeoutExpired guarda bytes aunque se pida texto.
     first = stdout.decode().strip().splitlines()[0]
     fields = first.split()
-    assert len(fields) == 6
+    assert len(fields) == 7
     assert fields[5] in {"performance", "balanced", "power-saver"}
+    assert fields[6].isdigit()

@@ -279,9 +279,12 @@ ShellRoot {
                 secondOutputQuery.running = true;
         }
 
-        function open(): void {
+        // La categoría es opcional: "quickshell ipc call menu2 open sistema".
+        function open(category: string): void {
             if (!shellRoot.secondMenuState.opened)
                 secondOutputQuery.running = true;
+            if (category)
+                shellRoot.secondMenuState.category = category;
         }
 
         function close(): void {
@@ -331,6 +334,7 @@ ShellRoot {
             swapUsage: resourceService.swap
             networkUsage: resourceService.network
             powerProfile: resourceService.powerProfile
+            resources: resourceService
         }
     }
 

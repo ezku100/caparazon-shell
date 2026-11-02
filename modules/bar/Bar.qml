@@ -32,6 +32,7 @@ PanelWindow {
     property int swapUsage: 0
     property int networkUsage: 0
     property string powerProfile: "balanced"
+    property var resources: null
 
     readonly property var activeTrayMenu: trayMenuState ? trayMenuState.active : null
 
@@ -62,7 +63,9 @@ PanelWindow {
         appMenuState.open(bar.screen);
     }
 
-    function openSecondMenu() {
+    // La categoría es opcional: el reloj pide "calendario" y los anillos del
+    // monitor "sistema".
+    function openSecondMenu(category) {
         closeTrayMenu();
         if (!secondMenuState)
             return;
@@ -70,7 +73,7 @@ PanelWindow {
             secondMenuState.close();
             return;
         }
-        secondMenuState.open(bar.screen, "calendario");
+        secondMenuState.open(bar.screen, category || "calendario");
     }
 
     function openPowerMenu() {
@@ -292,6 +295,8 @@ PanelWindow {
                 gpu: bar.gpuUsage
                 swap: bar.swapUsage
                 network: bar.networkUsage
+                resources: bar.resources
+                onActivated: bar.openSecondMenu("sistema")
             }
 
             Row {
@@ -417,6 +422,14 @@ PanelWindow {
             screen: bar.screen
             menuState: bar.secondMenuState
             notificationHistory: bar.notificationHistory
+            cpuUsage: bar.cpuUsage
+            ramUsage: bar.ramUsage
+            gpuUsage: bar.gpuUsage
+            swapUsage: bar.swapUsage
+            networkUsage: bar.networkUsage
+            temperature: bar.resources ? bar.resources.temperature : 0
+            metricSamples: bar.resources ? bar.resources.samples : []
+            resources: bar.resources
         }
     }
 }

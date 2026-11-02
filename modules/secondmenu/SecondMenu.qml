@@ -17,6 +17,16 @@ PanelWindow {
     required property var screen
     property var notificationHistory: null
 
+    // Métricas del monitor del sistema: llegan desde la barra.
+    property int cpuUsage: 0
+    property int ramUsage: 0
+    property int gpuUsage: 0
+    property int swapUsage: 0
+    property int networkUsage: 0
+    property int temperature: 0
+    property var metricSamples: []
+    property var resources: null
+
     readonly property bool opened: menuState ? menuState.opened : false
     readonly property bool active: opened && menuState.activeScreen === screen
     property bool closing: false
@@ -32,7 +42,8 @@ PanelWindow {
 
     readonly property var categories: [
         { key: "calendario", icon: "notifications", label: "Calendario" },
-        { key: "musica", icon: "audio", label: "Música" }
+        { key: "musica", icon: "audio", label: "Música" },
+        { key: "sistema", icon: "utilities-system-monitor", label: "Monitor del sistema" }
     ]
 
     function close() {
@@ -222,7 +233,13 @@ PanelWindow {
             Loader {
                 id: panelLoader
                 anchors.fill: parent
-                sourceComponent: root.category === "musica" ? musicComponent : calendarComponent
+                sourceComponent: {
+                    if (root.category === "musica")
+                        return musicComponent;
+                    if (root.category === "sistema")
+                        return systemComponent;
+                    return calendarComponent;
+                }
             }
 
             Component {
@@ -238,6 +255,21 @@ PanelWindow {
                 id: musicComponent
                 MusicPanel {
                     anchors.fill: parent
+                }
+            }
+
+            Component {
+                id: systemComponent
+                SystemMonitorPanel {
+                    anchors.fill: parent
+                    cpu: root.cpuUsage
+                    ram: root.ramUsage
+                    gpu: root.gpuUsage
+                    swap: root.swapUsage
+                    network: root.networkUsage
+                    temperature: root.temperature
+                    samples: root.metricSamples
+                    resources: root.resources
                 }
             }
         }

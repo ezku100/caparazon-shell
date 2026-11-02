@@ -133,7 +133,24 @@ while true; do
         esac
     fi
 
-    printf '%s %s %s %s %s %s\n' \
-        "$cpu" "$ram" "$gpu" "$swap" "$net" "$power_profile"
+    # Temperatura de la CPU: sensor k10temp/corelist de /sys/class/hwmon.
+    # Se mide en miligrados; el script entrega los grados.
+    temp=0
+    for h in /sys/class/hwmon/hwmon*; do
+        name=""
+        [[ -r "$h/name" ]] && read -r name < "$h/name"
+        case "$name" in
+            coretemp|k10temp|zenpower)
+                if [[ -r "$h/temp1_input" ]]; then
+                    read -r milli < "$h/temp1_input"
+                    temp=$((milli / 1000))
+                fi
+                break
+                ;;
+        esac
+    done
+
+    printf '%s %s %s %s %s %s %s\n' \
+        "$cpu" "$ram" "$gpu" "$swap" "$net" "$power_profile" "$temp"
     sleep 1
 done

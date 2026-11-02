@@ -13,10 +13,44 @@ Item {
     property int gpu: 0
     property int swap: 0
     property int network: 0
+    property int temperature: 0
     property string powerProfile: "balanced"
+
+    // Historial para los gráficos del panel: una muestra por segundo con los
+    // últimos dos minutos.
+    readonly property int historySize: 120
+    property var samples: []
+
+    // Medidores apagados desde la barra (por clave: cpu, ram, gpu, ...).
+    property var hiddenMeters: []
 
     function clamp(value) {
         return Math.max(0, Math.min(100, Math.round(Number(value) || 0)));
+    }
+
+    function pushSample(sample) {
+        const next = root.samples.concat([sample]);
+        root.samples = next.length > root.historySize
+            ? next.slice(next.length - root.historySize)
+            : next;
+    }
+
+    function isHidden(key) {
+        return root.hiddenMeters.indexOf(key) >= 0;
+    }
+
+    function toggleMeter(key) {
+        const next = root.hiddenMeters.slice();
+        const index = next.indexOf(key);
+        if (index >= 0)
+            next.splice(index, 1);
+        else
+            next.push(key);
+        root.hiddenMeters = next;
+    }
+
+    function restoreMeters() {
+        root.hiddenMeters = [];
     }
 
     Process {
@@ -35,6 +69,10 @@ Item {
                 root.swap = clamp(fields[3]);
                 root.network = clamp(fields[4]);
                 root.powerProfile = fields[5] || "balanced";
+                root.temperature = Math.max(0, Math.round(Number(fields[6]) || 0));
+                root.pushSample([
+                    root.cpu, root.ram, root.gpu,
+                    root.swap, root.network, root.temperature]);
             }
         }
     }

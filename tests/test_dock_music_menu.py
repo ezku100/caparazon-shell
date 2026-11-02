@@ -64,5 +64,9 @@ def test_second_menu_open_accepts_category_parameter() -> None:
 
 
 def test_bar_clock_opens_second_menu_with_calendar_category() -> None:
-    """El reloj de la barra abre el menú secundario forzando 'calendario'."""
-    assert 'secondMenuState.open(bar.screen, "calendario")' in contents(BAR)
+    """El reloj de la barra abre el menú secundario en 'calendario'.
+
+    La categoría es un parámetro opcional: el reloj no indica ninguna y
+    vale 'calendario'.
+    """
+    assert 'secondMenuState.open(bar.screen, category || "calendario")' in contents(BAR)
