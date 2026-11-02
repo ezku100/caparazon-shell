@@ -141,6 +141,43 @@ def test_the_panel_switches_the_bar_meters_on_and_off() -> None:
     assert "En la barra" in contents
 
 
+def test_the_temperature_has_its_own_switch() -> None:
+    """La temperatura también se puede apagar desde el panel."""
+    contents = SYSTEM_PANEL.read_text(encoding="utf-8")
+
+    assert '{ key: "temp", label: "Temp" }' in contents
+
+
+def test_the_bar_shows_a_temperature_ring() -> None:
+    """La barra tiene un anillo de temperatura en grados."""
+    contents = RESOURCE_MONITOR.read_text(encoding="utf-8")
+
+    assert "property int temperature: 0" in contents
+    assert 'label: "Temp"' in contents
+    assert "value: root.temperature" in contents
+    assert 'unit: "°C"' in contents
+    assert 'visible: !root.isHidden("temp")' in contents
+
+
+def test_the_bar_forwards_the_temperature_to_the_ring() -> None:
+    """La barra pasa la temperatura del servicio al monitor de anillos."""
+    contents = BAR.read_text(encoding="utf-8")
+
+    assert "temperature: bar.resources ? bar.resources.temperature : 0" in contents
+
+
+def test_the_metric_tabs_leave_room_inside_the_capsule() -> None:
+    """Las pestañas del selector dejan aire arriba y abajo."""
+    contents = SYSTEM_PANEL.read_text(encoding="utf-8")
+    delegate = contents[
+        contents.index("delegate: Rectangle {"):contents.index("MouseArea {")
+    ]
+
+    assert "height: 52" in delegate
+    assert "height: 46" not in delegate
+    assert "spacing: 3" in delegate
+
+
 def test_the_second_menu_forwards_the_service_to_the_panel() -> None:
     """El submenú pasa el servicio global al panel para los interruptores."""
     contents = SECOND_MENU.read_text(encoding="utf-8")

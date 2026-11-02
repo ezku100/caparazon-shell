@@ -35,7 +35,8 @@ Item {
         { key: "ram", label: "RAM" },
         { key: "gpu", label: "GPU" },
         { key: "swap", label: "Swap" },
-        { key: "network", label: "Red" }
+        { key: "network", label: "Red" },
+        { key: "temp", label: "Temp" }
     ]
 
     function isHidden(key) {
@@ -216,7 +217,7 @@ Item {
                     readonly property bool selected: root.selectedIndex === tab.index
 
                     width: Math.floor((selector.width - (selector.spacing * 5)) / 6)
-                    height: 46
+                    height: 52
                     radius: 14
                     color: tab.selected ? Theme.m3Primary : Theme.chip
 
@@ -226,28 +227,33 @@ Item {
 
                     Column {
                         anchors.centerIn: parent
-                        spacing: 2
+                        spacing: 3
 
-                        IconImage {
+                        Row {
                             anchors.horizontalCenter: parent.horizontalCenter
-                            implicitSize: 14
-                            source: tab.modelData.source
-                            layer.enabled: true
-                            layer.effect: MultiEffect {
-                                colorization: 1.0
-                                colorizationColor: tab.selected
-                                    ? Theme.m3OnPrimary
-                                    : Theme.textDim
+                            spacing: 5
+
+                            IconImage {
+                                anchors.verticalCenter: parent.verticalCenter
+                                implicitSize: 13
+                                source: tab.modelData.source
+                                layer.enabled: true
+                                layer.effect: MultiEffect {
+                                    colorization: 1.0
+                                    colorizationColor: tab.selected
+                                        ? Theme.m3OnPrimary
+                                        : Theme.textDim
+                                }
                             }
-                        }
 
-                        Text {
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            text: tab.modelData.label
-                            color: tab.selected ? Theme.m3OnPrimary : Theme.textDim
-                            font.family: Theme.fontUI
-                            font.pixelSize: 11
-                            font.weight: Font.DemiBold
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: tab.modelData.label
+                                color: tab.selected ? Theme.m3OnPrimary : Theme.textDim
+                                font.family: Theme.fontUI
+                                font.pixelSize: 11
+                                font.weight: Font.DemiBold
+                            }
                         }
 
                         Text {

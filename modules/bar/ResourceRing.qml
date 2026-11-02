@@ -21,11 +21,15 @@ Item {
     property bool wheelEnabled: false
     property bool tipVisible: false
 
+    // Unidad del globo de ayuda: los medidores de uso van en %, la
+    // temperatura en grados.
+    property string unit: "%"
+
     signal wheelUp()
     signal wheelDown()
 
     readonly property string tipText: root.label !== ""
-        ? root.label + " " + Math.round(root.value) + "%"
+        ? root.label + " " + Math.round(root.value) + root.unit
         : ""
 
     readonly property string resolvedIconSource: root.iconSource !== ""

@@ -15,6 +15,7 @@ Item {
     property int gpu: 0
     property int swap: 0
     property int network: 0
+    property int temperature: 0
 
     // Servicio global: guarda qué medidores están apagados para que el
     // estado sea el mismo en todas las barras.
@@ -76,6 +77,15 @@ Item {
             value: root.network
             visible: !root.isHidden("network")
             iconSource: root.networkSource
+        }
+
+        ResourceRing {
+            label: "Temp"
+            value: root.temperature
+            unit: "°C"
+            visible: !root.isHidden("temp")
+            iconSource: IconResolver.firstOf([
+                "temperature", "thermometer", "indicator-sensors-temperature", "weather-clear"])
         }
     }
 

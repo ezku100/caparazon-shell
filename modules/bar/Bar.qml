@@ -295,6 +295,7 @@ PanelWindow {
                 gpu: bar.gpuUsage
                 swap: bar.swapUsage
                 network: bar.networkUsage
+                temperature: bar.resources ? bar.resources.temperature : 0
                 resources: bar.resources
                 onActivated: bar.openSecondMenu("sistema")
             }
