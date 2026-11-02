@@ -30,6 +30,7 @@ PanelWindow {
     readonly property bool opened: menuState ? menuState.opened : false
     readonly property bool active: opened && menuState.activeScreen === screen
     property bool closing: false
+    property bool overlayOpen: false
 
     readonly property int animDuration: 220
     readonly property int cardWidth: Math.min(760,
@@ -102,7 +103,7 @@ PanelWindow {
 
     Shortcut {
         sequence: "Escape"
-        enabled: root.active
+        enabled: root.active && !root.overlayOpen
         onActivated: root.close()
     }
 
@@ -248,6 +249,7 @@ PanelWindow {
                     anchors.fill: parent
                     notificationHistory: root.notificationHistory
                     onNotificationActivated: root.openNotificationApp(entry)
+                    onOverlayChanged: (open) => root.overlayOpen = open
                 }
             }
 
