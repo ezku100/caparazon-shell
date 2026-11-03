@@ -236,44 +236,52 @@ Item {
                 Item {
                     id: switchRow
                     width: parent.width
-                    height: 22
+                    height: 24
 
                     Row {
-                        anchors.centerIn: parent
-                        spacing: 10
+                        anchors.fill: parent
+                        spacing: 4
 
-                        Text {
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: "‹"
-                            color: Theme.textDim
-                            font.family: Theme.fontUI
-                            font.pixelSize: 16
+                        Repeater {
+                            model: [
+                                { key: "notifications", label: "Notificaciones" },
+                                { key: "events", label: "Eventos" }
+                            ]
 
-                            MouseArea {
-                                anchors.fill: parent
-                                onClicked: root.setView("notifications")
-                            }
-                        }
+                            delegate: Item {
+                                id: viewButton
+                                required property var modelData
+                                readonly property bool active: root.view === modelData.key
+                                width: (switchRow.width - 4) / 2
+                                height: switchRow.height
 
-                        Text {
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: root.view === "events" ? "Eventos" : "Notificaciones"
-                            color: Theme.text
-                            font.family: Theme.fontUI
-                            font.pixelSize: 12
-                            font.weight: Font.DemiBold
-                        }
+                                Rectangle {
+                                    anchors.fill: parent
+                                    radius: 8
+                                    color: viewButton.active
+                                        ? Theme.m3Primary
+                                        : (viewHover.hovered ? Theme.chipHover : "transparent")
+                                }
 
-                        Text {
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: "›"
-                            color: Theme.textDim
-                            font.family: Theme.fontUI
-                            font.pixelSize: 16
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: viewButton.modelData.label
+                                    color: viewButton.active ? Theme.m3OnPrimary : Theme.textDim
+                                    font.family: Theme.fontUI
+                                    font.pixelSize: 10
+                                    font.weight: viewButton.active ? Font.DemiBold : Font.Normal
+                                }
 
-                            MouseArea {
-                                anchors.fill: parent
-                                onClicked: root.setView("events")
+                                HoverHandler {
+                                    id: viewHover
+                                    cursorShape: Qt.PointingHandCursor
+                                }
+
+                                MouseArea {
+                                    anchors.fill: parent
+                                    acceptedButtons: Qt.LeftButton
+                                    onClicked: root.setView(viewButton.modelData.key)
+                                }
                             }
                         }
                     }
