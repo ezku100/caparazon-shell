@@ -28,6 +28,16 @@ Item {
     property string pendingId: ""
     property string pendingMessage: ""
 
+    readonly property string activeColor: root.colorOfPending()
+
+    function colorOfPending() {
+        for (let i = 0; i < root.calendars.length; i++) {
+            if (root.calendars[i].id === root.pendingId)
+                return String(root.calendars[i].color);
+        }
+        return root.pendingColor;
+    }
+
     function close() {
         root.opened = false;
         root.statusText = "";
@@ -67,13 +77,12 @@ Item {
     }
 
     function pickColor(color) {
+        root.pendingColor = color;
         if (root.pendingId.length > 0) {
             root.runScript(
                 ["set-color", root.pendingId, color], "Color actualizado");
             root.pendingId = "";
-            return;
         }
-        root.pendingColor = color;
     }
 
     Rectangle {
@@ -97,6 +106,13 @@ Item {
         border.width: 1
         border.color: Theme.m3OutlineVariant
         visible: root.opened
+
+        // Absorbe los clics dentro de la tarjeta: sin esto caen al overlay y la
+        // cierran al pulsar cualquier espacio vacío.
+        MouseArea {
+            anchors.fill: parent
+            acceptedButtons: Qt.LeftButton
+        }
 
         Column {
             anchors.fill: parent
@@ -155,13 +171,20 @@ Item {
                             id: swatch
                             anchors.left: parent.left
                             anchors.verticalCenter: parent.verticalCenter
-                            width: 10
-                            height: 10
-                            radius: 5
+                            width: 12
+                            height: 12
+                            radius: 6
                             color: modelData.color
+                            border.width: root.pendingId === modelData.id ? 2 : 0
+                            border.color: Theme.text
+
+                            HoverHandler {
+                                cursorShape: Qt.PointingHandCursor
+                            }
 
                             MouseArea {
                                 anchors.fill: parent
+                                acceptedButtons: Qt.LeftButton
                                 onClicked: root.pendingId = modelData.id
                             }
                         }
@@ -344,16 +367,42 @@ Item {
                 Repeater {
                     model: root.palette
 
-                    delegate: Rectangle {
+                    delegate: Item {
+                        id: paletteSwatch
                         required property var modelData
-                        width: 12
-                        height: 12
-                        radius: 6
-                        color: modelData
+                        readonly property bool selected: root.activeColor === String(modelData)
+                        width: 18
+                        height: 18
+
+                        Rectangle {
+                            anchors.centerIn: parent
+                            width: 12
+                            height: 12
+                            radius: 6
+                            color: paletteSwatch.modelData
+                        }
+
+                        Rectangle {
+                            anchors.centerIn: parent
+                            width: 18
+                            height: 18
+                            radius: 9
+                            color: "transparent"
+                            border.width: paletteSwatch.selected ? 2 : 1
+                            border.color: paletteSwatch.selected
+                                ? Theme.text
+                                : (swatchHover.hovered ? Theme.textDim : "transparent")
+                        }
+
+                        HoverHandler {
+                            id: swatchHover
+                            cursorShape: Qt.PointingHandCursor
+                        }
 
                         MouseArea {
                             anchors.fill: parent
-                            onClicked: root.pickColor(modelData)
+                            acceptedButtons: Qt.LeftButton
+                            onClicked: root.pickColor(paletteSwatch.modelData)
                         }
                     }
                 }
