@@ -195,8 +195,9 @@ calendario se conecta con su **dirección secreta en formato iCal**.
 
 ### Conectar un calendario
 
-1. En Google Calendar (web) abre ⚙ → **Ajustes** y elige el calendario en la
-   columna izquierda.
+1. Abre <https://calendar.google.com/calendar/settings> (o en Google Calendar,
+   ⚙ → **Ajustes**) y elige el calendario en la columna izquierda. También
+   puedes entrar desde el diálogo de la shell con **Abrir ajustes de Google**.
 2. Entra en **Integrar calendario** y copia **Dirección secreta en formato
    iCal**: empieza por `https://calendar.google.com/calendar/ical/…` y termina
    en `basic.ics`. Trátala como una contraseña: quien la tenga puede leer ese
