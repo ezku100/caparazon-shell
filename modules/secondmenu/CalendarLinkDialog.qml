@@ -100,7 +100,7 @@ Item {
         id: card
         anchors.centerIn: parent
         width: 380
-        height: 340
+        height: Math.min(520, Math.max(320, contentColumn.implicitHeight + 32))
         radius: 20
         color: Theme.m3SurfaceContainerHigh
         border.width: 1
@@ -115,6 +115,7 @@ Item {
         }
 
         Column {
+            id: contentColumn
             anchors.fill: parent
             anchors.margins: 16
             spacing: 10
@@ -155,98 +156,98 @@ Item {
                 }
             }
 
-            Item {
+            ListView {
+                id: calendarList
                 width: parent.width
-                height: Math.max(0, root.calendars.length * 26)
+                height: Math.min(contentHeight, 130)
+                clip: true
+                model: root.calendars
+                boundsBehavior: Flickable.StopAtBounds
 
-                Repeater {
-                    model: root.calendars
+                delegate: Item {
+                    required property var modelData
+                    width: calendarList.width
+                    height: 26
 
-                    delegate: Item {
-                        required property var modelData
-                        width: header.width
-                        height: 26
+                    Rectangle {
+                        id: swatch
+                        anchors.left: parent.left
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: 12
+                        height: 12
+                        radius: 6
+                        color: modelData.color
+                        border.width: root.pendingId === modelData.id ? 2 : 0
+                        border.color: Theme.text
 
-                        Rectangle {
-                            id: swatch
-                            anchors.left: parent.left
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: 12
-                            height: 12
-                            radius: 6
-                            color: modelData.color
-                            border.width: root.pendingId === modelData.id ? 2 : 0
-                            border.color: Theme.text
-
-                            HoverHandler {
-                                cursorShape: Qt.PointingHandCursor
-                            }
-
-                            MouseArea {
-                                anchors.fill: parent
-                                acceptedButtons: Qt.LeftButton
-                                onClicked: root.pendingId = modelData.id
-                            }
+                        HoverHandler {
+                            cursorShape: Qt.PointingHandCursor
                         }
 
-                        TextInput {
-                            id: nameInput
-                            anchors.left: swatch.right
-                            anchors.leftMargin: 8
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: 130
-                            clip: true
-                            text: modelData.name
-                            color: Theme.text
-                            font.family: Theme.fontUI
-                            font.pixelSize: 10
-                            selectByMouse: true
-                            onEditingFinished: {
-                                if (text !== modelData.name)
-                                    root.runScript(
-                                        ["set-name", modelData.id, text],
-                                        "Nombre actualizado");
-                            }
+                        MouseArea {
+                            anchors.fill: parent
+                            acceptedButtons: Qt.LeftButton
+                            onClicked: root.pendingId = modelData.id
                         }
+                    }
 
-                        Text {
-                            anchors.left: nameInput.right
-                            anchors.leftMargin: 8
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: modelData.ical_tail
-                            color: Theme.textDim
-                            font.family: Theme.fontUI
-                            font.pixelSize: 9
+                    TextInput {
+                        id: nameInput
+                        anchors.left: swatch.right
+                        anchors.leftMargin: 8
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: 130
+                        clip: true
+                        text: modelData.name
+                        color: Theme.text
+                        font.family: Theme.fontUI
+                        font.pixelSize: 10
+                        selectByMouse: true
+                        onEditingFinished: {
+                            if (text !== modelData.name)
+                                root.runScript(
+                                    ["set-name", modelData.id, text],
+                                    "Nombre actualizado");
                         }
+                    }
 
-                        Text {
-                            anchors.right: removeLabel.left
-                            anchors.rightMargin: 10
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: modelData.enabled ? "activo" : "inactivo"
-                            color: Theme.textDim
-                            font.family: Theme.fontUI
-                            font.pixelSize: 9
+                    Text {
+                        anchors.left: nameInput.right
+                        anchors.leftMargin: 8
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: modelData.ical_tail
+                        color: Theme.textDim
+                        font.family: Theme.fontUI
+                        font.pixelSize: 9
+                    }
 
-                            MouseArea {
-                                anchors.fill: parent
-                                onClicked: root.toggleEnabled(modelData)
-                            }
+                    Text {
+                        anchors.right: removeLabel.left
+                        anchors.rightMargin: 10
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: modelData.enabled ? "activo" : "inactivo"
+                        color: Theme.textDim
+                        font.family: Theme.fontUI
+                        font.pixelSize: 9
+
+                        MouseArea {
+                            anchors.fill: parent
+                            onClicked: root.toggleEnabled(modelData)
                         }
+                    }
 
-                        Text {
-                            id: removeLabel
-                            anchors.right: parent.right
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: "Quitar"
-                            color: Theme.textDim
-                            font.family: Theme.fontUI
-                            font.pixelSize: 9
+                    Text {
+                        id: removeLabel
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: "Quitar"
+                        color: Theme.textDim
+                        font.family: Theme.fontUI
+                        font.pixelSize: 9
 
-                            MouseArea {
-                                anchors.fill: parent
-                                onClicked: root.removeCalendar(modelData)
-                            }
+                        MouseArea {
+                            anchors.fill: parent
+                            onClicked: root.removeCalendar(modelData)
                         }
                     }
                 }
