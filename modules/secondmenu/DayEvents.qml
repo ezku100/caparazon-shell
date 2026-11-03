@@ -12,11 +12,19 @@ Item {
     readonly property string emptyLabel: "Sin eventos este día"
     readonly property int count: root.events ? root.events.length : 0
 
+    Rectangle {
+        anchors.fill: parent
+        radius: 16
+        color: Theme.chip
+    }
+
     ListView {
         id: list
         anchors.fill: parent
         anchors.leftMargin: 12
         anchors.rightMargin: 12
+        anchors.topMargin: 12
+        anchors.bottomMargin: 12
         model: root.events
         clip: true
         spacing: 10

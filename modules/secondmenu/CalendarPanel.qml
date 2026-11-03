@@ -288,6 +288,7 @@ Item {
                 }
 
                 Text {
+                    id: eventsHint
                     width: parent.width
                     visible: root.view === "events" && !calendar.linked
                     text: "Vincula un calendario con el botón G"
@@ -311,7 +312,9 @@ Item {
                 DayEvents {
                     width: parent.width
                     height: root.view === "events"
-                        ? parent.height - switchRow.height - sideColumn.spacing
+                        ? sideColumn.height - switchRow.height - sideColumn.spacing
+                            - (eventsHint.visible
+                                ? eventsHint.height + sideColumn.spacing : 0)
                         : 0
                     visible: root.view === "events"
                     events: calendar.eventsForDay(root.selectedKey)

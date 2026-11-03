@@ -195,6 +195,7 @@ Item {
                             anchors.leftMargin: 8
                             anchors.verticalCenter: parent.verticalCenter
                             width: 130
+                            clip: true
                             text: modelData.name
                             color: Theme.text
                             font.family: Theme.fontUI
@@ -282,6 +283,7 @@ Item {
                 TextInput {
                     id: nameField
                     anchors.fill: parent
+                    clip: true
                     color: Theme.text
                     font.family: Theme.fontUI
                     font.pixelSize: 10
@@ -306,6 +308,7 @@ Item {
                 TextInput {
                     id: urlField
                     anchors.fill: parent
+                    clip: true
                     color: Theme.text
                     font.family: Theme.fontUI
                     font.pixelSize: 10
@@ -424,7 +427,12 @@ Item {
         command: ["wl-paste", "--no-newline"]
 
         stdout: StdioCollector {
-            onStreamFinished: urlField.text = String(text || "").trim();
+            onStreamFinished: {
+                urlField.text = String(text || "").trim();
+                // Deja a la vista el final de la URL, que es lo que identifica
+                // el calendario al revisarla.
+                urlField.cursorPosition = urlField.text.length;
+            }
         }
     }
 
