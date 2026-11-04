@@ -54,6 +54,7 @@ QtObject {
     // ── Métricas ─────────────────────────────────────────────────────────
     readonly property int barHeight: 40     // alto de la barra visible
     readonly property int dockHeight: 52    // alto del dock visible
+    readonly property int dockHotEdge: 6    // franja sensible en el borde inferior
     readonly property int radius:    16     // radio inferior (convexo)
     readonly property int radiusTop: 18     // radio superior INVERTIDO (cóncavo): nace del borde
     readonly property int padH:      14     // padding lateral
@@ -64,6 +65,9 @@ QtObject {
     // ── Animación ────────────────────────────────────────────────────────
     readonly property int durFast: 130
     readonly property int dur:     220
+    // Milisegundos de gracia antes de volver a apartar el dock: para que no
+    // se esconda mientras el ratón va hacia la barra.
+    readonly property int dockHideGrace: 600
 
     // ── Tipografía ───────────────────────────────────────────────────────
     readonly property string fontUI:   "Noto Sans Display"

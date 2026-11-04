@@ -1,11 +1,13 @@
 import Quickshell
 import Quickshell.Io
+import Quickshell.Widgets
 import QtQuick
 import QtQuick.Effects
 import QtQuick.Shapes
 import "../../theme"
 import "../icons"
 import "DockEntries.js" as DockEntries
+import "DockSmartHide.js" as DockSmartHide
 
 PanelWindow {
     id: dock
@@ -101,6 +103,7 @@ PanelWindow {
         JsonAdapter {
             id: pinsAdapter
             property var pinned: dock.defaultPinnedApps
+            property bool dockPinned: false
         }
     }
 
@@ -221,6 +224,39 @@ PanelWindow {
     }
     readonly property int bottomGap: 0
 
+    // El puntero está sobre el dock o sobre su franja sensible.
+    property bool pointerOnDock: false
+
+    readonly property bool dockPinned: pinsAdapter.dockPinned === true
+
+    // Con un menú abierto el dock no se esconde, aunque el ratón salga de él.
+    readonly property bool menuOpen: appMenu.opened || dock.trayMenuState > 0 || secondMenuState.opened
+
+    // Al cerrar el menú el ratón ya no está sobre el dock: sin esta pauta
+    // quedaba revelado para siempre, así que se rearranca la gracia.
+    onMenuOpenChanged: {
+        if (!menuOpen && !pointerOnDock)
+            hideGrace.restart();
+    }
+
+    function togglePin() {
+        pinsAdapter.dockPinned = !pinsAdapter.dockPinned;
+        pinsFile.writeAdapter();
+    }
+
+    readonly property string smartState: DockSmartHide.stateFor(dock.dockPinned, dock.pointerOnDock)
+
+    // Medidas que usa la librería de estados.
+    readonly property var metrics: ({
+        surfaceWidth: dock.width,
+        surfaceHeight: dock.height,
+        dockWidth: dock.dockWidth,
+        dockHeight: Theme.dockHeight,
+        shadowPad: Theme.shadowPad,
+        hotEdge: Theme.dockHotEdge,
+        bottomGap: dock.bottomGap
+    })
+
     anchors {
         bottom: true
         left: true
@@ -234,17 +270,44 @@ PanelWindow {
     }
 
     implicitHeight: Theme.dockHeight + Theme.shadowPad
-    exclusiveZone: Theme.dockHeight + dock.bottomGap
+    exclusiveZone: DockSmartHide.exclusiveZone(dock.dockPinned, dock.metrics)
     color: "transparent"
 
     mask: Region { item: hitArea }
 
     Item {
         id: hitArea
-        x: Math.round((parent.width - dock.dockWidth) / 2)
-        y: Theme.shadowPad
-        width: dock.dockWidth
-        height: Theme.dockHeight
+        readonly property var rect: DockSmartHide.maskRect(dock.smartState, dock.metrics)
+        x: rect.x
+        y: rect.y
+        width: rect.width
+        height: rect.height
+    }
+
+    // El ratón al borde inferior devuelve el dock y, mientras esté encima,
+    // lo mantiene revelado. El handler vive en la raíz de la ventana y no
+    // dentro de hitArea porque es pasivo: los MouseArea de los iconos de
+    // apps y de los botones multimedia se quedan con el hover, y un handler
+    // hermano de hitArea dejaría de verlo y escondería el dock en pleno uso.
+    HoverHandler {
+        onHoveredChanged: {
+            if (hovered) {
+                hideGrace.stop();
+                dock.pointerOnDock = true;
+            } else {
+                if (!dock.menuOpen) {
+                    hideGrace.restart();
+                }
+            }
+        }
+    }
+
+    // Margen antes de volver a apartar el dock: si el ratón va hacia la
+    // barra, no debe esconderse por el camino.
+    Timer {
+        id: hideGrace
+        interval: Theme.dockHideGrace
+        onTriggered: if (!dock.menuOpen) dock.pointerOnDock = false
     }
 
     DockMenu {
@@ -269,12 +332,20 @@ PanelWindow {
 
     Item {
         id: frame
-        anchors.bottom: parent.bottom
         x: Math.round((parent.width - width) / 2)
+        y: parent.height - height + DockSmartHide.dockOffset(dock.smartState, dock.metrics)
         width: dock.dockWidth + 2 * Theme.shadowPad
         height: dock.reveal * (Theme.dockHeight + Theme.shadowPad)
         clip: true
-        opacity: 0.25 + 0.75 * dock.reveal
+        opacity: dock.smartState === "hidden" ? 0 : (0.25 + 0.75 * dock.reveal)
+
+        Behavior on y {
+            NumberAnimation { duration: Theme.dur; easing.type: Easing.OutCubic }
+        }
+
+        Behavior on opacity {
+            NumberAnimation { duration: Theme.dur; easing.type: Easing.OutCubic }
+        }
 
         MultiEffect {
             id: elevation
@@ -399,6 +470,21 @@ PanelWindow {
                         onMenuRequested: function(anchor) {
                             dock.openAppMenu(modelData, anchor);
                         }
+                    }
+                }
+
+                Item {
+                    id: pinButton
+                    width: Theme.dockHeight
+                    height: Theme.dockHeight
+                    IconImage {
+                        anchors.centerIn: parent
+                        implicitSize: 22
+                        source: IconResolver.source(
+                            dock.dockPinned ? "window-unpin" : "window-pin", "edit-pin")
+                    }
+                    TapHandler {
+                        onTapped: dock.togglePin()
                     }
                 }
             }

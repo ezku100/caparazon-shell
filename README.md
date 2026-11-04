@@ -11,6 +11,11 @@ animación de despedida.
 - **Dock real**: apps ancladas y ventanas abiertas, agrupadas por aplicación,
   con contador de instancias, foco al instante y menú contextual con las
   acciones del `.desktop`.
+- **Dock inteligente**: el dock está **oculto** y sube al acercar el puntero al
+  borde inferior (y se puede usar encima de la ventana); se oculta otra vez al
+  dejarlo. El **botón de pin** lo deja **anclado**, visible y reservando su
+  franja como siempre. El estado se guarda en
+  `~/.config/caparazon/dock.json` (`"dockPinned": true`).
 - **Menú central**: buscador de aplicaciones con categorías, emojis y
   historial de portapapeles, navegable con flechas y `Enter`.
 - **Escritorios virtuales**: pager en números kanji, con halo en el escritorio
