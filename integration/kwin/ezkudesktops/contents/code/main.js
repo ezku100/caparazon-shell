@@ -121,7 +121,8 @@ function push() {
         callDBus("org.ezku.Desktops", "/Desktops", "org.ezku.Desktops",
             "PushState", JSON.stringify({ current: cur, desktops: list, occupied: occ, active: act,
                                           windows: windowAppIds(),
-                                          perOutput: perOutput, focusedScreen: focusedScreen, occupiedPerOutput: occByOutput }));
+                                          perOutput: perOutput, focusedScreen: focusedScreen,
+                                          occupiedPerOutput: occByOutput }));
     } catch (e) { /* demonio aún no corre; reintentará en el próximo cambio */ }
 }
 

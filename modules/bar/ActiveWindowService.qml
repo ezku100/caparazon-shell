@@ -109,8 +109,9 @@ Item {
             var ids = desktopCacheAdapter.windows;
             if (Array.isArray(ids) && ids.length > 0)
                 root.windowAppIds = ids;
-            else if (root.windowAppIds.length === 0)
-                desktopCacheFile.reload();
+            // El demonio sustituye el caché entero de golpe, y el vigilante
+            // de ficheros no siempre se entera: se relee siempre.
+            desktopCacheFile.reload();
         }
     }
 }
