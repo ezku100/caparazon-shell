@@ -165,26 +165,29 @@ PanelWindow {
     readonly property var dockApps: dock.pinnedApps.concat(dock.runningApps)
 
     Process {
-        id: focusProcess
+        id: windowActionProcess
         running: false
         property string target: ""
+        property string active: ""
 
         command: [
             "bash", "-c",
-            "target=\"$1\"; " +
-            "case \"$target\" in ''|*[!A-Za-z0-9._-]*) exit 1;; esac; " +
-            "tmp=\"${XDG_RUNTIME_DIR:-/tmp}/caparazon-focus-$$.js\"; " +
-            "sed \"s|__TARGET__|$target|g\" \"$2\" > \"$tmp\"; " +
+            "target=\"$1\"; active=\"$2\"; " +
+            "case \"$target\" in ''|*[!A-Za-z0-9._|-]*) exit 1;; esac; " +
+            "case \"$active\" in *[!A-Za-z0-9._-]*) active='';; esac; " +
+            "tmp=\"${XDG_RUNTIME_DIR:-/tmp}/caparazon-window-action-$$.js\"; " +
+            "sed -e \"s@__TARGET__@$target@g\" -e \"s@__ACTIVE__@$active@g\" \"$3\" > \"$tmp\"; " +
             "gdbus call --session --dest org.kde.KWin --object-path /Scripting " +
-            "--method org.kde.kwin.Scripting.unloadScript caparazon-focus >/dev/null 2>&1; " +
+            "--method org.kde.kwin.Scripting.unloadScript caparazon-window-action >/dev/null 2>&1; " +
             "gdbus call --session --dest org.kde.KWin --object-path /Scripting " +
-            "--method org.kde.kwin.Scripting.loadScript \"$tmp\" caparazon-focus >/dev/null; " +
+            "--method org.kde.kwin.Scripting.loadScript \"$tmp\" caparazon-window-action >/dev/null; " +
             "gdbus call --session --dest org.kde.KWin --object-path /Scripting " +
             "--method org.kde.kwin.Scripting.start >/dev/null; " +
             "rm -f \"$tmp\"",
             "bash",
-            focusProcess.target,
-            Quickshell.shellPath("modules/bar/KWinFocusApp.js")
+            windowActionProcess.target,
+            windowActionProcess.active,
+            Quickshell.shellPath("modules/bar/KWinWindowAction.js")
         ]
     }
 
@@ -729,19 +732,47 @@ PanelWindow {
         return name ? name.charAt(0).toUpperCase() + name.slice(1) : appId;
     }
 
-    function focusApp(app) {
-        const id = app.focusId || (app.matches ? app.matches[0] : "");
-        if (!id)
+    // Los nombres con los que se puede llamar a una app: id del .desktop,
+    // appId de la ventana y clase de arranque. Se pasan todos porque el
+    // nombre de la ventana no siempre coincide con el del icono.
+    function targetIdsFor(app) {
+        const ids = [];
+        const candidates = [app.focusId, app.entryId].concat(app.matches || []);
+        for (let i = 0; i < candidates.length; ++i) {
+            const id = normalizeId(candidates[i]);
+            if (id && ids.indexOf(id) === -1)
+                ids.push(id);
+        }
+        return ids;
+    }
+
+    // KWin decide qué hacer con la ventana: si está minimizada la restaura, si
+    // la app está enfocada la minimiza y si no la enfoca.
+    function activateApp(app) {
+        const ids = targetIdsFor(app);
+        if (ids.length === 0)
             return;
 
-        focusProcess.target = id;
-        focusProcess.running = true;
+        windowActionProcess.target = ids.join("|");
+        windowActionProcess.active = dock.activeAppId;
+
+        // Una acción en curso no se puede cambiar: se cancela y se lanza la
+        // nueva, que si no se perdería el clic.
+        if (windowActionProcess.running) {
+            windowActionProcess.running = false;
+            Qt.callLater(function() {
+                windowActionProcess.running = true;
+            });
+            return;
+        }
+
+        windowActionProcess.running = true;
     }
 
     function launch(app, newInstance) {
         // Las apps que ya tienen ventanas se enfocan en vez de duplicarse.
         if (app.pinned === false || (!newInstance && countFor(app) > 0)) {
-            focusApp(app);
+            activateApp(app);
             return;
         }
 

@@ -10,7 +10,8 @@ animación de despedida.
   difusa y 88 % del ancho del monitor. Se adapta a pantallas estrechas.
 - **Dock real**: apps ancladas y ventanas abiertas, agrupadas por aplicación,
   con contador de instancias, foco al instante y menú contextual con las
-  acciones del `.desktop`.
+  acciones del `.desktop`. Un clic sobre el icono **enfoca** la ventana; el
+  siguiente clic la **minimiza**, y si estaba minimizada la **restaura**.
 - **Dock inteligente**: el dock está **oculto** y sube al acercar el puntero al
   borde inferior (y se puede usar encima de la ventana); se oculta otra vez al
   dejarlo. El **botón de pin** lo deja **anclado**, visible y reservando su
@@ -164,7 +165,7 @@ KWin no expone por D-Bus todo lo que una shell necesita, así que la shell
 carga scripts propios en KWin:
 
 - `KWinActiveTitle.js` publica la ventana activa y la lista de ventanas.
-- `KWinFocusApp.js` enfoca una ventana concreta.
+- `KWinWindowAction.js` enfoca, minimiza o restaura la ventana de una app.
 - `integration/kwin/ezkudesktops` empuja el estado de los escritorios y sus
   ventanas ocupadas a `org.ezku.Desktops`, un pequeño demonio en Python.
 
