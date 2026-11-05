@@ -157,7 +157,9 @@ function iconSourceFromCandidates() {
             right: parent.right
             top: parent.top
             rightMargin: -3
-            topMargin: -3
+            // El contador se apoya en la esquina del icono, pero sin salirse
+            // por arriba: el recorte del cristal lo partía por la mitad.
+            topMargin: 3
         }
         width: 17
         height: 17

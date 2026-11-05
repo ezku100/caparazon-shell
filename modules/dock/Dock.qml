@@ -454,8 +454,12 @@ PanelWindow {
                 x: Math.round((dock.dockWidth - dockRow.implicitWidth) / 2)
                 spacing: 6
 
+                // Qt 6 quitó la propiedad `alignment` de las filas: los hijos
+                // se quedan arriba, pegados al borde del cristal. La fila ya
+                // no los mueve en vertical, así que se centran aquí.
                 MusicWidget {
                     id: musicWidget
+                    y: Math.round((dockRow.height - height) / 2)
                     onActivated: dock.openMusicMenu()
                 }
 
@@ -463,6 +467,7 @@ PanelWindow {
                     model: dock.dockApps
 
                     delegate: DockApp {
+                        y: Math.round((dockRow.height - height) / 2)
                         app: modelData
                         instanceCount: dock.countFor(modelData)
                         focused: dock.isFocused(modelData)
