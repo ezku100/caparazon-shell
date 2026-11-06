@@ -17,7 +17,7 @@ Item {
 
     readonly property bool running: root.instanceCount > 0
     readonly property color iconColor: root.running
-        ? Theme.m3Primary
+        ? (Theme.lightSurface ? Theme.iconTint : Theme.m3Primary)
         : (hover.hovered ? Theme.iconTintHover : Theme.iconTintMuted)
     readonly property color dotColor: root.focused
         ? Theme.m3Primary

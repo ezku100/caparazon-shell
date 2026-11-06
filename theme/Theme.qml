@@ -57,7 +57,7 @@ QtObject {
             1);
     }
     readonly property color iconTintMuted: lightSurface ? iconTint : m3OnSurfaceVariant
-    readonly property color iconTintHover: m3OnSurface
+    readonly property color iconTintHover: lightSurface ? m3Primary : m3OnSurface
 
     // ── Elevación ────────────────────────────────────────────────────────
     // Sombra M3: negra, difusa y proyectada hacia abajo. No es un color de
