@@ -1,4 +1,3 @@
 name = "caparazon-shell-perla"
 input_path = "~/.config/accent-theme/templates/caparazon-shell-perla/quickshell-perla.json"
 output_path = "~/.cache/caparazon/colors-perla.json"
-saturation = 1.45

@@ -45,10 +45,18 @@ QtObject {
             + m3SurfaceContainer.g * 0.587
             + m3SurfaceContainer.b * 0.114) > 0.5
     readonly property real iconTintWash: 0.30
+    readonly property real iconTintWashLightHover: 0.50
+    readonly property color colorMixHoverLight: {
+        const wash = theme.iconTintWashLightHover;
+        return Qt.rgba(
+            m3Primary.r * (1 - wash) + m3SurfaceContainer.r * wash,
+            m3Primary.g * (1 - wash) + m3SurfaceContainer.g * wash,
+            m3Primary.b * (1 - wash) + m3SurfaceContainer.b * wash,
+            1);
+    }
     readonly property color iconTint: {
         if (!lightSurface)
             return m3OnSurface;
-
         const wash = theme.iconTintWash;
         return Qt.rgba(
             m3Primary.r * (1 - wash) + m3SurfaceContainer.r * wash,
@@ -57,7 +65,7 @@ QtObject {
             1);
     }
     readonly property color iconTintMuted: lightSurface ? iconTint : m3OnSurfaceVariant
-    readonly property color iconTintHover: lightSurface ? m3Primary : m3OnSurface
+    readonly property color iconTintHover: lightSurface ? colorMixHoverLight : m3OnSurface
 
     // ── Elevación ────────────────────────────────────────────────────────
     // Sombra M3: negra, difusa y proyectada hacia abajo. No es un color de
