@@ -351,11 +351,13 @@ quedarse sin colores. Para generarlas, vuelve a ejecutar `./install.sh`.
 El tinte de los iconos (bandeja, dock, menú, submenú, recursos y nombre de la
 ventana) depende de la superficie de la paleta, no del nombre del estilo. Sobre
 superficie oscura se mantiene la tinta clara de siempre; sobre superficie clara
-—como Perla— los iconos llevan la tinta neutra (`onSurfaceVariant`, gris suave),
-igual que Material Design 3 en temas claros. El acento se reserva para lo
-activo y el seleccionado; el hover usa tinta fuerte (`onSurface`) como énfasis.
+—como Perla— el tono profundo del acento y la tinta neutra dejaban los iconos
+pesados y negros sobre el papel. Ahí los iconos llevan el acento lavado con la
+propia superficie (`#006b58` + 30 % de papel = `#479182`).
+
 Es un solo tinte para todos los iconos: no hay escala de intensidades del
-acento.
+acento, y el hover se marca con la tinta fuerte. El factor de lavado está en
+`Theme.iconTintWash`.
 
 Los tres tonos viven en `theme/Theme.qml`: `Theme.iconTint`,
 `Theme.iconTintMuted` y `Theme.iconTintHover`.

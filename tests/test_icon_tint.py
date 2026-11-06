@@ -5,11 +5,10 @@ En los estilos claros (Perla) la paleta trae `fgSurface` casi negro y
 de la bandeja, el dock, el menú, el submenú, los recursos y el nombre de la
 ventana quedaban negros sobre el papel y desentonaban con el acento.
 
-La regla, igual que Material Design 3 en tema claro: los iconos normales se
-tiñen con `onSurfaceVariant` (gris neutro, suave sobre el papel), el acento
-se reserva para estados activos/seleccionados, y el hover usa tinta fuerte
-(`onSurface`) como énfasis. No hay escala de intensidades del acento.
-Sobre superficie oscura se mantiene la tinta de siempre.
+La regla: sobre superficie clara los iconos llevan el color de énfasis, y no
+se juega con intensidades del mismo (ni un acento más claro ni más apagado).
+Sobre superficie oscura se mantiene la tinta de siempre: tinta clara para el
+icono normal, tinta apagada para el secundario y la fuerte para el hover.
 """
 
 from __future__ import annotations
@@ -66,14 +65,15 @@ def test_the_theme_exposes_the_icon_tint_tokens() -> None:
     assert "readonly property color iconTintHover:" in contents
 
 
-def test_the_icon_tint_is_neutral_on_light_surfaces() -> None:
-    """Sobre superficie clara, los iconos usan tinta neutra (Material), no el acento."""
+def test_the_icon_tint_follows_the_accent_on_light_surfaces() -> None:
+    """Sobre papel los iconos llevan el acento, lavado con la superficie."""
     contents = theme_contents()
     tint = property_body(contents, "iconTint")
 
     assert "lightSurface" in tint
-    assert "m3OnSurfaceVariant" in tint
-    assert "m3Primary" not in tint
+    assert "m3Primary" in tint
+    assert "m3SurfaceContainer" in tint
+    assert "iconTintWash" in tint
 
 
 def test_the_muted_icon_tint_shares_the_same_tone() -> None:
@@ -81,16 +81,18 @@ def test_the_muted_icon_tint_shares_the_same_tone() -> None:
     contents = theme_contents()
     tint = property_body(contents, "iconTintMuted")
 
+    assert "lightSurface" in tint
     assert "iconTint" in tint
     assert "m3Primary" not in tint
 
 
-def test_the_icon_tint_hover_uses_strong_ink() -> None:
-    """El hover usa tinta fuerte; en estilos claros no es el acento."""
+def test_the_accent_is_washed_with_the_surface() -> None:
+    """El lavado es una mezcla con el papel, no una opacidad."""
     contents = theme_contents()
-    tint = property_body(contents, "iconTintHover")
+    wash = property_body(contents, "iconTintWash")
 
-    assert "m3OnSurface" in tint
+    assert "0." in wash
+    assert "alpha" not in wash
 
 
 def test_the_light_surface_is_detected_from_the_palette() -> None:
@@ -107,27 +109,14 @@ def icon_tint_expressions(contents: str) -> list[str]:
 
     El tinte puede venir en la propia capa (`colorizationColor`) o en una
     propiedad que la capa usa (`iconColor`), así que se recogen las dos.
-    La ventana se cierra en la siguiente declaración de propiedad o
-    asignación, para no traer código ajeno.
     """
     expressions: list[str] = []
     lines = contents.splitlines()
-    statement = re.compile(r"^\s*(readonly property|signal |function )")
-    new_prop = re.compile(r"^\s*\w+:\s")
-    new_block = re.compile(r"^\s*(Behavior|Timer|FileView|JsonAdapter|Process|Connections|Component)\b")
 
     for index, line in enumerate(lines):
         if "colorizationColor:" not in line and "iconColor:" not in line:
             continue
-        window = [line]
-        for following in lines[index + 1 :]:
-            stripped = following.strip()
-            if not stripped:
-                continue
-            if statement.match(following) or new_prop.match(following) or new_block.match(following):
-                break
-            window.append(following)
-        expressions.append("\n".join(window))
+        expressions.append("\n".join(lines[index : index + 5]))
 
     return expressions
 
