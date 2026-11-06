@@ -32,9 +32,10 @@ Item {
 
     FileView {
         id: colorsFile
-        path: root.cacheDir + "/caparazon/colors.json"
+        path: root.cacheDir + "/caparazon/" + ThemeStyle.paletteFile
         watchChanges: true
         printErrors: true
+        onPathChanged: colorsFile.reload()
         onFileChanged: colorsFile.reload()
 
         JsonAdapter {
