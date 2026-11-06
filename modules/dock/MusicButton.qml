@@ -36,8 +36,8 @@ Item {
         layer.effect: MultiEffect {
             colorization: 1.0
             colorizationColor: root.available
-                ? (hover.hovered ? Theme.text : Theme.textDim)
-                : Theme.textDim
+                ? (hover.hovered ? Theme.iconTintHover : Theme.iconTintMuted)
+                : Theme.iconTintMuted
         }
     }
 

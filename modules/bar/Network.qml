@@ -74,7 +74,7 @@ Item {
         layer.enabled: true
         layer.effect: MultiEffect {
             colorization: 1.0
-            colorizationColor: root.kind === "off" ? Theme.textDim : Theme.m3OnPrimary
+            colorizationColor: root.kind === "off" ? Theme.iconTintMuted : Theme.m3OnPrimary
         }
     }
 }

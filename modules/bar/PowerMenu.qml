@@ -274,7 +274,7 @@ PanelWindow {
                     // en reposo se apaga con el mismo tinte que los iconos
                     property color iconColor: actionHover.hovered
                         ? Theme.m3Primary
-                        : Theme.textDim
+                        : Theme.iconTintMuted
 
                     Behavior on iconColor {
                         ColorAnimation {

@@ -60,8 +60,8 @@ Item {
         layer.effect: MultiEffect {
             colorization: 1.0
             colorizationColor: hover.hovered
-                ? Theme.text
-                : Theme.textDim
+                ? Theme.iconTintHover
+                : Theme.iconTintMuted
         }
     }
 
@@ -70,8 +70,8 @@ Item {
         visible: root.glyph !== ""
         text: root.glyph
         color: hover.hovered
-            ? Theme.text
-            : Theme.textDim
+            ? Theme.iconTintHover
+            : Theme.iconTintMuted
         font.family: Theme.fontJP
         font.pixelSize: 17
         font.weight: Font.DemiBold

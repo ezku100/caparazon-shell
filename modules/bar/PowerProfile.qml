@@ -29,7 +29,7 @@ Item {
     )
     readonly property color iconColor: root.tone >= 0.5
         ? Theme.m3OnPrimary
-        : Theme.text
+        : Theme.iconTint
     // Los iconos del perfil salen del tema activo (ver BarIcons.js).
 
     implicitWidth: 28

@@ -97,7 +97,7 @@ Item {
                 layer.enabled: true
                 layer.effect: MultiEffect {
                     colorization: 1.0
-                    colorizationColor: Theme.m3OnSurfaceVariant
+                    colorizationColor: Theme.iconTintMuted
                 }
             }
 

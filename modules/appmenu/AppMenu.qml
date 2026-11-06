@@ -669,7 +669,7 @@ PanelWindow {
                         layer.enabled: true
                         layer.effect: MultiEffect {
                             colorization: 1.0
-                            colorizationColor: Theme.textDim
+                            colorizationColor: Theme.iconTintMuted
                         }
                     }
                 }

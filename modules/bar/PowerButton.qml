@@ -46,7 +46,7 @@ HoverChip {
         layer.enabled: true
         layer.effect: MultiEffect {
             colorization: 1.0
-            colorizationColor: Theme.text
+            colorizationColor: Theme.iconTint
         }
     }
 

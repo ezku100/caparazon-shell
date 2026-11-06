@@ -66,7 +66,7 @@ def test_the_selected_category_icon_keeps_the_default_tint() -> None:
 
     assert tint is not None
     assert "selected" not in tint.group(1)
-    assert "Theme.textDim" in tint.group(1)
+    assert "Theme.iconTintMuted" in tint.group(1)
 
 
 def test_the_rail_glyph_uses_the_icon_tint() -> None:
@@ -75,7 +75,7 @@ def test_the_rail_glyph_uses_the_icon_tint() -> None:
     glyph = re.search(r"text:\s*root\.glyph(.*?)\n\s*\}", contents, re.DOTALL)
 
     assert glyph is not None
-    assert "Theme.textDim" in glyph.group(1)
+    assert "Theme.iconTintMuted" in glyph.group(1)
     assert "selected" not in glyph.group(1)
 
 

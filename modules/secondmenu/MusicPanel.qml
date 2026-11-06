@@ -1275,8 +1275,8 @@ Item {
             layer.effect: MultiEffect {
                 colorization: 1.0
                 colorizationColor: previousHover.hovered
-                    ? Theme.text
-                    : Theme.textDim
+                    ? Theme.iconTintHover
+                    : Theme.iconTintMuted
             }
         }
 
@@ -1331,8 +1331,8 @@ Item {
             layer.effect: MultiEffect {
                 colorization: 1.0
                 colorizationColor: nextHover.hovered
-                    ? Theme.text
-                    : Theme.textDim
+                    ? Theme.iconTintHover
+                    : Theme.iconTintMuted
             }
         }
 
@@ -1385,8 +1385,8 @@ Item {
             layer.effect: MultiEffect {
                 colorization: 1.0
                 colorizationColor: compactHover.hovered
-                    ? Theme.text
-                    : Theme.textDim
+                    ? Theme.iconTintHover
+                    : Theme.iconTintMuted
             }
         }
 

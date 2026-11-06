@@ -235,7 +235,7 @@ Item {
                                     colorization: 1.0
                                     colorizationColor: tab.selected
                                         ? Theme.m3OnPrimary
-                                        : Theme.textDim
+                                        : Theme.iconTintMuted
                                 }
                             }
 
@@ -301,7 +301,7 @@ Item {
                     layer.enabled: true
                     layer.effect: MultiEffect {
                         colorization: 1.0
-                        colorizationColor: Theme.textDim
+                        colorizationColor: Theme.iconTintMuted
                     }
                 }
 

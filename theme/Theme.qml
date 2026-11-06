@@ -32,6 +32,21 @@ QtObject {
     readonly property color chipHover: m3SurfaceContainerHighest
     readonly property color hairline: m3OutlineVariant
 
+    // ── Tintado de iconos ─────────────────────────────────────────────────
+    // Sobre superficie clara la tinta neutra (el `fgSurface` casi negro de
+    // Perla) dejaba los iconos negros sobre el papel, ajenos al acento.
+    // Ahí los iconos llevan el color de énfasis y no se juega con
+    // intensidades del mismo: el hover se marca con la tinta fuerte.
+    // La decisión sale de la propia paleta, así que un estilo nuevo se
+    // adapta solo.
+    readonly property bool lightSurface:
+        (m3SurfaceContainer.r * 0.299
+            + m3SurfaceContainer.g * 0.587
+            + m3SurfaceContainer.b * 0.114) > 0.5
+    readonly property color iconTint: lightSurface ? m3Primary : m3OnSurface
+    readonly property color iconTintMuted: lightSurface ? m3Primary : m3OnSurfaceVariant
+    readonly property color iconTintHover: m3OnSurface
+
     // ── Elevación ────────────────────────────────────────────────────────
     // Sombra M3: negra, difusa y proyectada hacia abajo. No es un color de
     // superficie: se aplica con MultiEffect detrás de la barra.
