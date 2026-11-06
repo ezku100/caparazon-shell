@@ -1,0 +1,19 @@
+{
+  "surface": "#FAF9F6",
+  "surfaceContainerLowest": "#FFFFFF",
+  "surfaceContainerLow": "#F4F2ED",
+  "surfaceContainer": "#EDEAE4",
+  "surfaceContainerHigh": "#E5E1DA",
+  "surfaceContainerHighest": "#DBD6CD",
+  "fgSurface": "#1C1B19",
+  "fgSurfaceVariant": "#56534D",
+  "outline": "#9B968C",
+  "outlineVariant": "#D6D1C7",
+  "primary": "{{colors.primary.light.hex}}",
+  "fgPrimary": "{{colors.on_primary.light.hex}}",
+  "secondary": "{{colors.secondary.light.hex}}",
+  "tertiary": "{{colors.tertiary.light.hex}}",
+  "error": "{{colors.error.light.hex}}",
+  "errorContainer": "{{colors.error_container.light.hex}}",
+  "fgErrorContainer": "{{colors.on_error_container.light.hex}}"
+}

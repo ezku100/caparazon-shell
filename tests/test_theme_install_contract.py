@@ -257,6 +257,69 @@ def test_descriptor_registers_the_caparazon_palette() -> None:
     assert values["output_path"] == "~/.cache/caparazon/colors.json"
 
 
+def load_descriptor(filename: str) -> dict[str, object]:
+    """Carga un descriptor del tema como diccionario sin tipar sus valores."""
+    return cast(
+        "dict[str, object]",
+        tomllib.loads((THEME_DIR / filename).read_text(encoding="utf-8")),
+    )
+
+
+def test_the_three_templates_share_the_same_tokens() -> None:
+    tokens = set(TOKENS_FILE.read_text(encoding="utf-8").split())
+
+    for name in (
+        "quickshell-matugen.json",
+        "quickshell-oled.json",
+        "quickshell-perla.json",
+    ):
+        template = cast(
+            "dict[str, str]",
+            json.loads((THEME_DIR / name).read_text(encoding="utf-8")),
+        )
+        assert set(template) == tokens, name
+
+
+def test_the_three_descriptors_cover_the_three_styles() -> None:
+    material = load_descriptor("accent-theme.toml")
+    oled = load_descriptor("accent-theme-oled.toml")
+    perla = load_descriptor("accent-theme-perla.toml")
+
+    assert material["name"] == "caparazon-shell-matugen"
+    assert oled["name"] == "caparazon-shell-oled"
+    assert perla["name"] == "caparazon-shell-perla"
+    assert oled["saturation"] == 1.45
+    assert "saturation" not in material
+    assert "saturation" not in perla
+    assert oled["output_path"] == "~/.cache/caparazon/colors-oled.json"
+    assert perla["output_path"] == "~/.cache/caparazon/colors-perla.json"
+
+
+def test_the_oled_and_perla_templates_use_their_own_backgrounds() -> None:
+    oled = cast(
+        "dict[str, str]",
+        json.loads((THEME_DIR / "quickshell-oled.json").read_text(encoding="utf-8")),
+    )
+    perla = cast(
+        "dict[str, str]",
+        json.loads((THEME_DIR / "quickshell-perla.json").read_text(encoding="utf-8")),
+    )
+
+    assert oled["surface"] == "#000000"
+    assert oled["primary"] == "{{colors.primary.dark.hex}}"
+    assert perla["surface"] == "#FAF9F6"
+    accent_keys = (
+        "primary",
+        "fgPrimary",
+        "secondary",
+        "tertiary",
+        "error",
+        "errorContainer",
+        "fgErrorContainer",
+    )
+    assert all(perla[key].endswith(".light.hex}}") for key in accent_keys)
+
+
 def test_qml_reads_exactly_the_contract_tokens() -> None:
     contents = PALETTE_QML.read_text(encoding="utf-8")
     adapter = set(ADAPTER_PROPERTY_PATTERN.findall(contents))

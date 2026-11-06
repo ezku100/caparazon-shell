@@ -1,0 +1,4 @@
+name = "caparazon-shell-oled"
+input_path = "~/.config/accent-theme/templates/caparazon-shell-oled/quickshell-oled.json"
+output_path = "~/.cache/caparazon/colors-oled.json"
+saturation = 1.45
