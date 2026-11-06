@@ -47,7 +47,8 @@ PanelWindow {
     readonly property var categories: [
         { key: "calendario", icon: "notifications", label: "Calendario" },
         { key: "musica", icon: "audio", label: "Música" },
-        { key: "sistema", icon: "utilities-system-monitor", label: "Monitor del sistema" }
+        { key: "sistema", icon: "utilities-system-monitor", label: "Monitor del sistema" },
+        { key: "configs", glyph: "猫", label: "Configs de la shell" }
     ]
 
     function close() {
@@ -224,7 +225,8 @@ PanelWindow {
                 Repeater {
                     model: root.categories
                     delegate: RailButton {
-                        icon: modelData.icon
+                        icon: modelData.icon || ""
+                        glyph: modelData.glyph || ""
                         selected: root.category === modelData.key
                         onActivated: {
                             if (root.menuState)
@@ -285,6 +287,8 @@ PanelWindow {
                     }
                 }
                 sourceComponent: {
+                    if (root.category === "configs")
+                        return configComponent;
                     if (root.category === "musica")
                         return musicComponent;
                     if (root.category === "sistema")
@@ -322,6 +326,13 @@ PanelWindow {
                     temperature: root.temperature
                     samples: root.metricSamples
                     resources: root.resources
+                }
+            }
+
+            Component {
+                id: configComponent
+                ShellConfigPanel {
+                    anchors.fill: parent
                 }
             }
         }

@@ -315,6 +315,37 @@ Para ver el estado del motor:
 ~/.local/bin/accent-theme doctor
 ```
 
+### Estilos de color
+
+La shell trae tres estilos y se cambian en vivo desde **Configs de la shell**
+(kanji 猫) en el menú secundario: **Material** (roles oscuros tal cual),
+**OLED** (negro puro con los mismos tokens) y **Perla** (roles claros para
+fondos claros). El estilo activo se guarda en `~/.config/caparazon/style.json`
+y `theme/ThemeStyle.qml` decide qué paleta lee `MatugenPalette.qml`:
+
+```text
+~/.cache/caparazon/colors.json         # Material
+~/.cache/caparazon/colors-oled.json    # OLED
+~/.cache/caparazon/colors-perla.json   # Perla
+```
+
+Cada paleta se genera con el acento de KDE, así que un cambio de acento repinta
+los tres estilos. OLED parte de los mismos roles que Material y aplica un boost
+de saturación (`saturation = 1.45` en su descriptor) para que los acentos se
+distingan sobre negro puro; Perla usa los roles claros (`.light`) para los
+acentos y los oscuros para el texto.
+
+```text
+integration/theme/quickshell-oled.json      # tokens del estilo OLED
+integration/theme/quickshell-perla.json     # tokens del estilo Perla
+integration/theme/accent-theme-oled.toml    # descriptor con saturation
+integration/theme/accent-theme-perla.toml   # descriptor del estilo Perla
+```
+
+Si una paleta no está generada (por ejemplo, tras actualizar desde una versión
+anterior), el panel marca su fila como no disponible y vuelve a Material para no
+quedarse sin colores. Para generarlas, vuelve a ejecutar `./install.sh`.
+
 ## Desarrollo
 
 Quickshell recarga solo al guardar, asi que basta con editar y guardar:

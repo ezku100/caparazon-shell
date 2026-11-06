@@ -69,6 +69,16 @@ def test_the_selected_category_icon_keeps_the_default_tint() -> None:
     assert "Theme.textDim" in tint.group(1)
 
 
+def test_the_rail_glyph_uses_the_icon_tint() -> None:
+    """El kanji del raíl se tiñe como el icono, no como la selección."""
+    contents = RAIL_BUTTON.read_text(encoding="utf-8")
+    glyph = re.search(r"text:\s*root\.glyph(.*?)\n\s*\}", contents, re.DOTALL)
+
+    assert glyph is not None
+    assert "Theme.textDim" in glyph.group(1)
+    assert "selected" not in glyph.group(1)
+
+
 def test_the_selected_category_pill_keeps_the_accent() -> None:
     """La píldora de selección sigue siendo la de acento."""
     contents = RAIL_BUTTON.read_text(encoding="utf-8")

@@ -103,6 +103,16 @@ def test_second_menu_category_uses_the_bell_icon() -> None:
     assert 'icon: "notifications"' in contents(SECOND_MENU)
 
 
+def test_the_configs_category_uses_the_menu_kanji() -> None:
+    """La categoría de configuración se identifica con el kanji del menú."""
+    contents_menu = contents(SECOND_MENU)
+
+    assert 'key: "configs"' in contents_menu
+    assert 'glyph: "猫"' in contents_menu
+    assert 'root.category === "configs"' in contents_menu
+    assert "ShellConfigPanel {" in contents_menu
+
+
 def test_header_shows_the_current_temperature() -> None:
     """La temperatura actual se muestra junto al reloj."""
     assert "Math.round(weather.temperature)" in contents(CALENDAR_PANEL)

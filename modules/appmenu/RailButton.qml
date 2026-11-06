@@ -13,6 +13,8 @@ Item {
     property bool selected: false
     // false = se muestra el icono con sus colores originales (logo de la distro)
     property bool tint: true
+    // Si no está vacío, pinta un glifo de texto en vez del icono (kanji 猫).
+    property string glyph: ""
 
     signal activated()
 
@@ -51,6 +53,7 @@ Item {
 
     IconImage {
         anchors.centerIn: parent
+        visible: root.glyph === ""
         implicitSize: 18
         source: IconResolver.source(root.icon, "application-x-executable")
         layer.enabled: root.tint
@@ -60,6 +63,18 @@ Item {
                 ? Theme.text
                 : Theme.textDim
         }
+    }
+
+    Text {
+        anchors.centerIn: parent
+        visible: root.glyph !== ""
+        text: root.glyph
+        color: hover.hovered
+            ? Theme.text
+            : Theme.textDim
+        font.family: Theme.fontJP
+        font.pixelSize: 17
+        font.weight: Font.DemiBold
     }
 
     MouseArea {
