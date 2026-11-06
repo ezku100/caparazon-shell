@@ -47,7 +47,7 @@ def theme_contents() -> str:
 def property_body(contents: str, name: str) -> str:
     """Devuelve el cuerpo de una propiedad del tema, sin comerse la siguiente."""
     match = re.search(
-        rf"readonly property (?:color|bool) {name}:(.*?)(?=\n\s*(?:readonly |property )\w|\Z)",
+        rf"readonly property (?:color|bool|real|int) {name}:(.*?)(?=\n\s*(?:readonly |property )\w|\Z)",
         contents,
         re.DOTALL,
     )
@@ -66,22 +66,33 @@ def test_the_theme_exposes_the_icon_tint_tokens() -> None:
 
 
 def test_the_icon_tint_follows_the_accent_on_light_surfaces() -> None:
-    """Sobre papel los iconos llevan el color de énfasis."""
+    """Sobre papel los iconos llevan el acento, lavado con la superficie."""
     contents = theme_contents()
     tint = property_body(contents, "iconTint")
 
     assert "lightSurface" in tint
     assert "m3Primary" in tint
-    assert "m3OnSurfaceVariant" not in tint
+    assert "m3SurfaceContainer" in tint
+    assert "iconTintWash" in tint
 
 
-def test_the_muted_icon_tint_also_follows_the_accent() -> None:
-    """El icono apagado tampoco inventa intensidades del acento."""
+def test_the_muted_icon_tint_shares_the_same_tone() -> None:
+    """El icono apagado no inventa un tono propio: es el mismo."""
     contents = theme_contents()
     tint = property_body(contents, "iconTintMuted")
 
     assert "lightSurface" in tint
-    assert "m3Primary" in tint
+    assert "iconTint" in tint
+    assert "m3Primary" not in tint
+
+
+def test_the_accent_is_washed_with_the_surface() -> None:
+    """El lavado es una mezcla con el papel, no una opacidad."""
+    contents = theme_contents()
+    wash = property_body(contents, "iconTintWash")
+
+    assert "0." in wash
+    assert "alpha" not in wash
 
 
 def test_the_light_surface_is_detected_from_the_palette() -> None:

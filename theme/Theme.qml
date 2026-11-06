@@ -33,18 +33,30 @@ QtObject {
     readonly property color hairline: m3OutlineVariant
 
     // ── Tintado de iconos ─────────────────────────────────────────────────
-    // Sobre superficie clara la tinta neutra (el `fgSurface` casi negro de
-    // Perla) dejaba los iconos negros sobre el papel, ajenos al acento.
-    // Ahí los iconos llevan el color de énfasis y no se juega con
-    // intensidades del mismo: el hover se marca con la tinta fuerte.
+    // Sobre superficie clara el acento de la paleta es un tono profundo (el
+    // 40 de M3) y dejaba los iconos pesados sobre el papel. Se lava con la
+    // propia superficie: el mismo color de acento, un tono más claro, sin
+    // inventar una escala de intensidades. Un solo tinte para todos los
+    // iconos y el hover marcado con la tinta fuerte.
     // La decisión sale de la propia paleta, así que un estilo nuevo se
     // adapta solo.
     readonly property bool lightSurface:
         (m3SurfaceContainer.r * 0.299
             + m3SurfaceContainer.g * 0.587
             + m3SurfaceContainer.b * 0.114) > 0.5
-    readonly property color iconTint: lightSurface ? m3Primary : m3OnSurface
-    readonly property color iconTintMuted: lightSurface ? m3Primary : m3OnSurfaceVariant
+    readonly property real iconTintWash: 0.30
+    readonly property color iconTint: {
+        if (!lightSurface)
+            return m3OnSurface;
+
+        const wash = theme.iconTintWash;
+        return Qt.rgba(
+            m3Primary.r * (1 - wash) + m3SurfaceContainer.r * wash,
+            m3Primary.g * (1 - wash) + m3SurfaceContainer.g * wash,
+            m3Primary.b * (1 - wash) + m3SurfaceContainer.b * wash,
+            1);
+    }
+    readonly property color iconTintMuted: lightSurface ? iconTint : m3OnSurfaceVariant
     readonly property color iconTintHover: m3OnSurface
 
     // ── Elevación ────────────────────────────────────────────────────────
