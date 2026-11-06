@@ -33,6 +33,9 @@ PanelWindow {
     property bool overlayOpen: false
 
     readonly property int animDuration: 220
+    // Lenguaje unificado de apertura/cierre (ver tests/test_menus_animacion.py).
+    readonly property int animOpen: 260
+    readonly property int animClose: 170
     readonly property int cardWidth: Math.min(760,
         Math.max(600, Math.round((screen ? screen.width : 1920) * 0.52)))
     readonly property int cardHeight: Math.min(500,
@@ -63,7 +66,11 @@ PanelWindow {
         root.close();
     }
 
-    visible: root.opened || root.closing
+    // La ventana queda cacheada (ver Bar.qml): se mapea solo en la pantalla
+    // que abrio el menu y durante su despedida.
+    visible: (root.opened || root.closing)
+        && root.menuState
+        && root.menuState.activeScreen === root.screen
     anchors { top: true; left: true; right: true; bottom: true }
     exclusionMode: ExclusionMode.Ignore
     aboveWindows: true
@@ -92,7 +99,7 @@ PanelWindow {
 
     Timer {
         id: closeTimer
-        interval: root.animDuration + 20
+        interval: root.animClose + 20
         onTriggered: {
             root.closing = false;
             if (root.menuState
@@ -111,10 +118,13 @@ PanelWindow {
         id: scrim
         anchors.fill: parent
         color: "#000000"
-        opacity: root.opened ? 0.20 : 0
+        opacity: root.opened ? 0.26 : 0
 
         Behavior on opacity {
-            NumberAnimation { duration: root.animDuration; easing.type: Easing.OutCubic }
+            NumberAnimation {
+                duration: root.opened ? root.animOpen : root.animClose
+                easing.type: root.opened ? Easing.OutQuint : Easing.OutCubic
+            }
         }
     }
 
@@ -130,24 +140,31 @@ PanelWindow {
         width: root.cardWidth
         height: root.cardHeight
         opacity: root.active ? 1 : 0
-        scale: root.active ? 1 : 0.96
+        scale: root.active ? 1 : 0.92
         transformOrigin: Item.Center
 
         Behavior on opacity {
-            NumberAnimation { duration: root.animDuration; easing.type: Easing.OutCubic }
+            NumberAnimation {
+                duration: root.active ? 200 : root.animClose
+                easing.type: Easing.OutCubic
+            }
         }
         Behavior on scale {
             NumberAnimation {
-                duration: root.animDuration
-                easing.type: Easing.OutBack
-                easing.overshoot: 1.03
+                duration: root.active ? root.animOpen : root.animClose
+                easing.type: root.active ? Easing.OutBack : Easing.InCubic
+                easing.overshoot: 1.2
             }
         }
 
         transform: Translate {
             y: root.active ? 0 : 14
             Behavior on y {
-                NumberAnimation { duration: root.animDuration; easing.type: Easing.OutCubic }
+                NumberAnimation {
+                    duration: root.active ? root.animOpen : root.animClose
+                    easing.type: root.active ? Easing.OutBack : Easing.InCubic
+                    easing.overshoot: 1.2
+                }
             }
         }
 
@@ -163,7 +180,20 @@ PanelWindow {
             blurMax: 64
             shadowEnabled: true
             shadowColor: "black"
-            shadowOpacity: 0.38
+            // El brillo del borde llega 70 ms tarde: la tarjeta ya esta
+            // creciendo cuando la sombra se asienta.
+            shadowOpacity: root.active ? 0.38 : 0
+            Behavior on shadowOpacity {
+                SequentialAnimation {
+                    PauseAnimation {
+                        duration: root.active ? 70 : 0
+                    }
+                    NumberAnimation {
+                        duration: 180
+                        easing.type: Easing.OutCubic
+                    }
+                }
+            }
             shadowBlur: 0.85
             shadowScale: 0.97
             shadowHorizontalOffset: 0
@@ -213,6 +243,21 @@ PanelWindow {
                             if (root.menuState)
                                 root.menuState.category = modelData.key;
                         }
+
+                        // Rail en cascada: los botones desfazan 45 ms; al cerrar
+                        // el desfase vale cero.
+                        opacity: root.active ? 1 : 0
+                        Behavior on opacity {
+                            SequentialAnimation {
+                                PauseAnimation {
+                                    duration: root.active ? index * 45 : 0
+                                }
+                                NumberAnimation {
+                                    duration: root.active ? root.animOpen : root.animClose
+                                    easing.type: root.active ? Easing.OutQuint : Easing.OutCubic
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -234,6 +279,24 @@ PanelWindow {
             Loader {
                 id: panelLoader
                 anchors.fill: parent
+                // El panel acompana la tarjeta: fundido con lift propio;
+                // al cambiar de seccion el contenido ya esta asentado.
+                opacity: root.active ? 1 : 0
+                transform: Translate {
+                    y: root.active ? 0 : 16
+                    Behavior on y {
+                        NumberAnimation {
+                            duration: root.active ? root.animOpen : root.animClose
+                            easing.type: root.active ? Easing.OutQuint : Easing.OutCubic
+                        }
+                    }
+                }
+                Behavior on opacity {
+                    NumberAnimation {
+                        duration: root.active ? root.animOpen : root.animClose
+                        easing.type: root.active ? Easing.OutQuint : Easing.OutCubic
+                    }
+                }
                 sourceComponent: {
                     if (root.category === "musica")
                         return musicComponent;

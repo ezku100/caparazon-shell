@@ -17,9 +17,15 @@ PanelWindow {
 
     readonly property bool opened: menuState ? menuState.opened : false
     readonly property bool active: opened
+        && menuState
+        && menuState.activeScreen === screen
         && menuState.activeScreen === screen
     property bool closing: false
     readonly property int animDuration: 260
+    // Lenguaje unificado de apertura/cierre (ver tests/test_menus_animacion.py):
+    // el farewell conserva animDuration, abrir/cerrar usan su propia pareja.
+    readonly property int animOpen: 260
+    readonly property int animClose: 170
     readonly property int farewellHold: 900
     readonly property int typeInterval: 70
     readonly property int farewellFontSize: Math.round(Math.min(78, Math.max(44, width * 0.04)))
@@ -133,7 +139,7 @@ PanelWindow {
 
     Timer {
         id: closeTimer
-        interval: root.animDuration
+        interval: root.animClose + 20
         onTriggered: {
             root.closing = false;
             if (root.menuState && typeof root.menuState.finishClose === "function")
@@ -161,7 +167,11 @@ PanelWindow {
         Qt.callLater(function() { Quickshell.execDetached(command); });
     }
 
-    visible: opened || closing
+    // La ventana queda cacheada (ver Bar.qml): se mapea solo en la pantalla
+    // que abrio el menu y durante su despedida.
+    visible: (opened || closing)
+        && root.menuState
+        && root.menuState.activeScreen === root.screen
     anchors { top: true; left: true; right: true; bottom: true }
     // Ignora las zonas exclusivas de barra/dock: así la capa cubre el
     // monitor completo, no sólo el área de trabajo.
@@ -191,7 +201,12 @@ PanelWindow {
         color: "#000000"
         opacity: 0
         Behavior on opacity {
-            NumberAnimation { duration: root.animDuration; easing.type: Easing.OutCubic }
+            NumberAnimation {
+                duration: root.farewell
+                    ? root.animDuration
+                    : (root.opened ? root.animOpen : root.animClose)
+                easing.type: Easing.OutCubic
+            }
         }
     }
 
@@ -208,17 +223,33 @@ PanelWindow {
         visible: root.opened || root.closing
         enabled: root.active && !root.farewell
         opacity: root.farewell ? 0 : (root.active ? 1 : 0)
-        scale: root.farewell ? 0.92 : (root.active ? 1 : 0.80)
+        scale: root.farewell ? 0.92 : (root.active ? 1 : 0.92)
         transformOrigin: Item.Center
+        transform: Translate {
+            y: root.active ? 0 : 14
+            Behavior on y {
+                NumberAnimation {
+                    duration: root.farewell
+                        ? root.animDuration
+                        : (root.active ? root.animOpen : root.animClose)
+                    easing.type: root.active ? Easing.OutQuint : Easing.OutCubic
+                }
+            }
+        }
 
         Behavior on opacity {
-            NumberAnimation { duration: root.animDuration; easing.type: Easing.OutCubic }
+            NumberAnimation {
+                duration: root.active ? 200 : root.animClose
+                easing.type: Easing.OutCubic
+            }
         }
         Behavior on scale {
             NumberAnimation {
-                duration: root.animDuration
-                easing.type: Easing.OutBack
-                easing.overshoot: 1.04
+                duration: root.farewell
+                    ? root.animDuration
+                    : (root.active ? root.animOpen : root.animClose)
+                easing.type: root.active ? Easing.OutBack : Easing.InCubic
+                easing.overshoot: 1.2
             }
         }
 
