@@ -2,9 +2,12 @@
 
 El menu "crece" desde el centro: escala 0.92 -> 1 con rebote sutil
 (OutBack overshoot 1.2) al abrir, InCubic al cerrar. Y baja de entrada
-14 px, la opacidad se adelanta a la escala, el brillo del borde llega
-70 ms tarde y el contenido acompana escalonado (tiles, rail, panel).
+14 px, la opacidad se adelanta a la escala y el contenido acompana
+escalonado (tiles, rail, panel).
 Abrid 260 ms, cerrad 170 ms: agil.
+
+La sombra del borde es estatica (0.38): se probo un brillo que llegaba
+70 ms tarde y no se apreciaba, asi que se descarto.
 
 Ademas las ventanas de menu se montan siempre: si el Loader las
 recreara al abrir, el componente naceria ya en reposo y ningun Behavior
@@ -17,7 +20,6 @@ from pathlib import Path
 WAVE_STEP_MS = 10
 MAX_WAVE_MS = 150
 RAIL_STEP_MS = 45
-GLOW_DELAY_MS = 70
 
 APPMENU = Path("modules/appmenu/AppMenu.qml")
 SECONDMENU = Path("modules/secondmenu/SecondMenu.qml")
@@ -94,15 +96,15 @@ def test_la_opacidad_se_adelanta_un_poco_a_la_escala() -> None:
         )
 
 
-def test_el_glow_del_borde_llega_tarde() -> None:
+def test_la_sombra_del_borde_es_estatica() -> None:
     for path in (APPMENU, SECONDMENU):
         text = source(path)
-        assert "shadowOpacity: root.active ? 0.38 : 0" in text, (
-            f"{path}: el brillo debe apagarse al cerrar"
+        assert "shadowOpacity: 0.38" in text, (
+            f"{path}: la sombra debe quedarse fija en 0.38"
         )
-        assert (
-            f"duration: root.active ? {GLOW_DELAY_MS} : 0" in text
-        ), f"{path}: el brillo debe desfazar {GLOW_DELAY_MS} ms"
+        assert "Behavior on shadowOpacity" not in text, (
+            f"{path}: el brillo animado se descarto, no volver a meterlo"
+        )
 
 
 def test_el_scrim_usa_el_tiempo_abrir_o_cerrar() -> None:

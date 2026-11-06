@@ -180,20 +180,7 @@ PanelWindow {
             blurMax: 64
             shadowEnabled: true
             shadowColor: "black"
-            // El brillo del borde llega 70 ms tarde: la tarjeta ya esta
-            // creciendo cuando la sombra se asienta.
-            shadowOpacity: root.active ? 0.38 : 0
-            Behavior on shadowOpacity {
-                SequentialAnimation {
-                    PauseAnimation {
-                        duration: root.active ? 70 : 0
-                    }
-                    NumberAnimation {
-                        duration: 180
-                        easing.type: Easing.OutCubic
-                    }
-                }
-            }
+            shadowOpacity: 0.38
             shadowBlur: 0.85
             shadowScale: 0.97
             shadowHorizontalOffset: 0
