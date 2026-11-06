@@ -397,7 +397,11 @@ PanelWindow {
     }
 
     Loader {
-        active: bar.powerMenuState && (bar.powerMenuState.opened || bar.powerMenuState.closing)
+        // La ventana del menu de sesion se monta siempre: si el Loader
+        // la recreara al abrir, el componente naceria ya en reposo y sus
+        // Behavior de entrada no tendrian nada que animar. El menu decide
+        // cuando mapearse con su propiedad visible.
+        active: true
         sourceComponent: PowerMenu {
             screen: bar.screen
             menuState: bar.powerMenuState
@@ -405,9 +409,7 @@ PanelWindow {
     }
 
     Loader {
-        active: bar.appMenuState
-            && bar.appMenuState.activeScreen === bar.screen
-            && (bar.appMenuState.opened || bar.appMenuState.closing)
+        active: true
         sourceComponent: AppMenu {
             screen: bar.screen
             menuState: bar.appMenuState
@@ -416,9 +418,7 @@ PanelWindow {
     }
 
     Loader {
-        active: bar.secondMenuState
-            && bar.secondMenuState.activeScreen === bar.screen
-            && (bar.secondMenuState.opened || bar.secondMenuState.closing)
+        active: true
         sourceComponent: SecondMenu {
             screen: bar.screen
             menuState: bar.secondMenuState
