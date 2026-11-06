@@ -2,8 +2,8 @@
 //
 // El dock está oculto por defecto y sube al acercar el puntero al borde
 // inferior; se puede usar encima de cualquier ventana y se retira al dejarlo.
-// Un botón de pin lo deja anclado: visible y reservando su franja, como el dock
-// de siempre.
+// El modo anclado se elige en Configs de la shell: visible y reservando su
+// franja, como el dock de siempre.
 //
 // Aquí sólo vive el cálculo: qué estado corresponde a cada situación, dónde
 // queda la zona clicable y cuánto espacio reserva el dock. Sin QML, para que

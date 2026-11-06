@@ -1,9 +1,9 @@
-"""Contrato del dock inteligente (auto-oculto siempre con pin).
+"""Contrato del dock inteligente (auto-oculto con modo anclado en configs).
 
 El QML no se puede ejecutar en un test, así que aquí se comprueba el
-cableado: que el dock lea el pin de su configuración, que lo guarde al
-tocar el botón, que se quede quieto con un menú abierto y que los estados
-sigan saliendo de la librería.
+cableado: que el dock lea el modo de su configuración, que el interruptor
+viva en Configs de la shell (sin botón de pin en el dock), que se quede
+quieto con un menú abierto y que los estados sigan saliendo de la librería.
 """
 
 from __future__ import annotations
@@ -35,21 +35,20 @@ def test_the_dock_reads_the_pin_from_its_config() -> None:
 
 
 def test_the_dock_toggles_the_pin_and_saves_it() -> None:
-    """Un clic en el botón alterna el pin y lo guarda en disco."""
+    """El dock ya no alterna el pin: el interruptor vive en configs."""
     contents = DOCK.read_text(encoding="utf-8")
 
-    assert "pinsAdapter.dockPinned = !pinsAdapter.dockPinned" in contents
-    assert "pinsFile.writeAdapter()" in contents
+    assert "togglePin" not in contents
+    assert "dockPinned = !dockPinned" not in contents
 
 
 def test_the_dock_shows_a_pin_button() -> None:
-    """El botón de pin vive dentro del dock y su icono es discreto."""
+    """El dock no pinta ningún botón de pin."""
     contents = DOCK.read_text(encoding="utf-8")
 
-    assert "IconResolver.source(" in contents
-    assert 'dock.dockPinned ? "window-unpin" : "window-pin"' in contents
-    assert "implicitSize: 22" in contents
-    assert "togglePin" in contents
+    assert "window-pin" not in contents
+    assert "window-unpin" not in contents
+    assert "pinButton" not in contents
 
 
 def test_the_dock_stays_while_a_menu_is_open() -> None:
@@ -83,9 +82,10 @@ def test_the_dock_uses_the_anchored_state() -> None:
     assert "DockSmartHide.exclusiveZone(dock.dockPinned, dock.metrics)" in contents
 
 
-def test_the_readme_documents_the_auto_hide_and_the_pin() -> None:
-    """El README explica el auto-ocultado y el pin."""
+def test_the_readme_documents_the_auto_hide_and_the_anchor() -> None:
+    """El README explica el auto-ocultado y el modo anclado desde configs."""
     contents = README.read_text(encoding="utf-8").lower()
 
     assert "oculto" in contents
-    assert "pin" in contents
+    assert "anclado" in contents
+    assert "configs de la shell" in contents

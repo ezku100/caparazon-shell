@@ -47,3 +47,31 @@ def test_the_panel_switches_the_style() -> None:
 
     assert "ThemeStyle.setStyle(" in contents
     assert "ThemeStyle.palettePathFor(" in contents
+
+
+def test_the_panel_offers_the_dock_modes() -> None:
+    """El panel alterna entre dock dinámico y anclado."""
+    contents = PANEL.read_text(encoding="utf-8")
+
+    assert '"dynamic"' in contents
+    assert '"anchored"' in contents
+    assert "setDockAnchored(" in contents
+
+
+def test_the_panel_reads_the_dock_mode_from_its_config() -> None:
+    """El estado del dock vive en dock.json, junto al del estilo."""
+    contents = PANEL.read_text(encoding="utf-8")
+
+    assert "dock.json" in contents
+    assert "property bool dockPinned: false" in contents
+    assert "watchChanges: true" in contents
+
+
+def test_the_panel_patches_only_the_dock_mode() -> None:
+    """El parche es atómico y conserva el resto de dock.json."""
+    contents = PANEL.read_text(encoding="utf-8")
+
+    assert '"python3"' in contents
+    assert "os.replace(tmp, path)" in contents
+    assert "data['dockPinned'] = wanted" in contents
+    assert "writeAdapter" not in contents

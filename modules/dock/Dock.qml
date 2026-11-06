@@ -242,11 +242,6 @@ PanelWindow {
             hideGrace.restart();
     }
 
-    function togglePin() {
-        pinsAdapter.dockPinned = !pinsAdapter.dockPinned;
-        pinsFile.writeAdapter();
-    }
-
     readonly property string smartState: DockSmartHide.stateFor(dock.dockPinned, dock.pointerOnDock)
 
     // Medidas que usa la librería de estados.
@@ -478,21 +473,6 @@ PanelWindow {
                         onMenuRequested: function(anchor) {
                             dock.openAppMenu(modelData, anchor);
                         }
-                    }
-                }
-
-                Item {
-                    id: pinButton
-                    width: Theme.dockHeight
-                    height: Theme.dockHeight
-                    IconImage {
-                        anchors.centerIn: parent
-                        implicitSize: 22
-                        source: IconResolver.source(
-                            dock.dockPinned ? "window-unpin" : "window-pin", "edit-pin")
-                    }
-                    TapHandler {
-                        onTapped: dock.togglePin()
                     }
                 }
             }

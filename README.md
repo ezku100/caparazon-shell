@@ -14,8 +14,8 @@ animación de despedida.
   siguiente clic la **minimiza**, y si estaba minimizada la **restaura**.
 - **Dock inteligente**: el dock está **oculto** y sube al acercar el puntero al
   borde inferior (y se puede usar encima de la ventana); se oculta otra vez al
-  dejarlo. El **botón de pin** lo deja **anclado**, visible y reservando su
-  franja como siempre. El estado se guarda en
+  dejarlo. Desde **Configs de la shell** (kanji 猫) puede pasar a **anclado**:
+  siempre visible y reservando su franja. El estado se guarda en
   `~/.config/caparazon/dock.json` (`"dockPinned": true`).
 - **Menú central**: buscador de aplicaciones con categorías, emojis y
   historial de portapapeles, navegable con flechas y `Enter`.
