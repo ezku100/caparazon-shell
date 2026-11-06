@@ -19,10 +19,20 @@ ACCENT_THEME_REPO="${ACCENT_THEME_REPO:-https://github.com/ezku100/accent-theme.
 ACCENT_THEME_SOURCE="${ACCENT_THEME_SOURCE:-$DATA_HOME/accent-theme/source}"
 ACCENT_THEME_BIN="$BIN_DIR/accent-theme"
 ACCENT_THEME_DESCRIPTOR="$REPO/integration/theme/accent-theme.toml"
+ACCENT_THEME_DESCRIPTOR_OLED="$REPO/integration/theme/accent-theme-oled.toml"
+ACCENT_THEME_DESCRIPTOR_PERLA="$REPO/integration/theme/accent-theme-perla.toml"
 ACCENT_THEME_TOKENS="$REPO/integration/theme/required-tokens.txt"
 ACCENT_THEME_TEMPLATE_DIR="$CONFIG_HOME/accent-theme/templates/caparazon-shell"
+ACCENT_THEME_TEMPLATE_DIR_OLED="$CONFIG_HOME/accent-theme/templates/caparazon-shell-oled"
+ACCENT_THEME_TEMPLATE_DIR_PERLA="$CONFIG_HOME/accent-theme/templates/caparazon-shell-perla"
 ACCENT_THEME_INSTALLED_DESCRIPTOR="$CONFIG_HOME/accent-theme/templates.d/caparazon-shell.toml"
-ACCENT_THEME_PALETTE="$HOME/.cache/caparazon/colors.json"
+ACCENT_THEME_INSTALLED_DESCRIPTOR_OLED="$CONFIG_HOME/accent-theme/templates.d/caparazon-shell-oled.toml"
+ACCENT_THEME_INSTALLED_DESCRIPTOR_PERLA="$CONFIG_HOME/accent-theme/templates.d/caparazon-shell-perla.toml"
+ACCENT_THEME_PALETTES=(
+    "$HOME/.cache/caparazon/colors.json"
+    "$HOME/.cache/caparazon/colors-oled.json"
+    "$HOME/.cache/caparazon/colors-perla.json"
+)
 REQUIRED_THEME_DEPENDENCIES=(matugen python3 inotifywait flock kreadconfig6 git)
 THEME_APT_PACKAGES="matugen python3 inotify-tools util-linux libkf6config-bin git"
 CALENDAR_APT_PACKAGES="python3 python3-dateutil"
@@ -187,9 +197,13 @@ install_theme_engine() {
 }
 
 register_caparazon_theme() {
-    echo "Registrando la plantilla de Caparazon"
+    echo "Registrando las plantillas de Caparazon"
     "$ACCENT_THEME_BIN" register --app caparazon-shell \
         --descriptor "$ACCENT_THEME_DESCRIPTOR"
+    "$ACCENT_THEME_BIN" register --app caparazon-shell-oled \
+        --descriptor "$ACCENT_THEME_DESCRIPTOR_OLED"
+    "$ACCENT_THEME_BIN" register --app caparazon-shell-perla \
+        --descriptor "$ACCENT_THEME_DESCRIPTOR_PERLA"
     "$ACCENT_THEME_BIN" generate
 }
 
@@ -208,8 +222,8 @@ link_xdg_cache() {
     ln -s "$HOME/.cache/caparazon" "$CACHE_HOME/caparazon"
 }
 
-validate_palette() {
-    local palette="$ACCENT_THEME_PALETTE"
+validate_one_palette() {
+    local palette="$1"
     local missing_tokens=""
     local token
     if [ ! -f "$palette" ]; then
@@ -223,10 +237,17 @@ validate_palette() {
         fi
     done < "$ACCENT_THEME_TOKENS"
     if [ -n "$missing_tokens" ]; then
-        echo "ERROR: la paleta no contiene:$missing_tokens" >&2
+        echo "ERROR: la paleta $palette no contiene:$missing_tokens" >&2
         return 1
     fi
     echo "Paleta validada en $palette"
+}
+
+validate_palette() {
+    local palette
+    for palette in "${ACCENT_THEME_PALETTES[@]}"; do
+        validate_one_palette "$palette"
+    done
 }
 
 install_theme() {
@@ -240,9 +261,13 @@ install_theme() {
 }
 
 remove_caparazon_theme() {
-    rm -f "$ACCENT_THEME_INSTALLED_DESCRIPTOR"
-    rm -rf "$ACCENT_THEME_TEMPLATE_DIR"
-    rm -f "$ACCENT_THEME_PALETTE"
+    rm -f "$ACCENT_THEME_INSTALLED_DESCRIPTOR" \
+        "$ACCENT_THEME_INSTALLED_DESCRIPTOR_OLED" \
+        "$ACCENT_THEME_INSTALLED_DESCRIPTOR_PERLA"
+    rm -rf "$ACCENT_THEME_TEMPLATE_DIR" \
+        "$ACCENT_THEME_TEMPLATE_DIR_OLED" \
+        "$ACCENT_THEME_TEMPLATE_DIR_PERLA"
+    rm -f "${ACCENT_THEME_PALETTES[@]}"
     if [ -L "$CACHE_HOME/caparazon" ]; then
         rm -f "$CACHE_HOME/caparazon"
     fi

@@ -351,6 +351,16 @@ def test_installer_validates_the_generated_palette() -> None:
     assert "caparazon/colors.json" in contents
 
 
+def test_installer_registers_and_validates_the_three_palettes() -> None:
+    contents = INSTALLER.read_text(encoding="utf-8")
+
+    for descriptor in ("accent-theme-oled.toml", "accent-theme-perla.toml"):
+        assert descriptor in contents
+    for palette in ("colors-oled.json", "colors-perla.json"):
+        assert palette in contents
+    assert contents.count("register --app caparazon-shell") == 3
+
+
 def test_palette_read_errors_are_visible() -> None:
     contents = PALETTE_QML.read_text(encoding="utf-8")
 
