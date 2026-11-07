@@ -71,6 +71,32 @@ def test_the_emoji_and_clipboard_chips_animates_opacity() -> None:
     assert "opacity: clipHover.hovered ? 1 : 0" in contents
 
 
+def test_the_clipboard_content_does_not_live_under_the_chip() -> None:
+    """El contenido del portapapeles no hereda la opacidad del chip.
+
+    Texto e imagen eran hijos del rectángulo con opacidad animada: sin
+    hover todo el elemento quedaba invisible, no sólo el fondo.
+    """
+    contents = APP_MENU.read_text(encoding="utf-8")
+    start = contents.index("opacity: clipHover.hovered ? 1 : 0")
+    open_brace = contents.rindex("{", 0, start)
+
+    depth = 0
+    end = open_brace
+    for index in range(open_brace, len(contents)):
+        if contents[index] == "{":
+            depth += 1
+        elif contents[index] == "}":
+            depth -= 1
+            if depth == 0:
+                end = index
+                break
+    chip = contents[open_brace:end]
+
+    assert "root.preview(" not in chip
+    assert "clipImage" not in chip
+
+
 def test_the_rail_paints_selection_and_hover_in_two_layers() -> None:
     """El raíl separa selección y hover para no mezclar tonos."""
     contents = RAIL_BUTTON.read_text(encoding="utf-8")
