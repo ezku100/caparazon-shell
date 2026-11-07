@@ -97,6 +97,24 @@ def test_the_clipboard_content_does_not_live_under_the_chip() -> None:
     assert "clipImage" not in chip
 
 
+def test_the_clipboard_image_preview_is_a_side_thumbnail() -> None:
+    """La vista previa de imagen es una miniatura lateral, sin solapes.
+
+    La imagen iba arriba centrada y el texto mezclaba anchors `top` y
+    `verticalCenter`: se solapaban entre sí y dominaban la fila.
+    """
+    contents = APP_MENU.read_text(encoding="utf-8")
+    delegate = contents[contents.index("id: clipboardList"):]
+    delegate = delegate[:delegate.index("Keys.onEscapePressed")]
+
+    assert "left: clipDelegate.imagePreview" in delegate
+    assert "? clipImage.right : parent.left" in delegate
+    assert "verticalCenter: parent.verticalCenter" in delegate
+    assert "top: clipImage.visible" not in delegate
+    assert "width: 64" in delegate
+    assert "width: 96" not in delegate
+
+
 def test_the_rail_paints_selection_and_hover_in_two_layers() -> None:
     """El raíl separa selección y hover para no mezclar tonos."""
     contents = RAIL_BUTTON.read_text(encoding="utf-8")

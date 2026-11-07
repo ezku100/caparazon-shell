@@ -1021,6 +1021,14 @@ PanelWindow {
                         boundsBehavior: Flickable.StopAtBounds
 
                         delegate: Item {
+                            id: clipDelegate
+
+                            readonly property bool imagePreview: {
+                                const low = String(modelData.text).toLowerCase();
+                                return low.endsWith(".png") || low.endsWith(".jpg")
+                                    || low.endsWith(".jpeg") || low.endsWith(".webp");
+                            }
+
                             width: clipboardList.width
                             height: 140
 
@@ -1043,28 +1051,26 @@ PanelWindow {
 
                             Image {
                                 id: clipImage
-                                anchors.horizontalCenter: parent.horizontalCenter
-                                anchors.top: parent.top
-                                anchors.topMargin: 8
-                                width: 96
-                                height: 96
+                                anchors {
+                                    left: parent.left
+                                    leftMargin: 14
+                                    verticalCenter: parent.verticalCenter
+                                }
+                                width: 64
+                                height: 64
                                 source: modelData.text
                                 fillMode: Image.PreserveAspectFit
-                                visible: modelData.text.endsWith(".png")
-                                    || modelData.text.endsWith(".jpg")
-                                    || modelData.text.endsWith(".jpeg")
-                                    || modelData.text.endsWith(".webp")
+                                visible: clipDelegate.imagePreview
                             }
 
                             Column {
                                 anchors {
-                                    left: parent.left
+                                    left: clipDelegate.imagePreview
+                                        ? clipImage.right : parent.left
+                                    leftMargin: clipDelegate.imagePreview ? 12 : 14
                                     right: parent.right
-                                    leftMargin: 14
                                     rightMargin: 14
                                     verticalCenter: parent.verticalCenter
-                                    top: clipImage.visible ? clipImage.bottom : undefined
-                                    topMargin: clipImage.visible ? 6 : 0
                                 }
                                 spacing: 2
 
