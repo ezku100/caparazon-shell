@@ -15,6 +15,10 @@ import "../../theme"
   dock.json, el mismo archivo que lee el dock; se parchea con python3 para
   no reescribir la lista de apps ancladas que también vive ahí.
 
+  El modo día/noche delega en ThemeStyle: activo, el estilo lo elige la hora
+  (mañana Perla, tarde Material, noche OLED); manual, se queda el elegido a
+  mano. Tocar un estilo mientras está activo lo devuelve a manual.
+
   Si una paleta no está instalada, su fila queda desactivada con un aviso y
   la paleta activa vuelve a Material para no quedarse sin colores.
 */
@@ -76,6 +80,8 @@ Item {
     // están resueltas: durante la carga una paleta ausente se ve igual que
     // una pendiente y pisaría el estilo guardado al abrir el panel.
     function reconcileActiveStyle() {
+        if (ThemeStyle.autoStyle)
+            return;
         if (!root.palettesSettled)
             return;
         if (root.availablePalettes.length === 0)
@@ -86,6 +92,19 @@ Item {
 
     onAvailablePalettesChanged: root.reconcileActiveStyle()
     onPalettesSettledChanged: root.reconcileActiveStyle()
+
+    readonly property var modeRows: [
+        {
+            key: "auto",
+            label: "Automático",
+            note: "06–12 Perla · 12–19 Material · 19–06 OLED."
+        },
+        {
+            key: "manual",
+            label: "Manual",
+            note: "Eliges el estilo de arriba y se queda."
+        }
+    ]
 
     readonly property var dockModeRows: [
         {
@@ -279,8 +298,39 @@ Item {
                         anchors.fill: parent
                         enabled: row.available
                         cursorShape: Qt.PointingHandCursor
-                        onClicked: ThemeStyle.setStyle(row.modelData.key)
+                        onClicked: {
+                            ThemeStyle.setAutoStyle(false);
+                            ThemeStyle.setStyle(row.modelData.key);
+                        }
                     }
+                }
+            }
+        }
+
+        Text {
+            width: parent.width
+            text: "Modo día/noche"
+            color: Theme.textDim
+            font.family: Theme.fontUI
+            font.pixelSize: Theme.fontPx
+        }
+
+        Column {
+            width: parent.width
+            spacing: 8
+
+            Repeater {
+                model: root.modeRows
+
+                delegate: ChoiceRow {
+                    required property var modelData
+
+                    current: ThemeStyle.autoStyle
+                        ? modelData.key === "auto"
+                        : modelData.key === "manual"
+                    label: modelData.label
+                    note: modelData.note
+                    onPicked: ThemeStyle.setAutoStyle(modelData.key === "auto")
                 }
             }
         }
@@ -300,80 +350,16 @@ Item {
             Repeater {
                 model: root.dockModeRows
 
-                delegate: Rectangle {
-                    id: dockModeRow
-
+                delegate: ChoiceRow {
                     required property var modelData
 
-                    readonly property bool current: root.dockAnchored
-                        ? dockModeRow.modelData.key === "anchored"
-                        : dockModeRow.modelData.key === "dynamic"
-
-                    width: parent.width
-                    height: 52
-                    radius: 14
-                    color: dockModeRow.current ? Theme.m3Primary : Theme.chip
-
-                    Behavior on color {
-                        ColorAnimation { duration: Theme.durFast }
-                    }
-
-                    Row {
-                        anchors {
-                            left: parent.left
-                            leftMargin: 14
-                            right: parent.right
-                            rightMargin: 14
-                            verticalCenter: parent.verticalCenter
-                        }
-                        spacing: 10
-
-                        Rectangle {
-                            width: 12
-                            height: 12
-                            radius: 6
-                            anchors.verticalCenter: parent.verticalCenter
-                            color: dockModeRow.current ? Theme.m3OnPrimary : "transparent"
-                            border.width: dockModeRow.current ? 0 : 1
-                            border.color: Theme.m3Outline
-                        }
-
-                        Column {
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: parent.width - 22
-                            spacing: 2
-
-                            Text {
-                                width: parent.width
-                                text: dockModeRow.modelData.label
-                                color: dockModeRow.current
-                                    ? Theme.m3OnPrimary
-                                    : Theme.text
-                                font.family: Theme.fontUI
-                                font.pixelSize: 14
-                                font.weight: Font.DemiBold
-                                elide: Text.ElideRight
-                            }
-
-                            Text {
-                                width: parent.width
-                                text: dockModeRow.modelData.note
-                                color: dockModeRow.current
-                                    ? Theme.m3OnPrimary
-                                    : Theme.textDim
-                                font.family: Theme.fontUI
-                                font.pixelSize: 11
-                                elide: Text.ElideRight
-                            }
-                        }
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: root.setDockAnchored(
-                            dockModeRow.modelData.key === "anchored")
-                    }
+                    current: root.dockAnchored
+                        ? modelData.key === "anchored"
+                        : modelData.key === "dynamic"
+                    label: modelData.label
+                    note: modelData.note
+                    onPicked: root.setDockAnchored(
+                        modelData.key === "anchored")
                 }
             }
         }

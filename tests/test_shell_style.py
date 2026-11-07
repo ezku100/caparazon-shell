@@ -94,3 +94,52 @@ def test_the_style_fallback_waits_for_the_palettes_to_settle() -> None:
     assert contents.index("if (!root.palettesSettled)") < contents.index(
         'ThemeStyle.setStyle("material")'
     )
+
+
+def test_the_auto_mode_follows_the_hour() -> None:
+    """Mañana Perla, tarde Material, noche OLED, revisado cada medio minuto."""
+    contents = THEME_STYLE.read_text(encoding="utf-8")
+
+    assert "property bool autoStyle: false" in contents
+    assert "function styleForHour(hour)" in contents
+    assert "hour >= 6 && hour < 12" in contents
+    assert "hour >= 12 && hour < 19" in contents
+    assert 'return "perla"' in contents
+    assert 'return "material"' in contents
+    assert 'return "oled"' in contents
+    assert "new Date().getHours()" in contents
+    assert "interval: 30000" in contents
+    assert "running: root.autoStyle" in contents
+
+
+def test_the_auto_mode_is_saved_with_the_style() -> None:
+    contents = THEME_STYLE.read_text(encoding="utf-8")
+
+    assert "property bool auto: false" in contents
+    assert '\\"auto\\":' in contents
+    assert "root.autoStyle = adapter.auto === true" in contents
+
+
+def test_the_panel_offers_the_day_night_mode() -> None:
+    contents = PANEL.read_text(encoding="utf-8")
+    row = REPOSITORY_ROOT / "modules" / "secondmenu" / "ChoiceRow.qml"
+
+    assert "Modo día/noche" in contents
+    assert "ThemeStyle.setAutoStyle(" in contents
+    assert '"auto"' in contents
+    assert '"manual"' in contents
+    assert row.exists(), "la fila binaria compartida debe existir"
+
+
+def test_choosing_a_style_leaves_the_auto_mode() -> None:
+    contents = PANEL.read_text(encoding="utf-8")
+
+    assert contents.index("ThemeStyle.setAutoStyle(false)") < contents.index(
+        "ThemeStyle.setStyle(row.modelData.key)"
+    )
+
+
+def test_the_fallback_does_not_fight_the_auto_mode() -> None:
+    contents = PANEL.read_text(encoding="utf-8")
+
+    assert "if (ThemeStyle.autoStyle)" in contents
