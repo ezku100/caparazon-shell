@@ -8,33 +8,49 @@
 # desaparece y sólo quedan los iconos flotando.
 #
 # Este vigilante lee el log de la instancia activa y reinicia la shell en
-# cuanto aparece la pérdida de contexto. Vive en el arranque automático del
-# usuario y no escribe nada en disco.
+# cuanto aparece la pérdida de contexto. Cada arranque de Quickshell crea un
+# directorio nuevo en `quickshell/by-id`, así que el log se resuelve por el
+# PID vivo (`quickshell/by-pid/<pid>`) cada pocos segundos. Vive en el
+# arranque automático del usuario y no escribe nada en disco.
 set -u
 
 SERVICE="${CAPARAZON_SERVICE:-app-caparazon@autostart.service}"
 RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
-LOG_DIR="$RUNTIME_DIR/quickshell/by-id"
+AUTOSTART="$HOME/.config/autostart/caparazon.desktop"
 
-# La shell tarda en crear su log; el id del directorio depende de su ruta.
-for _ in $(seq 1 60); do
-    compgen -G "$LOG_DIR/*/log.log" >/dev/null && break
-    sleep 2
-done
-
-shopt -s nullglob
-logs=("$LOG_DIR"/*/log.log)
-if [ "${#logs[@]}" -eq 0 ]; then
-    echo "caparazon-guardian: no encuentro el log de Quickshell en $LOG_DIR" >&2
+# La ruta de la shell es la del arranque automático real del usuario.
+SHELL_PATH="$(sed -n 's/.*quickshell -p \([^ ]*\).*/\1/p' "$AUTOSTART" 2>/dev/null | head -n 1)"
+if [ -z "$SHELL_PATH" ]; then
+    echo "caparazon-guardian: no encuentro la ruta de la shell en $AUTOSTART" >&2
     exit 1
 fi
 
-tail -F -n 0 -- "${logs[@]}" 2>/dev/null | while IFS= read -r line; do
-    case "$line" in
-        *"Graphics device lost"*)
-            systemctl --user restart "$SERVICE" || true
-            # Deja respirar al arranque para no encadenar reinicios.
-            sleep 5
-            ;;
-    esac
+current_log=""
+tail_pid=""
+
+while true; do
+    pid="$(pgrep -f "quickshell -p $SHELL_PATH" 2>/dev/null | head -n 1 || true)"
+    log=""
+    if [ -n "$pid" ] && [ -e "$RUNTIME_DIR/quickshell/by-pid/$pid/log.log" ]; then
+        log="$RUNTIME_DIR/quickshell/by-pid/$pid/log.log"
+    fi
+
+    if [ -n "$log" ] && [ "$log" != "$current_log" ]; then
+        if [ -n "$tail_pid" ]; then
+            kill "$tail_pid" 2>/dev/null || true
+        fi
+        current_log="$log"
+        tail -F -n 0 -- "$log" 2>/dev/null | while IFS= read -r line; do
+            case "$line" in
+                *"Graphics device lost"*)
+                    systemctl --user restart "$SERVICE" || true
+                    # Deja respirar al arranque para no encadenar reinicios.
+                    sleep 5
+                    ;;
+            esac
+        done &
+        tail_pid=$!
+    fi
+
+    sleep 2
 done

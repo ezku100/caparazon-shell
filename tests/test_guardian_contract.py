@@ -25,12 +25,15 @@ def test_the_guardian_watches_for_the_lost_context_message() -> None:
     assert "systemctl --user restart" in contents
 
 
-def test_the_guardian_follows_the_quickshell_log() -> None:
+def test_the_guardian_follows_the_live_quickshell_log() -> None:
+    """Cada arranque crea un `by-id` nuevo: el log se resuelve por PID."""
     contents = GUARDIAN.read_text(encoding="utf-8")
 
-    assert "quickshell/by-id" in contents
+    assert "quickshell/by-pid" in contents
+    assert "pgrep" in contents
     assert "log.log" in contents
     assert "tail -F" in contents
+    assert "while true" in contents
 
 
 def test_the_guardian_is_executable() -> None:
