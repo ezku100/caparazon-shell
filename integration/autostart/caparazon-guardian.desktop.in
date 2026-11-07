@@ -1,0 +1,10 @@
+[Desktop Entry]
+Categories=System;
+Comment=Reinicia Caparazon si el contexto grafico se pierde
+Exec=@HOME@/.local/bin/caparazon-guardian.sh
+Hidden=true
+Icon=video-display
+Name=Caparazon Guardian
+Terminal=false
+Type=Application
+X-GNOME-Autostart-enabled=true

@@ -97,6 +97,7 @@ install_bridge() {
     mkdir -p "$BIN_DIR" "$KWIN_DIR"
     install -m755 "$REPO/integration/bin/ezku-desktops-bootstrap.sh" "$BIN_DIR/"
     install -m755 "$REPO/integration/bin/ezku-desktops-daemon.py" "$BIN_DIR/"
+    install -m755 "$REPO/integration/bin/caparazon-guardian.sh" "$BIN_DIR/"
     install -m644 \
         "$REPO/integration/kwin/ezkudesktops/contents/code/main.js" \
         "$KWIN_DIR/main.js"
@@ -111,6 +112,9 @@ install_autostart() {
     sed -e "s|@HOME@|$HOME|g" \
         "$REPO/integration/autostart/ezku-desktops-bridge.desktop.in" \
         > "$AUTOSTART_DIR/ezku-desktops-bridge.desktop"
+    sed -e "s|@HOME@|$HOME|g" \
+        "$REPO/integration/autostart/caparazon-guardian.desktop.in" \
+        > "$AUTOSTART_DIR/caparazon-guardian.desktop"
 }
 
 existing_shell_dir() {
@@ -287,8 +291,10 @@ uninstall() {
     rm -rf "$SHELL_DIR"
     rm -f "$AUTOSTART_DIR/caparazon.desktop"
     rm -f "$AUTOSTART_DIR/ezku-desktops-bridge.desktop"
+    rm -f "$AUTOSTART_DIR/caparazon-guardian.desktop"
     rm -f "$BIN_DIR/ezku-desktops-bootstrap.sh"
     rm -f "$BIN_DIR/ezku-desktops-daemon.py"
+    rm -f "$BIN_DIR/caparazon-guardian.sh"
     rm -rf "$HOME/.local/share/kwin/scripts/ezkudesktops"
     remove_shortcut
     uninstall_theme
