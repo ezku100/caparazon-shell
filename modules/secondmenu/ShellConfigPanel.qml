@@ -50,6 +50,17 @@ Item {
         return list;
     }
 
+    // Un FileView sin archivo nunca emite loaded: sin el rastro de fallos,
+    // una paleta ausente y una que aún carga serían indistinguibles.
+    property bool materialFailed: false
+    property bool oledFailed: false
+    property bool perlaFailed: false
+
+    readonly property bool palettesSettled:
+        (materialFile.loaded || root.materialFailed)
+            && (oledFile.loaded || root.oledFailed)
+            && (perlaFile.loaded || root.perlaFailed)
+
     // La fila de cada estilo enseña las muestras de su propia paleta. Se
     // resuelve con una función para que el Repeater no se reconstruya cada
     // vez que cambia el acento.
@@ -61,12 +72,20 @@ Item {
         return materialAdapter;
     }
 
-    onAvailablePalettesChanged: {
+    // El regreso a Material sólo puede decidirse cuando las tres paletas
+    // están resueltas: durante la carga una paleta ausente se ve igual que
+    // una pendiente y pisaría el estilo guardado al abrir el panel.
+    function reconcileActiveStyle() {
+        if (!root.palettesSettled)
+            return;
         if (root.availablePalettes.length === 0)
             return;
         if (root.availablePalettes.indexOf(ThemeStyle.style) === -1)
             ThemeStyle.setStyle("material");
     }
+
+    onAvailablePalettesChanged: root.reconcileActiveStyle()
+    onPalettesSettledChanged: root.reconcileActiveStyle()
 
     readonly property var dockModeRows: [
         {
@@ -384,6 +403,7 @@ Item {
         watchChanges: true
         printErrors: false
         onFileChanged: reload()
+        onLoadFailed: root.materialFailed = true
 
         JsonAdapter {
             id: materialAdapter
@@ -399,6 +419,7 @@ Item {
         watchChanges: true
         printErrors: false
         onFileChanged: reload()
+        onLoadFailed: root.oledFailed = true
 
         JsonAdapter {
             id: oledAdapter
@@ -414,6 +435,7 @@ Item {
         watchChanges: true
         printErrors: false
         onFileChanged: reload()
+        onLoadFailed: root.perlaFailed = true
 
         JsonAdapter {
             id: perlaAdapter

@@ -75,3 +75,22 @@ def test_the_panel_patches_only_the_dock_mode() -> None:
     assert "os.replace(tmp, path)" in contents
     assert "data['dockPinned'] = wanted" in contents
     assert "writeAdapter" not in contents
+
+
+def test_the_style_fallback_waits_for_the_palettes_to_settle() -> None:
+    """El regreso a Material espera a que las tres paletas se resuelvan.
+
+    Durante la carga una paleta pendiente se ve igual que una ausente:
+    decidir antes pisaba el estilo guardado (OLED volvía a Material) al
+    abrir el panel.
+    """
+    contents = PANEL.read_text(encoding="utf-8")
+
+    assert "onLoadFailed" in contents
+    assert "palettesSettled" in contents
+    assert "if (!root.palettesSettled)" in contents
+    assert "availablePalettes.indexOf(ThemeStyle.style)" in contents
+    assert contents.count('ThemeStyle.setStyle("material")') == 1
+    assert contents.index("if (!root.palettesSettled)") < contents.index(
+        'ThemeStyle.setStyle("material")'
+    )
