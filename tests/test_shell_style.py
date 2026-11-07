@@ -9,6 +9,7 @@ THEME_STYLE = REPOSITORY_ROOT / "theme" / "ThemeStyle.qml"
 PALETTE = REPOSITORY_ROOT / "theme" / "MatugenPalette.qml"
 QMLDIR = REPOSITORY_ROOT / "theme" / "qmldir"
 PANEL = REPOSITORY_ROOT / "modules" / "secondmenu" / "ShellConfigPanel.qml"
+SECOND_MENU = REPOSITORY_ROOT / "modules" / "secondmenu" / "SecondMenu.qml"
 
 
 def test_theme_style_knows_the_three_styles() -> None:
@@ -144,3 +145,20 @@ def test_the_fallback_does_not_fight_the_auto_mode() -> None:
     contents = PANEL.read_text(encoding="utf-8")
 
     assert "if (ThemeStyle.autoStyle)" in contents
+
+
+def test_the_panel_clips_and_scrolls_instead_of_spilling() -> None:
+    """En pantallas bajas el panel se desplaza dentro de la tarjeta."""
+    contents = PANEL.read_text(encoding="utf-8")
+
+    assert "Flickable {" in contents
+    assert "clip: true" in contents
+    assert "contentHeight: body.implicitHeight" in contents
+    assert "interactive: contentHeight > height" in contents
+
+
+def test_the_submenu_grows_with_the_screen() -> None:
+    """La tarjeta aprovecha más alto en pantallas pequeñas (0,68 y no 0,50)."""
+    contents = SECOND_MENU.read_text(encoding="utf-8")
+
+    assert "* 0.68" in contents

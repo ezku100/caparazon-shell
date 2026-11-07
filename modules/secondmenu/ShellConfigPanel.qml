@@ -22,8 +22,14 @@ import "../../theme"
   Si una paleta no está instalada, su fila queda desactivada con un aviso y
   la paleta activa vuelve a Material para no quedarse sin colores.
 */
-Item {
+Flickable {
     id: root
+
+    clip: true
+    contentWidth: width
+    contentHeight: body.implicitHeight
+    boundsBehavior: Flickable.StopAtBounds
+    interactive: contentHeight > height
 
     readonly property var styleRows: [
         {
@@ -164,7 +170,8 @@ Item {
     }
 
     Column {
-        anchors.fill: parent
+        id: body
+        width: root.width
         spacing: 10
 
         // Cabecera con la misma altura que la del monitor: el título se

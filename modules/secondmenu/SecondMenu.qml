@@ -39,7 +39,7 @@ PanelWindow {
     readonly property int cardWidth: Math.min(760,
         Math.max(600, Math.round((screen ? screen.width : 1920) * 0.52)))
     readonly property int cardHeight: Math.min(500,
-        Math.max(400, Math.round((screen ? screen.height : 1080) * 0.50)))
+        Math.max(400, Math.round((screen ? screen.height : 1080) * 0.68)))
     readonly property int railWidth: 60
     readonly property int railInset: 8
     readonly property string category: menuState ? menuState.category : "calendario"
