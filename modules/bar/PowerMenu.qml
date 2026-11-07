@@ -180,6 +180,8 @@ PanelWindow {
     focusable: active
     color: "transparent"
     // Desenfoque del escritorio detrás del scrim (ext-background-effect-v1).
+    // Aquí es deliberado: el scrim a pantalla completa se apoya en el
+    // escritorio desenfocado. En AppMenu y SecondMenu no va.
     BackgroundEffect.blurRegion: Region { item: root.contentItem }
     // Por encima de barra, dock y popups.
     WlrLayershell.layer: WlrLayer.Overlay

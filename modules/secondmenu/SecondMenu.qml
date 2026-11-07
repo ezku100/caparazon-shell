@@ -77,10 +77,6 @@ PanelWindow {
     aboveWindows: true
     focusable: root.active
     color: "transparent"
-    BackgroundEffect.blurRegion: Region {
-        item: root.active ? cardBounds : null
-        radius: 24
-    }
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.keyboardFocus: root.active
         ? WlrKeyboardFocus.Exclusive

@@ -424,12 +424,6 @@ PanelWindow {
     aboveWindows: true
     focusable: root.active
     color: "transparent"
-    BackgroundEffect.blurRegion: Region {
-        // Sólo se difumina bajo la tarjeta del monitor activo; en el otro
-        // monitor la tarjeta es invisible y no debe dejar un parche borroso.
-        item: root.active ? cardBounds : null
-        radius: 24
-    }
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.keyboardFocus: root.active
         ? WlrKeyboardFocus.Exclusive
