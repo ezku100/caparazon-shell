@@ -9,7 +9,6 @@ el sampler del plugin.
 from __future__ import annotations
 
 import importlib.util
-import os
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -98,17 +97,11 @@ def test_normalize_raises_the_reference_gradually() -> None:
     assert 100 < reference < 200
 
 
-def test_read_frame_takes_exactly_one_frame() -> None:
-    """El sampler publica un frame por lectura, sin acumular dos de golpe."""
+def test_split_frames_takes_whole_frames_and_keeps_the_remainder() -> None:
+    """La lectura no bloqueante puede dejar medio frame: no se pierde."""
     module = load_module()
-    read_fd, write_fd = os.pipe()
-    try:
-        os.write(write_fd, bytes(range(64)))
-        first = module.read_frame(read_fd, 32)
-        second = module.read_frame(read_fd, 32)
-    finally:
-        os.close(read_fd)
-        os.close(write_fd)
 
-    assert first == bytes(range(32))
-    assert second == bytes(range(32, 64))
+    frames, rest = module.split_frames(bytes(range(70)))
+
+    assert frames == [bytes(range(32)), bytes(range(32, 64))]
+    assert rest == bytes(range(64, 70))

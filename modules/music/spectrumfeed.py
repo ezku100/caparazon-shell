@@ -26,6 +26,9 @@ RATE = 30
 # amplificar el silencio ni dar tirones cuando entra un golpe fuerte.
 NOISE_FLOOR = 6
 REFERENCE_RATE = 0.12
+# Cada cuánto se comprueba que cava sigue vivo si el FIFO no da datos.
+CHECK_SECONDS = 2.0
+IDLE_SLEEP = 0.02
 
 
 def normalize(frame, reference):
@@ -98,15 +101,35 @@ def ensure_cava(conf, fifo):
                      stderr=subprocess.DEVNULL)
 
 
-def read_frame(fd, size):
-    """Lee exactamente un frame del FIFO; None si no hay datos todavía."""
-    data = b""
-    while len(data) < size:
-        chunk = os.read(fd, size - len(data))
-        if not chunk:
-            return None
-        data += chunk
-    return data
+def split_frames(buffer, size=BARS):
+    """Separa los frames completos del buffer y devuelve ``(frames, resto)``.
+
+    La lectura es no bloqueante: puede devolver medio frame. El resto se
+    guarda para el siguiente ciclo en vez de perderse.
+    """
+    frames = []
+    while len(buffer) >= size:
+        frames.append(buffer[:size])
+        buffer = buffer[size:]
+    return frames, buffer
+
+
+def read_chunk(fd):
+    """Lee lo que haya en el FIFO; ``None`` si está vacío o sin escritores."""
+    try:
+        return os.read(fd, 4096)
+    except BlockingIOError:
+        return None
+
+
+def publish(waves, spec):
+    """Publica un frame de forma atómica para que la shell nunca lea medio."""
+    try:
+        with open(waves + ".tmp", "w") as f:
+            json.dump({"ts": time.time(), "spec": spec}, f)
+        os.replace(waves + ".tmp", waves)
+    except OSError:
+        pass
 
 
 def main(datadir):
@@ -122,21 +145,26 @@ def main(datadir):
         os._exit(0)
     os.setsid()
     ensure_cava(conf, fifo)
-    fd = os.open(fifo, os.O_RDONLY)
+    fd = os.open(fifo, os.O_RDONLY | os.O_NONBLOCK)
+    buffer = b""
+    reference = 0.0
+    last_check = 0.0
     try:
-        reference = 0.0
         while True:
-            frame = read_frame(fd, BARS)
-            if frame is None:
-                time.sleep(0.05)
+            chunk = read_chunk(fd)
+            if chunk:
+                buffer += chunk
+                frames, buffer = split_frames(buffer)
+                for frame in frames:
+                    spec, reference = normalize(frame, reference)
+                    publish(waves, spec)
                 continue
-            spec, reference = normalize(frame, reference)
-            try:
-                with open(waves + ".tmp", "w") as f:
-                    json.dump({"ts": time.time(), "spec": spec}, f)
-                os.replace(waves + ".tmp", waves)
-            except OSError:
-                pass
+            now = time.monotonic()
+            if now - last_check >= CHECK_SECONDS:
+                last_check = now
+                if not running(f"cava -p {conf}"):
+                    ensure_cava(conf, fifo)
+            time.sleep(IDLE_SLEEP)
     finally:
         os.close(fd)
 
