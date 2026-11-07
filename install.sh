@@ -13,6 +13,7 @@ CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}"
 SHELL_DIR="$CONFIG_HOME/quickshell/caparazon"
 AUTOSTART_DIR="$CONFIG_HOME/autostart"
 BIN_DIR="$HOME/.local/bin"
+UPDATE_CONF="$CONFIG_HOME/caparazon/update.conf"
 KWIN_DIR="$HOME/.local/share/kwin/scripts/ezkudesktops/contents/code"
 
 ACCENT_THEME_REPO="${ACCENT_THEME_REPO:-https://github.com/ezku100/accent-theme.git}"
@@ -101,6 +102,37 @@ install_bridge() {
     install -m644 \
         "$REPO/integration/kwin/ezkudesktops/contents/code/main.js" \
         "$KWIN_DIR/main.js"
+}
+
+update_branch() {
+    local dir="$1"
+    local branch
+    branch="$(git -C "$dir" rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
+    if [ -n "$branch" ] && [ "$branch" != "HEAD" ]; then
+        printf '%s\n' "$branch"
+        return 0
+    fi
+    branch="$(git -C "$REPO" rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
+    if [ -n "$branch" ] && [ "$branch" != "HEAD" ]; then
+        printf '%s\n' "$branch"
+        return 0
+    fi
+    printf 'main\n'
+}
+
+install_updater() {
+    local shell_path="$1"
+    local update_repo=""
+    if [ -d "$REPO/.git" ]; then
+        update_repo="$REPO"
+    fi
+    echo "Instalando el actualizador"
+    mkdir -p "$BIN_DIR" "$(dirname "$UPDATE_CONF")"
+    install -m755 "$REPO/integration/bin/caparazon-update-check.sh" "$BIN_DIR/"
+    install -m755 "$REPO/integration/bin/caparazon-update.sh" "$BIN_DIR/"
+    printf '{\n  "repo": "%s",\n  "branch": "%s",\n  "shell": "%s"\n}\n' \
+        "$update_repo" "$(update_branch "$shell_path")" "$shell_path" \
+        > "$UPDATE_CONF"
 }
 
 install_autostart() {
@@ -295,6 +327,9 @@ uninstall() {
     rm -f "$BIN_DIR/ezku-desktops-bootstrap.sh"
     rm -f "$BIN_DIR/ezku-desktops-daemon.py"
     rm -f "$BIN_DIR/caparazon-guardian.sh"
+    rm -f "$BIN_DIR/caparazon-update-check.sh"
+    rm -f "$BIN_DIR/caparazon-update.sh"
+    rm -f "$UPDATE_CONF"
     rm -rf "$HOME/.local/share/kwin/scripts/ezkudesktops"
     remove_shortcut
     uninstall_theme
@@ -319,6 +354,7 @@ case "${1:-instalar}" in
         install_shortcut "$ACTIVE_SHELL_DIR"
         refresh_shortcut_hint
         install_bridge
+        install_updater "$ACTIVE_SHELL_DIR"
         install_theme
         echo
         echo "Listo. Para probarla ahora mismo:"

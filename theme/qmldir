@@ -1,3 +1,4 @@
 singleton Theme 1.0 Theme.qml
 singleton MatugenPalette 1.0 MatugenPalette.qml
 singleton ThemeStyle 1.0 ThemeStyle.qml
+singleton UpdateStatus 1.0 UpdateStatus.qml

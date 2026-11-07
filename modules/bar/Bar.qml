@@ -323,6 +323,9 @@ PanelWindow {
                     BluetoothIndicator {}
                     MicVolume {}
                     Volume {}
+                    UpdateChip {
+                        onActivated: bar.openSecondMenu("configs")
+                    }
                     PowerButton {
                         onActivated: bar.openPowerMenu()
                     }

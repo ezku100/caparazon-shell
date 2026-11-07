@@ -80,16 +80,28 @@ se detiene indicando el comando `apt` exacto para instalarla.
 
 ## Actualizar
 
+La shell se actualiza sola. Cada diez minutos (y veinte segundos después de
+arrancar) pregunta a GitHub si hay commits nuevos; cuando los hay, aparece en
+la barra —a la izquierda del botón de apagado— un icono con un punto rojo. Al
+pulsarlo se abre el panel de Configs, donde **Actualizar ahora** trae los
+cambios, ejecuta `install.sh` y reinicia la shell.
+
+El botón sólo actúa si el clon no tiene cambios locales sin commit: con
+cambios, el aviso queda en gris y hay que actualizar a mano. Cada intento
+queda registrado en `~/.cache/caparazon/update.log`.
+
+La ruta del clon, la rama y la copia activa de la shell viven en
+`~/.config/caparazon/update.conf`, que escribe `install.sh`. El reinicio se
+lanza en una unidad transitoria de systemd (`caparazon-update`) para que el
+propio reinicio de la shell no interrumpa la actualización.
+
+A mano sigue funcionando igual:
+
 ```bash
 cd caparazon-shell
 git pull --ff-only
 ./install.sh
 ```
-
-Esto trae las mejoras del repositorio y las copia a
-`~/.config/quickshell/caparazon`. Si el arranque automatico apunta a tu
-clon de trabajo, solo necesitas el `git pull`: el instalador reutiliza
-la shell que ya tienes registrada.
 
 Para quitar todo lo que instaló:
 

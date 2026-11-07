@@ -192,6 +192,87 @@ Flickable {
 
         Text {
             width: parent.width
+            visible: UpdateStatus.pending
+            text: "Actualización de la shell"
+            color: Theme.textDim
+            font.family: Theme.fontUI
+            font.pixelSize: Theme.fontPx
+        }
+
+        Rectangle {
+            id: updateRow
+
+            visible: UpdateStatus.pending
+            width: parent.width
+            height: 54
+            radius: 14
+            color: Theme.m3Primary
+            opacity: UpdateStatus.state === "available" && !UpdateStatus.dirty
+                ? 1
+                : 0.65
+
+            Behavior on opacity {
+                NumberAnimation { duration: Theme.durFast }
+            }
+
+            Column {
+                anchors {
+                    left: parent.left
+                    leftMargin: 14
+                    right: parent.right
+                    rightMargin: 14
+                    verticalCenter: parent.verticalCenter
+                }
+                spacing: 2
+
+                Text {
+                    width: parent.width
+                    text: "Actualizar ahora"
+                    color: Theme.m3OnPrimary
+                    font.family: Theme.fontUI
+                    font.pixelSize: 14
+                    font.weight: Font.DemiBold
+                    elide: Text.ElideRight
+                }
+
+                Text {
+                    width: parent.width
+                    text: {
+                        if (UpdateStatus.state === "updating")
+                            return "Actualizando y reiniciando la shell…";
+                        if (UpdateStatus.dirty)
+                            return "Tienes cambios locales: actualiza a mano.";
+                        if (UpdateStatus.state === "offline")
+                            return "Sin conexión; se reintentará solo.";
+                        if (UpdateStatus.state === "error")
+                            return "No se pudo actualizar; mira update.log.";
+                        return UpdateStatus.behind + " commits nuevos en "
+                            + UpdateStatus.branch + ".";
+                    }
+                    color: Theme.m3OnPrimary
+                    opacity: 0.85
+                    font.family: Theme.fontUI
+                    font.pixelSize: 11
+                    elide: Text.ElideRight
+                }
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                enabled: !UpdateStatus.dirty
+                    && UpdateStatus.state !== "updating"
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
+                    if (UpdateStatus.state === "available")
+                        UpdateStatus.startUpdate();
+                    else
+                        UpdateStatus.refresh();
+                }
+            }
+        }
+
+        Text {
+            width: parent.width
             text: "Estilo de color"
             color: Theme.textDim
             font.family: Theme.fontUI
