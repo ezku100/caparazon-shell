@@ -144,6 +144,14 @@ Item {
         "os.replace(tmp, path)"
     ].join("\n")
 
+    function noteFor(rows, key) {
+        for (let i = 0; i < rows.length; i++) {
+            if (rows[i].key === key)
+                return rows[i].note;
+        }
+        return "";
+    }
+
     function setDockAnchored(anchored) {
         if (root.dockAnchored === anchored)
             return;
@@ -157,7 +165,7 @@ Item {
 
     Column {
         anchors.fill: parent
-        spacing: 12
+        spacing: 10
 
         // Cabecera con la misma altura que la del monitor: el título se
         // centra con anclas y sin altura explícita no se dibujaría.
@@ -201,7 +209,7 @@ Item {
                         root.availablePalettes.indexOf(row.modelData.key) !== -1
 
                     width: parent.width
-                    height: 64
+                    height: 54
                     radius: 14
                     color: row.current ? Theme.m3Primary : Theme.chip
                     opacity: row.available ? 1 : 0.55
@@ -315,24 +323,21 @@ Item {
             font.pixelSize: Theme.fontPx
         }
 
-        Column {
+        SegmentedChoice {
             width: parent.width
-            spacing: 8
+            options: root.modeRows
+            value: ThemeStyle.autoStyle ? "auto" : "manual"
+            onPicked: (key) => ThemeStyle.setAutoStyle(key === "auto")
+        }
 
-            Repeater {
-                model: root.modeRows
-
-                delegate: ChoiceRow {
-                    required property var modelData
-
-                    current: ThemeStyle.autoStyle
-                        ? modelData.key === "auto"
-                        : modelData.key === "manual"
-                    label: modelData.label
-                    note: modelData.note
-                    onPicked: ThemeStyle.setAutoStyle(modelData.key === "auto")
-                }
-            }
+        Text {
+            width: parent.width
+            text: root.noteFor(root.modeRows,
+                ThemeStyle.autoStyle ? "auto" : "manual")
+            color: Theme.textDim
+            font.family: Theme.fontUI
+            font.pixelSize: 11
+            elide: Text.ElideRight
         }
 
         Text {
@@ -343,25 +348,21 @@ Item {
             font.pixelSize: Theme.fontPx
         }
 
-        Column {
+        SegmentedChoice {
             width: parent.width
-            spacing: 8
+            options: root.dockModeRows
+            value: root.dockAnchored ? "anchored" : "dynamic"
+            onPicked: (key) => root.setDockAnchored(key === "anchored")
+        }
 
-            Repeater {
-                model: root.dockModeRows
-
-                delegate: ChoiceRow {
-                    required property var modelData
-
-                    current: root.dockAnchored
-                        ? modelData.key === "anchored"
-                        : modelData.key === "dynamic"
-                    label: modelData.label
-                    note: modelData.note
-                    onPicked: root.setDockAnchored(
-                        modelData.key === "anchored")
-                }
-            }
+        Text {
+            width: parent.width
+            text: root.noteFor(root.dockModeRows,
+                root.dockAnchored ? "anchored" : "dynamic")
+            color: Theme.textDim
+            font.family: Theme.fontUI
+            font.pixelSize: 11
+            elide: Text.ElideRight
         }
     }
 

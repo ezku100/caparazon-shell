@@ -122,13 +122,14 @@ def test_the_auto_mode_is_saved_with_the_style() -> None:
 
 def test_the_panel_offers_the_day_night_mode() -> None:
     contents = PANEL.read_text(encoding="utf-8")
-    row = REPOSITORY_ROOT / "modules" / "secondmenu" / "ChoiceRow.qml"
+    control = REPOSITORY_ROOT / "modules" / "secondmenu" / "SegmentedChoice.qml"
 
     assert "Modo día/noche" in contents
     assert "ThemeStyle.setAutoStyle(" in contents
     assert '"auto"' in contents
     assert '"manual"' in contents
-    assert row.exists(), "la fila binaria compartida debe existir"
+    assert "SegmentedChoice {" in contents
+    assert control.exists(), "el control segmentado debe existir"
 
 
 def test_choosing_a_style_leaves_the_auto_mode() -> None:
