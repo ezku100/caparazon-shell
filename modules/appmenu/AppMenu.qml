@@ -391,8 +391,19 @@ PanelWindow {
         return result;
     }
 
+    // El portapapeles puede traer HTML (copiar desde un navegador). Un Text
+    // en formato automático renderizaba las etiquetas <img> a tamaño natural
+    // encima de todo el historial: se pinta plano y de las imágenes queda su
+    // texto alt como descripción.
     function preview(value) {
-        const text = String(value || "").replace(/\s+/g, " ").trim();
+        let text = String(value || "");
+        if (/<[a-z][^>]*>/i.test(text)) {
+            const described = /alt="([^"]*)"/i.exec(text);
+            text = (described ? described[1] : "") + " "
+                + text.replace(/<style[\s\S]*?<\/style>/gi, " ")
+                    .replace(/<[^>]*>/g, " ");
+        }
+        text = text.replace(/\s+/g, " ").trim();
         return text.length > 0 ? text : "…";
     }
 
@@ -1077,6 +1088,7 @@ PanelWindow {
                                 Text {
                                     width: parent.width
                                     text: root.preview(modelData.text)
+                                    textFormat: Text.PlainText
                                     color: Theme.text
                                     font.family: Theme.fontUI
                                     font.pixelSize: 11

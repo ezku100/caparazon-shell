@@ -115,6 +115,24 @@ def test_the_clipboard_image_preview_is_a_side_thumbnail() -> None:
     assert "width: 96" not in delegate
 
 
+def test_the_clipboard_preview_never_renders_rich_text() -> None:
+    """El portapapeles puede traer HTML: la vista previa es texto plano.
+
+    Un Text en formato automático renderizaba las etiquetas <img> del
+    portapapeles a tamaño natural encima de todo el historial.
+    """
+    contents = APP_MENU.read_text(encoding="utf-8")
+    delegate = contents[contents.index("id: clipboardList"):]
+    delegate = delegate[:delegate.index("Keys.onEscapePressed")]
+
+    assert "textFormat: Text.PlainText" in delegate
+
+    preview_body = contents[contents.index("function preview("):]
+    preview_body = preview_body[:preview_body.index("function formatTime")]
+    assert 'replace(/<[^>]*>/g' in preview_body
+    assert 'alt="([^"]*)"' in preview_body
+
+
 def test_the_rail_paints_selection_and_hover_in_two_layers() -> None:
     """El raíl separa selección y hover para no mezclar tonos."""
     contents = RAIL_BUTTON.read_text(encoding="utf-8")
