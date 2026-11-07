@@ -1069,7 +1069,17 @@ PanelWindow {
                                 }
                                 width: 64
                                 height: 64
-                                source: modelData.text
+                                // `source` se evalúa aunque la miniatura esté
+                                // oculta: con el texto crudo, cada entrada del
+                                // historial (HTML, URLs, rutas .rar) se abría
+                                // como imagen y disparaba descargas y
+                                // decodificaciones que no llevaban a nada.
+                                source: clipDelegate.imagePreview
+                                    ? modelData.text : ""
+                                sourceSize.width: 64
+                                sourceSize.height: 64
+                                cache: false
+                                asynchronous: true
                                 fillMode: Image.PreserveAspectFit
                                 visible: clipDelegate.imagePreview
                             }
