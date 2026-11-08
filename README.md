@@ -95,6 +95,12 @@ La ruta del clon, la rama y la copia activa de la shell viven en
 lanza en una unidad transitoria de systemd (`caparazon-update`) para que el
 propio reinicio de la shell no interrumpa la actualización.
 
+Para saber si hay algo pendiente sin abrir Configs:
+
+```bash
+~/.local/bin/caparazon-update-check.sh ~/Projects/caparazon-shell main
+```
+
 A mano sigue funcionando igual:
 
 ```bash
