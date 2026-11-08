@@ -128,6 +128,10 @@ anterior.
 ```bash
 quickshell -p ~/.config/quickshell/caparazon     # en primer plano
 quickshell -p ~/.config/quickshell/caparazon -d  # desmontado
+
+El menú secundario se abre también por línea de comandos, con la categoría
+que quieras (`quickshell -p <ruta> ipc call menu2 open configs`); el atajo
+`menu2 toggle` lo abre y lo cierra.
 quickshell -p ~/Projects/caparazon-shell -d       # desde tu clon
 quickshell -c caparazon                         # por nombre de configuracion
 pkill -f 'quickshell -p'                        # pararlo
