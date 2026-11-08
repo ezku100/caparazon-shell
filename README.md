@@ -169,7 +169,7 @@ caparazon-shell/
 ├── theme/                 # tokens Material 3 y paleta de matugen
 ├── components/            # piezas visuales compartidas
 ├── assets/                # tipografias
-├── integration/           # puente de KWin, daemon y arranque automatico
+├── integration/           # puente de KWin, daemon, arranque y actualizador
 └── install.sh
 ```
 
