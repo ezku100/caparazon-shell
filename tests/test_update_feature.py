@@ -155,6 +155,23 @@ def test_bar_shows_the_chip_and_opens_configs() -> None:
     assert "UpdateStatus.pending" in chip
 
 
+def test_chip_sits_left_of_the_clock() -> None:
+    contents = BAR.read_text(encoding="utf-8")
+    center = contents.index("id: centerCluster")
+    chip = contents.index("UpdateChip {", center)
+    clock = contents.index("Clock {", center)
+
+    assert center < chip < clock
+
+
+def test_chip_animates_in_like_the_notification() -> None:
+    chip = CHIP.read_text(encoding="utf-8")
+
+    assert "width: shown ? 26 : 0" in chip
+    assert "visible: shown || width > 0.5" in chip
+    assert "Behavior on width" in chip
+
+
 def test_panel_offers_the_update_action() -> None:
     contents = PANEL.read_text(encoding="utf-8")
 

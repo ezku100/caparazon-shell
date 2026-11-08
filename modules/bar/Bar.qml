@@ -268,14 +268,17 @@ PanelWindow {
                 compact: bar.compactBar
             }
 
-            // ── Centro: reloj + notificación activa ──────────────────
-            // El grupo completo se centra. Al entrar una notificación, el
-            // reloj corre hacia escritorios y el chip aparece a su derecha.
+            // ── Centro: actualización + reloj + notificación activa ──
+            // El grupo completo se centra. Al entrar una actualización o
+            // una notificación, el reloj corre y el chip aparece a su lado.
             Row {
                 id: centerCluster
                 anchors.centerIn: parent
                 spacing: 8
 
+                UpdateChip {
+                    onActivated: bar.openSecondMenu("configs")
+                }
                 Clock { compact: bar.compactBar; onActivated: bar.openSecondMenu() }
                 NotificationChip { server: bar.notificationServer }
                 MediaChip {}
@@ -323,9 +326,6 @@ PanelWindow {
                     BluetoothIndicator {}
                     MicVolume {}
                     Volume {}
-                    UpdateChip {
-                        onActivated: bar.openSecondMenu("configs")
-                    }
                     PowerButton {
                         onActivated: bar.openPowerMenu()
                     }
