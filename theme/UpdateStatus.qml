@@ -36,6 +36,10 @@ Item {
     readonly property bool available: root.state === "available"
     readonly property bool busy: root.state === "checking" || root.state === "updating"
 
+    readonly property string pendingText: root.behind === 1
+        ? "1 commit nuevo en " + root.branch + "."
+        : root.behind + " commits nuevos en " + root.branch + "."
+
     function refresh() {
         if (!root.loaded || root.repo === "" || root.state === "updating"
                 || checkProcess.running)

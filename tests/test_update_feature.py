@@ -146,6 +146,13 @@ def test_update_status_checks_periodically_and_restarts_out_of_band() -> None:
     assert "interval: 3600000" in contents
 
 
+def test_pending_text_uses_the_singular_for_one_commit() -> None:
+    contents = UPDATE_STATUS.read_text(encoding="utf-8")
+
+    assert "pendingText" in contents
+    assert '"1 commit nuevo en "' in contents
+
+
 def test_bar_shows_the_chip_and_opens_configs() -> None:
     bar = BAR.read_text(encoding="utf-8")
     chip = CHIP.read_text(encoding="utf-8")

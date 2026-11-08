@@ -253,8 +253,7 @@ Flickable {
                             return "Sin conexión; se reintentará solo.";
                         if (UpdateStatus.state === "error")
                             return "No se pudo actualizar; mira update.log.";
-                        return UpdateStatus.behind + " commits nuevos en "
-                            + UpdateStatus.branch + ".";
+                        return UpdateStatus.pendingText;
                     }
                     color: Theme.m3OnPrimary
                     opacity: 0.85
@@ -296,8 +295,7 @@ Flickable {
                 case "uptodate":
                     return "Estás al día.";
                 case "available":
-                    return UpdateStatus.behind + " commits nuevos en "
-                        + UpdateStatus.branch + ".";
+                    return UpdateStatus.pendingText;
                 case "offline":
                     return "Sin conexión; se reintenta sola cada hora.";
                 case "error":
