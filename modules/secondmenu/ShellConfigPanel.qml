@@ -1,7 +1,10 @@
 import Quickshell
 import Quickshell.Io
+import Quickshell.Widgets
 import QtQuick
+import QtQuick.Effects
 import "../../theme"
+import "../icons"
 
 /*
   Configs de la shell — estilo de color y modo del dock.
@@ -18,6 +21,10 @@ import "../../theme"
   El modo día/noche delega en ThemeStyle: activo, el estilo lo elige la hora
   (mañana Perla, tarde Material, noche OLED); manual, se queda el elegido a
   mano. Tocar un estilo mientras está activo lo devuelve a manual.
+
+  La actualización se revisa sola cada hora, pero la fila "Buscar
+  actualizaciones" la comprueba al momento; cuando hay commits pendientes
+  aparece debajo la fila para aplicarla.
 
   Si una paleta no está instalada, su fila queda desactivada con un aviso y
   la paleta activa vuelve a Material para no quedarse sin colores.
@@ -192,7 +199,7 @@ Flickable {
 
         Text {
             width: parent.width
-            visible: UpdateStatus.pending
+            visible: UpdateStatus.loaded && UpdateStatus.repo !== ""
             text: "Actualización de la shell"
             color: Theme.textDim
             font.family: Theme.fontUI
@@ -268,6 +275,97 @@ Flickable {
                     else
                         UpdateStatus.refresh();
                 }
+            }
+        }
+
+        Rectangle {
+            id: checkRow
+
+            visible: UpdateStatus.loaded && UpdateStatus.repo !== ""
+            width: parent.width
+            height: 54
+            radius: 14
+            color: Theme.chip
+            opacity: checkRow.canCheck ? 1 : 0.6
+
+            readonly property bool canCheck: !UpdateStatus.busy
+            readonly property string note: {
+                switch (UpdateStatus.state) {
+                case "checking":
+                    return "Buscando…";
+                case "uptodate":
+                    return "Estás al día.";
+                case "available":
+                    return UpdateStatus.behind + " commits nuevos en "
+                        + UpdateStatus.branch + ".";
+                case "offline":
+                    return "Sin conexión; se reintenta sola cada hora.";
+                case "error":
+                    return "No se pudo comprobar; mira update.log.";
+                default:
+                    return "Se revisa sola cada hora.";
+                }
+            }
+
+            Behavior on opacity {
+                NumberAnimation { duration: Theme.durFast }
+            }
+
+            Column {
+                anchors {
+                    left: parent.left
+                    leftMargin: 14
+                    right: refreshIcon.left
+                    rightMargin: 10
+                    verticalCenter: parent.verticalCenter
+                }
+                spacing: 2
+
+                Text {
+                    width: parent.width
+                    text: "Buscar actualizaciones"
+                    color: Theme.text
+                    font.family: Theme.fontUI
+                    font.pixelSize: 14
+                    font.weight: Font.DemiBold
+                    elide: Text.ElideRight
+                }
+
+                Text {
+                    width: parent.width
+                    text: checkRow.note
+                    color: Theme.textDim
+                    font.family: Theme.fontUI
+                    font.pixelSize: 11
+                    elide: Text.ElideRight
+                }
+            }
+
+            IconImage {
+                id: refreshIcon
+
+                anchors {
+                    right: parent.right
+                    rightMargin: 14
+                    verticalCenter: parent.verticalCenter
+                }
+                implicitSize: 16
+                source: IconResolver.firstOf([
+                    "view-refresh",
+                    "view-refresh-symbolic"
+                ])
+                layer.enabled: true
+                layer.effect: MultiEffect {
+                    colorization: 1.0
+                    colorizationColor: Theme.textDim
+                }
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                enabled: checkRow.canCheck
+                cursorShape: Qt.PointingHandCursor
+                onClicked: UpdateStatus.refresh()
             }
         }
 

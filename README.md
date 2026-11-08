@@ -80,12 +80,16 @@ se detiene indicando el comando `apt` exacto para instalarla.
 
 ## Actualizar
 
-La shell se actualiza sola. Cada diez minutos (y veinte segundos después de
-arrancar) pregunta a GitHub si hay commits nuevos; cuando los hay, aparece
-junto al reloj —a su izquierda— un icono con un punto rojo, y el reloj se
-corre como cuando entra una notificación. Al pulsarlo se abre el panel de
-Configs, donde **Actualizar ahora** trae los cambios, ejecuta `install.sh` y
-reinicia la shell.
+La shell se actualiza sola. Cada hora (y veinte segundos después de arrancar)
+pregunta a GitHub si hay commits nuevos; cuando los hay, aparece junto al
+reloj —a su izquierda— un icono con un punto rojo, y el reloj se corre como
+cuando entra una notificación. Al pulsarlo se abre el panel de Configs, donde
+**Actualizar ahora** trae los cambios, ejecuta `install.sh` y reinicia la
+shell.
+
+Si no quieres esperar a la revisión automática, en Configs está **Buscar
+actualizaciones**: pregunta al momento y deja el resultado en la propia fila
+("Estás al día", "N commits nuevos", "sin conexión"…).
 
 El botón sólo actúa si el clon no tiene cambios locales sin commit: con
 cambios, el aviso queda en gris y hay que actualizar a mano. Cada intento

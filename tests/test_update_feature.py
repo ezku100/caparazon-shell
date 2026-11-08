@@ -143,7 +143,7 @@ def test_update_status_checks_periodically_and_restarts_out_of_band() -> None:
     assert "caparazon-update-check.sh" in contents
     assert "caparazon-update.sh" in contents
     assert "systemd-run" in contents
-    assert "interval: 600000" in contents
+    assert "interval: 3600000" in contents
 
 
 def test_bar_shows_the_chip_and_opens_configs() -> None:
@@ -177,6 +177,14 @@ def test_panel_offers_the_update_action() -> None:
 
     assert "UpdateStatus.pending" in contents
     assert "UpdateStatus.startUpdate()" in contents
+
+
+def test_panel_offers_a_manual_check() -> None:
+    contents = PANEL.read_text(encoding="utf-8")
+
+    assert "Buscar actualizaciones" in contents
+    assert "UpdateStatus.refresh()" in contents
+    assert "UpdateStatus.loaded" in contents
 
 
 def test_installer_registers_the_updater() -> None:

@@ -85,7 +85,7 @@ Item {
 
     Timer {
         id: periodic
-        interval: 600000
+        interval: 3600000
         repeat: true
         running: root.loaded && root.state !== "updating"
         onTriggered: root.refresh()
