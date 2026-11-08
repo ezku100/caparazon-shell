@@ -264,3 +264,13 @@ def test_the_shell_gives_the_service_to_the_bar() -> None:
     contents = SHELL.read_text(encoding="utf-8")
 
     assert "resources: resourceService" in contents
+
+
+def test_the_grid_paints_behind_the_curve() -> None:
+    """La cuadrícula se declara antes que la curva, así pinta por detrás."""
+    contents = SYSTEM_PANEL.read_text(encoding="utf-8")
+
+    grid = contents.index("Cuadrícula por detrás")
+    shape = contents.index("Shape {")
+
+    assert grid < shape

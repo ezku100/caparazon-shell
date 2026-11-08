@@ -334,6 +334,20 @@ Item {
                 anchors.leftMargin: 14
                 anchors.rightMargin: 46
 
+                // Cuadrícula por detrás de la curva, con las marcas del eje.
+                Repeater {
+                    model: 5
+
+                    delegate: Rectangle {
+                        required property int index
+
+                        width: chartArea.width
+                        height: 1
+                        y: chartArea.height * (1 - index / 4) - 0.5
+                        color: Theme.hairline
+                    }
+                }
+
                 // Curva y área bajo la curva en un solo motor de trazado que
                 // ya usan los anillos de la barra.
                 readonly property string linePath: chartArea.buildPath(false)
@@ -389,20 +403,6 @@ Item {
                         PathSvg {
                             path: chartArea.linePath
                         }
-                    }
-                }
-
-                // Cuadrícula con las marcas del eje.
-                Repeater {
-                    model: 5
-
-                    delegate: Rectangle {
-                        required property int index
-
-                        width: chartArea.width
-                        height: 1
-                        y: chartArea.height * (1 - index / 4) - 0.5
-                        color: Theme.hairline
                     }
                 }
 
