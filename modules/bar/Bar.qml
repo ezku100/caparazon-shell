@@ -287,8 +287,36 @@ PanelWindow {
             // ── Derecha: recursos + bandeja + red + volumen ───────────
             // El monitor se ancla por separado para que al cambiar su
             // contenido no mueva la bandeja.
+            // En pantallas angostas (barra compacta) los anillos no caben
+            // junto al reloj, así que aparecen sólo cuando la bandeja está
+            // plegada: ocupan el hueco que ésta deja libre. Se ven los que
+            // estén activos en el panel del monitor del sistema.
             ResourceMonitor {
-                visible: !bar.compactBar
+                id: resourceMonitor
+
+                readonly property bool shown: !bar.compactBar || tray.collapsed
+
+                visible: opacity > 0
+                opacity: shown ? 1 : 0
+
+                Behavior on opacity {
+                    NumberAnimation {
+                        duration: Theme.durFast + 60
+                        easing.type: Easing.OutCubic
+                    }
+                }
+
+                transform: Translate {
+                    x: resourceMonitor.shown ? 0 : 10
+
+                    Behavior on x {
+                        NumberAnimation {
+                            duration: Theme.durFast + 60
+                            easing.type: Easing.OutCubic
+                        }
+                    }
+                }
+
                 anchors {
                     right: rightCluster.left; rightMargin: 16
                     verticalCenter: parent.verticalCenter
