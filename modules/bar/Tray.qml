@@ -89,6 +89,19 @@ Item {
     readonly property color capsuleColor: Qt.rgba(
         Theme.m3Primary.r, Theme.m3Primary.g, Theme.m3Primary.b, 0.16)
 
+    // Plegado: la cápsula se encoge, recorta a los iconos y éstos se funden
+    // escalonados empezando por el borde de la flecha. `open` va de 1
+    // (desplegada) a 0 (plegada) con la misma curva que el ancho.
+    readonly property int foldDuration: 260
+    property real open: root.collapsed ? 0 : 1
+
+    Behavior on open {
+        NumberAnimation {
+            duration: root.foldDuration
+            easing.type: Easing.OutCubic
+        }
+    }
+
     // Algunos AppIndicator de Flatpak publican el IconName como una ruta
     // absoluta (/usr/share/icons/...). Esa ruta no existe fuera del sandbox;
     // se usa el nombre del icono para que lo resuelva el tema del host.
@@ -118,17 +131,30 @@ Item {
     }
 
     // Plegada ocupa lo mismo que un círculo de estado; desplegada, la
-    // cápsula de siempre.
-    implicitWidth: trayRow.implicitWidth + (root.collapsed ? 0 : capsulePad * 2)
+    // cápsula de siempre. El ancho se anima para que el resto de la barra
+    // acompañe en vez de saltar.
+    implicitWidth: root.width
+    width: root.collapsed ? 26 : trayRow.implicitWidth + capsulePad * 2
     implicitHeight: 26
     visible: rep.count > 0
 
+    Behavior on width {
+        NumberAnimation {
+            duration: root.foldDuration
+            easing.type: Easing.OutCubic
+        }
+    }
+
+    // El contenido vive dentro de la cápsula para que el recorte acompañe
+    // al encogimiento: los iconos se meten detrás del borde redondeado.
     Rectangle {
-        anchors.horizontalCenter: parent.horizontalCenter
+        id: capsule
         anchors.verticalCenter: parent.verticalCenter
-        width: parent.width
+        anchors.right: parent.right
+        width: root.width
         height: root.collapsed ? 26 : root.capsuleHeight
         radius: height / 2
+        clip: true
         // Plegada usa el acento de los círculos de estado; desplegada,
         // el tinte translúcido de la cápsula.
         color: root.collapsed
@@ -147,7 +173,7 @@ Item {
 
         Behavior on color {
             ColorAnimation {
-                duration: Theme.durFast
+                duration: root.foldDuration
                 easing.type: Easing.OutCubic
             }
         }
@@ -155,7 +181,9 @@ Item {
 
     Row {
         id: trayRow
-        anchors.centerIn: parent
+        anchors.verticalCenter: parent.verticalCenter
+        anchors.right: parent.right
+        anchors.rightMargin: root.capsulePad * root.open
         spacing: 2
 
         Repeater {
@@ -168,7 +196,31 @@ Item {
 
             implicitWidth: 26
             implicitHeight: 26
-            visible: !root.collapsed
+            // Siguen reservando su sitio para que la fila no salte; se
+            // funden y encogen, de derecha a izquierda.
+            enabled: !root.collapsed
+            opacity: root.collapsed ? 0 : 1
+            scale: root.collapsed ? 0.7 : 1
+
+            Behavior on opacity {
+                NumberAnimation {
+                    // Sin `delay` en Qt Quick: el escalón va en la
+                    // duración, así el último icono de la fila se va antes.
+                    duration: root.foldDuration - 140
+                        + (rep.count - 1 - index) * 22
+                    easing.type: Easing.OutCubic
+                }
+            }
+
+            Behavior on scale {
+                NumberAnimation {
+                    // Sin `delay` en Qt Quick: el escalón va en la
+                    // duración, así el último icono de la fila se va antes.
+                    duration: root.foldDuration - 140
+                        + (rep.count - 1 - index) * 22
+                    easing.type: Easing.OutCubic
+                }
+            }
             // La cápsula ya es el fondo del grupo; el hover no debe pintar
             // otro bloque encima del icono seleccionado.
             color: "transparent"
@@ -252,8 +304,8 @@ Item {
                 interval: 350
                 repeat: false
                 onTriggered: {
-                    if (!trayHover.hovered || !item.modelData
-                            || !item.modelData.hasMenu)
+                    if (root.collapsed || !trayHover.hovered
+                            || !item.modelData || !item.modelData.hasMenu)
                         return;
                     const active = root.trayMenuState
                         ? root.trayMenuState.active
@@ -315,6 +367,9 @@ Item {
                 }
 
                 onClicked: function (mouse) {
+                    if (root.collapsed)
+                        return;
+
                     const tray = item.modelData;
 
                     // Si el menú ya estaba abierto al pulsar, este clic debe
@@ -452,7 +507,7 @@ Item {
 
                 Behavior on rotation {
                     NumberAnimation {
-                        duration: Theme.durFast
+                        duration: root.foldDuration - 80
                         easing.type: Easing.OutCubic
                     }
                 }

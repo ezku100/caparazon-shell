@@ -24,12 +24,25 @@ def test_the_default_state_is_expanded() -> None:
     assert "property bool collapsed: false" in contents
 
 
-def test_collapsing_hides_the_icons_and_keeps_the_toggle() -> None:
+def test_collapsing_fades_the_icons_and_keeps_the_toggle() -> None:
+    """Los iconos se funden (opacity 0) en vez de desaparecer de golpe."""
     contents = TRAY.read_text(encoding="utf-8")
 
-    assert "visible: !root.collapsed" in contents
+    assert "opacity: root.collapsed ? 0 : 1" in contents
+    assert "enabled: !root.collapsed" in contents
     assert "setCollapsed(!root.collapsed)" in contents
     assert "pan-end-symbolic" in contents
+
+
+def test_folding_animates_the_capsule_and_the_icons() -> None:
+    """El ancho de la cápsula, el recorte y el fundido van animados."""
+    contents = TRAY.read_text(encoding="utf-8")
+
+    assert "Behavior on width" in contents
+    assert "clip: true" in contents
+    assert "Behavior on open" in contents
+    assert "anchors.rightMargin: root.capsulePad * root.open" in contents
+    assert "+ (rep.count - 1 - index) * 22" in contents
 
 
 def test_the_arrow_turns_around_when_collapsed() -> None:
