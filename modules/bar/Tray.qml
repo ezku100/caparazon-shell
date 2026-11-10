@@ -117,7 +117,9 @@ Item {
         return prefix + name + query;
     }
 
-    implicitWidth: trayRow.implicitWidth + capsulePad * 2
+    // Plegada ocupa lo mismo que un círculo de estado; desplegada, la
+    // cápsula de siempre.
+    implicitWidth: trayRow.implicitWidth + (root.collapsed ? 0 : capsulePad * 2)
     implicitHeight: 26
     visible: rep.count > 0
 
@@ -125,9 +127,30 @@ Item {
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.verticalCenter: parent.verticalCenter
         width: parent.width
-        height: root.capsuleHeight
+        height: root.collapsed ? 26 : root.capsuleHeight
         radius: height / 2
-        color: root.capsuleColor
+        // Plegada usa el acento de los círculos de estado; desplegada,
+        // el tinte translúcido de la cápsula.
+        color: root.collapsed
+            ? (toggleHover.hovered
+                ? Qt.lighter(Theme.m3Primary, 1.08)
+                : Theme.m3Primary)
+            : Qt.rgba(Theme.m3Primary.r, Theme.m3Primary.g,
+                Theme.m3Primary.b, toggleHover.hovered ? 0.22 : 0.16)
+
+        Behavior on height {
+            NumberAnimation {
+                duration: Theme.durFast
+                easing.type: Easing.OutCubic
+            }
+        }
+
+        Behavior on color {
+            ColorAnimation {
+                duration: Theme.durFast
+                easing.type: Easing.OutCubic
+            }
+        }
     }
 
     Row {
@@ -408,13 +431,18 @@ Item {
         HoverChip {
             id: toggle
 
-            implicitWidth: 22
+            implicitWidth: root.collapsed ? 26 : 22
             implicitHeight: 26
             color: "transparent"
 
+            HoverHandler {
+                id: toggleHover
+                cursorShape: Qt.PointingHandCursor
+            }
+
             IconImage {
                 anchors.centerIn: parent
-                implicitSize: 14
+                implicitSize: root.collapsed ? 16 : 14
                 source: IconResolver.firstOf([
                     "pan-end-symbolic",
                     "go-next-symbolic"
@@ -432,7 +460,9 @@ Item {
                 layer.enabled: true
                 layer.effect: MultiEffect {
                     colorization: 1.0
-                    colorizationColor: Theme.iconTintMuted
+                    colorizationColor: root.collapsed
+                        ? Theme.m3OnPrimary
+                        : Theme.iconTintMuted
                 }
             }
 

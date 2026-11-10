@@ -43,3 +43,13 @@ def test_the_bar_still_owns_the_tray() -> None:
 
     assert "Tray {" in contents
     assert "trayMenuState: bar.trayMenuState" in contents
+
+
+def test_the_folded_pill_matches_the_status_circles() -> None:
+    """Plegada es un círculo de 26 con el acento y el icono en onPrimary."""
+    contents = TRAY.read_text(encoding="utf-8")
+
+    assert "root.collapsed ? 26 : root.capsuleHeight" in contents
+    assert "root.collapsed ? 26 : 22" in contents
+    assert "? Theme.m3OnPrimary" in contents
+    assert "Qt.lighter(Theme.m3Primary, 1.08)" in contents
