@@ -21,7 +21,7 @@ animación de despedida.
   historial de portapapeles, navegable con flechas y `Enter`.
 - **Escritorios virtuales**: pager en números kanji, con halo en el escritorio
   activo y marca de los que tienen ventanas, por pantalla.
-- **Ventana activa**: icono, nombre y título de la ventana enfocada.
+- **Ventana activa**: icono y nombre de la aplicación enfocada (sin título).
 - **Recursos en vivo**: anillos de CPU, RAM, GPU, swap y red, con tooltip al
   pasar el ratón.
 - **Bandeja del sistema**: iconos de StatusNotifier con menú propio dibujado

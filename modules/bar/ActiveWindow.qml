@@ -6,13 +6,12 @@ import "../../theme"
 import "../icons"
 
 // Ventana activa, alimentada por ActiveWindowService.
-// Icono de la app (tintado como los de la bandeja) + nombre de la app +
-// título de la ventana. Sin separador: el aire entre módulos ya los separa.
+// Icono de la app (tintado como los de la bandeja) + nombre de la app.
+// El título de la ventana no se muestra: el módulo queda compacto.
 Item {
     id: root
 
     property string appId: ""
-    property string title: ""
     property bool compact: false
 
     readonly property bool isDesktop: root.appId === "plasmashell"
@@ -68,7 +67,7 @@ Item {
 
     implicitWidth: visible ? row.implicitWidth : 0
     implicitHeight: Theme.barHeight
-    visible: appId !== "" || title !== ""
+    visible: appId !== ""
 
     Row {
         id: row
@@ -102,26 +101,13 @@ Item {
 
         Text {
             anchors.verticalCenter: parent.verticalCenter
-            visible: !root.compact && root.appName !== ""
-            width: Math.min(120, implicitWidth)
+            visible: root.appName !== ""
+            width: Math.min(root.compact ? 110 : 170, implicitWidth)
             text: root.appName
             color: Theme.text
             font.family: Theme.fontUI
             font.pixelSize: 12
             font.weight: Font.DemiBold
-            elide: Text.ElideRight
-            maximumLineCount: 1
-        }
-
-        Text {
-            anchors.verticalCenter: parent.verticalCenter
-            visible: !root.isDesktop && root.title !== ""
-            width: Math.min(root.compact ? 160 : 260, implicitWidth)
-            text: root.title
-            color: Theme.textDim
-            font.family: Theme.fontUI
-            font.pixelSize: 12
-            font.weight: Font.Medium
             elide: Text.ElideRight
             maximumLineCount: 1
         }

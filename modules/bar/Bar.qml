@@ -25,7 +25,6 @@ PanelWindow {
     property var notificationServer: null
     property var workspacesService: null
     property string activeWindowAppId: ""
-    property string activeWindowTitle: ""
     property int cpuUsage: 0
     property int ramUsage: 0
     property int gpuUsage: 0
@@ -264,7 +263,6 @@ PanelWindow {
                     verticalCenter: parent.verticalCenter
                 }
                 appId: bar.activeWindowAppId
-                title: bar.activeWindowTitle
                 compact: bar.compactBar
             }
 

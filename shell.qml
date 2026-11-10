@@ -327,7 +327,6 @@ ShellRoot {
             trayMenuState: shellRoot.trayMenuState
             notificationServer: notifServer
             activeWindowAppId: activeWindowService.appId
-            activeWindowTitle: activeWindowService.title
             cpuUsage: resourceService.cpu
             ramUsage: resourceService.ram
             gpuUsage: resourceService.gpu
