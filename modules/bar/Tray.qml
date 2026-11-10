@@ -1,10 +1,12 @@
 import Quickshell
+import Quickshell.Io
 import Quickshell.Services.SystemTray
 import Quickshell.Widgets
 import QtQuick
 import QtQuick.Effects
 import "../../components"
 import "../../theme"
+import "../icons"
 
 // Bandeja del sistema (StatusNotifier). Consume los items que ya
 // publica el watcher de la sesión (kded6 en Plasma 6).
@@ -12,6 +14,73 @@ Item {
     id: root
 
     property var trayMenuState: null
+
+    // Plegada o desplegada. El estado se recuerda en
+    // ~/.config/caparazon/tray.json, así que sobrevive al reinicio.
+    property bool collapsed: false
+    property bool syncing: false
+
+    readonly property string configDir: Quickshell.env("HOME") + "/.config/caparazon"
+    readonly property string configPath: root.configDir + "/tray.json"
+
+    function setCollapsed(value) {
+        if (root.collapsed === value)
+            return;
+        root.collapsed = value;
+    }
+
+    function save() {
+        writer.command = [
+            "bash", "-c",
+            "printf '%s\\n' \"$1\" > \"$2.tmp\" && mv \"$2.tmp\" \"$2\"",
+            "bash",
+            "{\"collapsed\":" + (root.collapsed ? "true" : "false") + "}",
+            root.configPath
+        ];
+        writer.running = true;
+    }
+
+    onCollapsedChanged: if (!root.syncing) root.save()
+
+    Process {
+        id: ensureFile
+        running: true
+        command: [
+            "bash", "-c",
+            "mkdir -p \"$1\"; [ -f \"$2\" ] || printf '%s\\n' '{\"collapsed\":false}' > \"$2\"",
+            "bash",
+            root.configDir,
+            root.configPath
+        ]
+        onExited: file.reload()
+    }
+
+    Process {
+        id: writer
+    }
+
+    FileView {
+        id: file
+        path: root.configPath
+        watchChanges: true
+        printErrors: false
+        onFileChanged: reload()
+
+        JsonAdapter {
+            id: adapter
+            property bool collapsed: false
+        }
+    }
+
+    Connections {
+        target: file
+        function onLoaded() {
+            // Si cambia desde otra barra, se aplica sin reescribir.
+            root.syncing = true;
+            root.collapsed = adapter.collapsed === true;
+            root.syncing = false;
+        }
+    }
 
     // Cápsula común para toda la bandeja. Usa el mismo acento que los
     // medidores de audio, con baja opacidad para no competir con los iconos.
@@ -76,6 +145,7 @@ Item {
 
             implicitWidth: 26
             implicitHeight: 26
+            visible: !root.collapsed
             // La cápsula ya es el fondo del grupo; el hover no debe pintar
             // otro bloque encima del icono seleccionado.
             color: "transparent"
@@ -332,6 +402,45 @@ Item {
             }
         }
     }
-}
 
+        // Plegar/desplegar la bandeja. Vive en el borde derecho de la
+        // cápsula: al plegarla, los iconos se van hacia la izquierda.
+        HoverChip {
+            id: toggle
+
+            implicitWidth: 22
+            implicitHeight: 26
+            color: "transparent"
+
+            IconImage {
+                anchors.centerIn: parent
+                implicitSize: 14
+                source: IconResolver.firstOf([
+                    "pan-end-symbolic",
+                    "go-next-symbolic"
+                ])
+                rotation: root.collapsed ? 180 : 0
+                transformOrigin: Item.Center
+
+                Behavior on rotation {
+                    NumberAnimation {
+                        duration: Theme.durFast
+                        easing.type: Easing.OutCubic
+                    }
+                }
+
+                layer.enabled: true
+                layer.effect: MultiEffect {
+                    colorization: 1.0
+                    colorizationColor: Theme.iconTintMuted
+                }
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                onClicked: root.setCollapsed(!root.collapsed)
+            }
+        }
+    }
 }

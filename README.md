@@ -25,7 +25,8 @@ animación de despedida.
 - **Recursos en vivo**: anillos de CPU, RAM, GPU, swap y red, con tooltip al
   pasar el ratón.
 - **Bandeja del sistema**: iconos de StatusNotifier con menú propio dibujado
-  en QML y un nivel de submenú.
+  en QML y un nivel de submenú. La flecha del borde la pliega y la despliega,
+  y el estado se recuerda en `~/.config/caparazon/tray.json`.
 - **Sonido y energía**: volumen y micrófono con medidor, perfil de energía con
   la rueda, estado de red y Bluetooth.
 - **Avisos efímeros**: notificaciones y cambios de canción aparecen junto al
