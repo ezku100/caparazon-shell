@@ -581,7 +581,10 @@ PanelWindow {
                 id: dockRow
                 visible: !dock.vertical
                 anchors.verticalCenter: parent.verticalCenter
-                x: Math.round((dock.dockWidth - dockRow.implicitWidth) / 2)
+                // Centrada en el cristal: el recorte mide dockWidth + el aire
+                // de la sombra, y centrar sobre dockWidth dejaba el margen
+                // izquierdo pegado y el derecho enorme.
+                anchors.horizontalCenter: parent.horizontalCenter
                 spacing: 6
 
                 // Qt 6 quitó la propiedad `alignment` de las filas: los hijos
@@ -616,11 +619,13 @@ PanelWindow {
                 id: dockColumn
                 visible: dock.vertical
                 anchors.horizontalCenter: parent.horizontalCenter
-                // Centrada sobre el largo plegado: al desplegar, la carátula se
-                // queda donde está y la tarjeta sólo crece hacia abajo.
+                // Centrada en el cristal con el largo plegado (y su aire de
+                // sombra): al desplegar, la carátula se queda donde está y la
+                // tarjeta sólo crece hacia abajo.
                 y: dock.vertical
-                    ? Math.round((dock.collapsedLength - dock.restContent) / 2)
-                    : Math.round((dock.dockWidth - dockColumn.implicitHeight) / 2)
+                    ? Math.round((dock.collapsedLength + 2 * Theme.shadowPad
+                        - dock.restContent) / 2)
+                    : 0
                 spacing: 6
 
                 // En columna no cabe el reproductor entero: sólo la carátula,
