@@ -377,12 +377,34 @@ Flickable {
 
         // El principal es el que KDE marca como principal (prioridad 1 de
         // kscreen), así que la shell coincide con lo que decide Plasma.
+        // La barra no se puede apagar en todas las pantallas: es la única
+        // entrada a estos menús.
+        ToggleRow {
+            width: parent.width
+            label: "Barra en el monitor principal"
+            note: ShellLayout.barPrimaryCanTurnOff || !ShellLayout.barOnPrimary
+                ? "Apágala si prefieres la barra sólo en las demás pantallas."
+                : "Al menos una pantalla conserva la barra."
+            value: ShellLayout.barOnPrimary
+            available: !ShellLayout.barOnPrimary
+                || ShellLayout.barPrimaryCanTurnOff
+            onToggled: ShellLayout.setBarOnPrimary(!ShellLayout.barOnPrimary)
+        }
+
         ToggleRow {
             width: parent.width
             label: "Barra en monitores secundarios"
-            note: "Se queda sólo en el monitor principal de KDE."
+            note: "Se instala en todas las pantallas menos la principal de KDE."
             value: ShellLayout.barOnSecondary
             onToggled: ShellLayout.setBarOnSecondary(!ShellLayout.barOnSecondary)
+        }
+
+        ToggleRow {
+            width: parent.width
+            label: "Dock en el monitor principal"
+            note: "El dock es opcional en cualquier pantalla."
+            value: ShellLayout.dockOnPrimary
+            onToggled: ShellLayout.setDockOnPrimary(!ShellLayout.dockOnPrimary)
         }
 
         ToggleRow {

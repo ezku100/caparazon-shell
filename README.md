@@ -17,10 +17,12 @@ animación de despedida.
   dejarlo. Desde **Configs de la shell** (kanji 猫) puede pasar a **anclado**:
   siempre visible y reservando su franja. El estado se guarda en
   `~/.config/caparazon/dock.json` (`"dockPinned": true`).
-- **Multi-monitor**: barra y dock en cada pantalla, con interruptores en
-  **Configs de la shell** para dejarlos sólo en el monitor principal. Se toma
-  como principal el que KDE designa como principal (`kscreen-doctor`), no el
-  primero de la lista. Se guarda en `~/.config/caparazon/display.json`.
+- **Multi-monitor**: barra y dock en cada pantalla, con cuatro interruptores
+  en **Configs de la shell** (principal y secundarios, por separado para barra
+  y dock). Se toma como principal el que KDE designa como principal
+  (`kscreen-doctor`), no el primero de la lista. La barra no puede apagarse en
+  todas las pantallas porque es la entrada al panel; el dock sí. Se guarda en
+  `~/.config/caparazon/display.json`.
 - **Menú central**: buscador de aplicaciones con categorías, emojis y
   historial de portapapeles, navegable con flechas y `Enter`.
 - **Escritorios virtuales**: pager en números kanji, con halo en el escritorio

@@ -24,13 +24,21 @@ def test_the_primary_screen_comes_from_kscreen() -> None:
     assert "root.primaryName = best.name" in contents
 
 
-def test_screens_are_filtered_by_the_option() -> None:
+def test_screens_are_filtered_by_the_options() -> None:
     contents = LAYOUT.read_text(encoding="utf-8")
 
-    assert "function screensFor(showOnSecondary)" in contents
-    assert "return [root.primaryScreen]" in contents
-    assert "readonly property var barScreens: root.screensFor(root.barOnSecondary)" in contents
-    assert "readonly property var dockScreens: root.screensFor(root.dockOnSecondary)" in contents
+    assert "function screensFor(onPrimary, onSecondary)" in contents
+    assert "root.screensFor(root.barOnPrimary, root.barOnSecondary)" in contents
+    assert "root.screensFor(root.dockOnPrimary, root.dockOnSecondary)" in contents
+
+
+def test_the_bar_never_disappears_completely() -> None:
+    """Sin barra no hay acceso al panel: siempre queda en una pantalla."""
+    contents = LAYOUT.read_text(encoding="utf-8")
+
+    assert "readonly property bool barPrimaryCanTurnOff" in contents
+    assert "if (!value && !root.barPrimaryCanTurnOff)" in contents
+    assert "return root.primaryScreen !== null ? [root.primaryScreen]" in contents
 
 
 def test_the_shell_uses_the_filtered_screen_lists() -> None:
@@ -40,12 +48,16 @@ def test_the_shell_uses_the_filtered_screen_lists() -> None:
     assert "model: ShellLayout.dockScreens" in contents
 
 
-def test_the_panel_offers_both_switches() -> None:
+def test_the_panel_offers_the_four_switches() -> None:
     contents = PANEL.read_text(encoding="utf-8")
 
+    assert "Barra en el monitor principal" in contents
     assert "Barra en monitores secundarios" in contents
+    assert "Dock en el monitor principal" in contents
     assert "Dock en monitores secundarios" in contents
+    assert "ShellLayout.setBarOnPrimary" in contents
     assert "ShellLayout.setBarOnSecondary" in contents
+    assert "ShellLayout.setDockOnPrimary" in contents
     assert "ShellLayout.setDockOnSecondary" in contents
 
 
@@ -55,3 +67,5 @@ def test_the_switch_row_reacts_to_the_value() -> None:
     assert "property bool value: false" in contents
     assert "signal toggled()" in contents
     assert "onClicked: root.toggled()" in contents
+    assert "property bool available: true" in contents
+    assert "enabled: root.available" in contents

@@ -8,11 +8,14 @@ Item {
     property string label: ""
     property string note: ""
     property bool value: false
+    // Un interruptor no disponible se ve atenuado y no responde.
+    property bool available: true
 
     signal toggled()
 
     implicitHeight: 54
     height: implicitHeight
+    opacity: root.available ? 1 : 0.55
 
     Rectangle {
         anchors.fill: parent
@@ -95,6 +98,7 @@ Item {
 
         MouseArea {
             anchors.fill: parent
+            enabled: root.available
             cursorShape: Qt.PointingHandCursor
             onClicked: root.toggled()
         }

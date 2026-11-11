@@ -14,7 +14,9 @@ Item {
     id: root
     visible: false
 
+    property bool barOnPrimary: true
     property bool barOnSecondary: true
+    property bool dockOnPrimary: true
     property bool dockOnSecondary: true
     property bool loaded: false
     property bool syncing: false
@@ -37,20 +39,59 @@ Item {
         return list.length > 0 ? list[0] : null;
     }
 
-    // Pantallas donde se instala la barra y el dock.
-    readonly property var barScreens: root.screensFor(root.barOnSecondary)
-    readonly property var dockScreens: root.screensFor(root.dockOnSecondary)
+    readonly property bool hasSecondaryScreen: root.screens.length > 1
 
-    function screensFor(showOnSecondary) {
-        if (showOnSecondary || !root.primaryScreen)
-            return root.screens;
-        return [root.primaryScreen];
+    // Apagar la barra en el principal sólo se permite si otra pantalla se
+    // queda con ella: es la única vía de acceso a los menús. El dock no
+    // necesita la salvaguarda (el panel sigue disponible en la barra).
+    readonly property bool barPrimaryCanTurnOff:
+        root.hasSecondaryScreen && root.barOnSecondary
+
+    function screensFor(onPrimary, onSecondary) {
+        const list = root.screens;
+        const primary = root.primaryScreen;
+        const result = [];
+        for (let i = 0; i < list.length; i++) {
+            const screen = list[i];
+            if (!screen)
+                continue;
+            const isPrimary = primary !== null && screen.name === primary.name;
+            if (isPrimary ? onPrimary : onSecondary)
+                result.push(screen);
+        }
+        return result;
+    }
+
+    readonly property var barScreens: {
+        const chosen = root.screensFor(root.barOnPrimary, root.barOnSecondary);
+        if (chosen.length > 0 || root.screens.length === 0)
+            return chosen;
+        // Config editada a mano sin ninguna barra: se deja en el principal
+        // para no perder el acceso al panel.
+        return root.primaryScreen !== null ? [root.primaryScreen] : root.screens;
+    }
+
+    readonly property var dockScreens:
+        root.screensFor(root.dockOnPrimary, root.dockOnSecondary)
+
+    function setBarOnPrimary(value) {
+        if (root.barOnPrimary === value)
+            return;
+        if (!value && !root.barPrimaryCanTurnOff)
+            return;
+        root.barOnPrimary = value;
     }
 
     function setBarOnSecondary(value) {
         if (root.barOnSecondary === value)
             return;
         root.barOnSecondary = value;
+    }
+
+    function setDockOnPrimary(value) {
+        if (root.dockOnPrimary === value)
+            return;
+        root.dockOnPrimary = value;
     }
 
     function setDockOnSecondary(value) {
@@ -60,7 +101,9 @@ Item {
     }
 
     // Al leer el archivo no se reescribe; al cambiarlo desde el panel sí.
+    onBarOnPrimaryChanged: if (!root.syncing) root.save()
     onBarOnSecondaryChanged: if (!root.syncing) root.save()
+    onDockOnPrimaryChanged: if (!root.syncing) root.save()
     onDockOnSecondaryChanged: if (!root.syncing) root.save()
 
     function save() {
@@ -70,7 +113,9 @@ Item {
             "bash", "-c",
             "printf '%s\\n' \"$1\" > \"$2.tmp\" && mv \"$2.tmp\" \"$2\"",
             "bash",
-            "{\"barSecondary\":" + (root.barOnSecondary ? "true" : "false")
+            "{\"barPrimary\":" + (root.barOnPrimary ? "true" : "false")
+                + ",\"barSecondary\":" + (root.barOnSecondary ? "true" : "false")
+                + ",\"dockPrimary\":" + (root.dockOnPrimary ? "true" : "false")
                 + ",\"dockSecondary\":" + (root.dockOnSecondary ? "true" : "false") + "}",
             root.configPath
         ];
@@ -130,7 +175,8 @@ Item {
         command: [
             "bash", "-c",
             "mkdir -p \"$1\"; [ -f \"$2\" ] || "
-                + "printf '%s\\n' '{\"barSecondary\":true,\"dockSecondary\":true}' > \"$2\"",
+                + "printf '%s\\n' '{\"barPrimary\":true,\"barSecondary\":true,"
+                + "\"dockPrimary\":true,\"dockSecondary\":true}' > \"$2\"",
             "bash",
             root.configDir,
             root.configPath
@@ -151,7 +197,9 @@ Item {
 
         JsonAdapter {
             id: adapter
+            property bool barPrimary: true
             property bool barSecondary: true
+            property bool dockPrimary: true
             property bool dockSecondary: true
         }
     }
@@ -161,7 +209,9 @@ Item {
         function onLoaded() {
             // También se aplica si el archivo cambia desde fuera.
             root.syncing = true;
+            root.barOnPrimary = adapter.barPrimary !== false;
             root.barOnSecondary = adapter.barSecondary !== false;
+            root.dockOnPrimary = adapter.dockPrimary !== false;
             root.dockOnSecondary = adapter.dockSecondary !== false;
             root.syncing = false;
             root.loaded = true;
