@@ -21,8 +21,10 @@ animación de despedida.
   en **Configs de la shell** (principal y secundarios, por separado para barra
   y dock). Se toma como principal el que KDE designa como principal
   (`kscreen-doctor`), no el primero de la lista. La barra no puede apagarse en
-  todas las pantallas porque es la entrada al panel; el dock sí. Se guarda en
-  `~/.config/caparazon/display.json`.
+  todas las pantallas porque es la entrada al panel; el dock sí. En las
+  pantallas donde está apagada la barra, sus menús (apps, configs, calendario,
+  música) siguen abriéndose desde el dock o los atajos: la ventana se oculta,
+  no se destruye. Se guarda en `~/.config/caparazon/display.json`.
 - **Menú central**: buscador de aplicaciones con categorías, emojis y
   historial de portapapeles, navegable con flechas y `Enter`.
 - **Escritorios virtuales**: pager en números kanji, con halo en el escritorio

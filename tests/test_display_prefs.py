@@ -28,7 +28,8 @@ def test_screens_are_filtered_by_the_options() -> None:
     contents = LAYOUT.read_text(encoding="utf-8")
 
     assert "function screensFor(onPrimary, onSecondary)" in contents
-    assert "root.screensFor(root.barOnPrimary, root.barOnSecondary)" in contents
+    assert "function barShownFor(screen)" in contents
+    assert "return root.barOnSecondary" in contents
     assert "root.screensFor(root.dockOnPrimary, root.dockOnSecondary)" in contents
 
 
@@ -38,13 +39,14 @@ def test_the_bar_never_disappears_completely() -> None:
 
     assert "readonly property bool barPrimaryCanTurnOff" in contents
     assert "if (!value && !root.barPrimaryCanTurnOff)" in contents
-    assert "return root.primaryScreen !== null ? [root.primaryScreen]" in contents
+    assert "return !root.hasSecondaryScreen || !root.barOnSecondary" in contents
 
 
 def test_the_shell_uses_the_filtered_screen_lists() -> None:
     contents = SHELL.read_text(encoding="utf-8")
 
-    assert "model: ShellLayout.barScreens" in contents
+    assert "model: Quickshell.screens" in contents
+    assert "shown: ShellLayout.barShownFor(modelData)" in contents
     assert "model: ShellLayout.dockScreens" in contents
 
 

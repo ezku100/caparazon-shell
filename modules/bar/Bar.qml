@@ -25,6 +25,9 @@ PanelWindow {
     property var notificationServer: null
     property var workspacesService: null
     property string activeWindowAppId: ""
+    // Apagada desde el panel: se oculta, no se destruye (sus menús siguen
+    // disponibles desde el dock y los atajos).
+    property bool shown: true
     property int cpuUsage: 0
     property int ramUsage: 0
     property int gpuUsage: 0
@@ -100,8 +103,9 @@ PanelWindow {
     // Acabado SÓLIDO tipo Material 3 (sin blur ni borde): superficie opaca.
     // El alto incluye el aire inferior de la sombra; exclusiveZone reserva
     // sólo la franja de la barra para el resto de ventanas.
+    visible: bar.shown
     implicitHeight: Theme.barHeight + Theme.shadowPad
-    exclusiveZone: Theme.barHeight
+    exclusiveZone: bar.shown ? Theme.barHeight : 0
     color: "transparent"
 
     // La zona de sombra no debe tragarse clics: sólo la barra es clicable.
@@ -292,10 +296,11 @@ PanelWindow {
             ResourceMonitor {
                 id: resourceMonitor
 
-                readonly property bool shown: !bar.compactBar || tray.collapsed
+                readonly property bool ringsShown:
+                    !bar.compactBar || tray.collapsed
 
                 visible: opacity > 0
-                opacity: shown ? 1 : 0
+                opacity: ringsShown ? 1 : 0
 
                 Behavior on opacity {
                     NumberAnimation {
@@ -305,7 +310,7 @@ PanelWindow {
                 }
 
                 transform: Translate {
-                    x: resourceMonitor.shown ? 0 : 10
+                    x: resourceMonitor.ringsShown ? 0 : 10
 
                     Behavior on x {
                         NumberAnimation {

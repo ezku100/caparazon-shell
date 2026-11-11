@@ -62,13 +62,21 @@ Item {
         return result;
     }
 
-    readonly property var barScreens: {
-        const chosen = root.screensFor(root.barOnPrimary, root.barOnSecondary);
-        if (chosen.length > 0 || root.screens.length === 0)
-            return chosen;
-        // Config editada a mano sin ninguna barra: se deja en el principal
-        // para no perder el acceso al panel.
-        return root.primaryScreen !== null ? [root.primaryScreen] : root.screens;
+    // La barra no se destruye en las pantallas donde está apagada: se oculta
+    // (la ventana y sus menús tienen que seguir vivos para el dock y los
+    // atajos). Devuelve si debe verse en esa pantalla.
+    function barShownFor(screen) {
+        if (!screen)
+            return false;
+        const primary = root.primaryScreen;
+        const isPrimary = primary !== null && screen.name === primary.name;
+        if (!isPrimary)
+            return root.barOnSecondary;
+        if (root.barOnPrimary)
+            return true;
+        // Config a mano sin ninguna barra: se deja en el principal para no
+        // perder el acceso al panel.
+        return !root.hasSecondaryScreen || !root.barOnSecondary;
     }
 
     readonly property var dockScreens:

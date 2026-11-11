@@ -316,11 +316,13 @@ ShellRoot {
         }
     }
 
-    // Sólo las pantallas donde debe vivir la barra: todas, o únicamente la
-    // principal de KDE si la opción está apagada.
+    // Una barra por pantalla. Las apagadas desde el panel quedan ocultas
+    // (ver Bar.shown), no destruidas: sus menús se usan desde el dock o los
+    // atajos aunque no haya barra a la vista.
     Variants {
-        model: ShellLayout.barScreens
+        model: Quickshell.screens
         delegate: Bar {
+            shown: ShellLayout.barShownFor(modelData)
             workspacesService: workspacesSvc
             powerMenuState: shellRoot.powerMenuState
             appMenuState: shellRoot.appMenuState

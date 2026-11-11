@@ -9,8 +9,8 @@ def test_the_compact_bar_shows_the_rings_only_with_the_tray_folded() -> None:
     """En barra compacta los anillos aparecen cuando la bandeja se pliega."""
     contents = BAR.read_text(encoding="utf-8")
 
-    assert "readonly property bool shown: !bar.compactBar || tray.collapsed" in contents
-    assert "opacity: shown ? 1 : 0" in contents
+    assert "!bar.compactBar || tray.collapsed" in contents
+    assert "opacity: ringsShown ? 1 : 0" in contents
 
 
 def test_the_rings_fade_instead_of_popping() -> None:
@@ -18,7 +18,7 @@ def test_the_rings_fade_instead_of_popping() -> None:
 
     assert "visible: opacity > 0" in contents
     assert "Behavior on opacity" in contents
-    assert "x: resourceMonitor.shown ? 0 : 10" in contents
+    assert "x: resourceMonitor.ringsShown ? 0 : 10" in contents
 
 
 def test_the_rings_still_follow_the_monitor_options() -> None:
