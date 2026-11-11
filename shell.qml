@@ -7,6 +7,7 @@ import "modules/bar"
 import "modules/appmenu"
 import "modules/dock"
 import "modules/icons"
+import "theme"
 
 // Caparazón — punto de entrada.
 // Una barra por pantalla (Quickshell.screens).
@@ -315,8 +316,10 @@ ShellRoot {
         }
     }
 
+    // Sólo las pantallas donde debe vivir la barra: todas, o únicamente la
+    // principal de KDE si la opción está apagada.
     Variants {
-        model: Quickshell.screens
+        model: ShellLayout.barScreens
         delegate: Bar {
             workspacesService: workspacesSvc
             powerMenuState: shellRoot.powerMenuState
@@ -338,7 +341,7 @@ ShellRoot {
     }
 
     Variants {
-        model: Quickshell.screens
+        model: ShellLayout.dockScreens
         delegate: Dock {
             screen: modelData
             activeAppId: activeWindowService.appId

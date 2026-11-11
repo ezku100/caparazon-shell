@@ -17,6 +17,10 @@ animación de despedida.
   dejarlo. Desde **Configs de la shell** (kanji 猫) puede pasar a **anclado**:
   siempre visible y reservando su franja. El estado se guarda en
   `~/.config/caparazon/dock.json` (`"dockPinned": true`).
+- **Multi-monitor**: barra y dock en cada pantalla, con interruptores en
+  **Configs de la shell** para dejarlos sólo en el monitor principal. Se toma
+  como principal el que KDE designa como principal (`kscreen-doctor`), no el
+  primero de la lista. Se guarda en `~/.config/caparazon/display.json`.
 - **Menú central**: buscador de aplicaciones con categorías, emojis y
   historial de portapapeles, navegable con flechas y `Enter`.
 - **Escritorios virtuales**: pager en números kanji, con halo en el escritorio
@@ -41,7 +45,8 @@ animación de despedida.
 
 - KDE Plasma 6 sobre **Wayland** (KWin).
 - `quickshell` 0.3.x o superior.
-- Herramientas de KDE: `qdbus6`, `busctl`, `dbus-monitor`.
+- Herramientas de KDE: `qdbus6`, `busctl`, `dbus-monitor` y `kscreen-doctor`
+  (monitor principal).
 - `wl-paste` (historial de portapapeles) y `gdbus` (puente con KWin).
 - Para el tema dinámico: `matugen`, `inotify-tools` (`inotifywait`),
   `util-linux` (`flock`), `libkf6config-bin` (`kreadconfig6`), `git` y

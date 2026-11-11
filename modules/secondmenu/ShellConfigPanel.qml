@@ -369,6 +369,32 @@ Flickable {
 
         Text {
             width: parent.width
+            text: "Monitores"
+            color: Theme.textDim
+            font.family: Theme.fontUI
+            font.pixelSize: Theme.fontPx
+        }
+
+        // El principal es el que KDE marca como principal (prioridad 1 de
+        // kscreen), así que la shell coincide con lo que decide Plasma.
+        ToggleRow {
+            width: parent.width
+            label: "Barra en monitores secundarios"
+            note: "Se queda sólo en el monitor principal de KDE."
+            value: ShellLayout.barOnSecondary
+            onToggled: ShellLayout.setBarOnSecondary(!ShellLayout.barOnSecondary)
+        }
+
+        ToggleRow {
+            width: parent.width
+            label: "Dock en monitores secundarios"
+            note: "Apágalo para tener el dock sólo en el principal."
+            value: ShellLayout.dockOnSecondary
+            onToggled: ShellLayout.setDockOnSecondary(!ShellLayout.dockOnSecondary)
+        }
+
+        Text {
+            width: parent.width
             text: "Estilo de color"
             color: Theme.textDim
             font.family: Theme.fontUI
