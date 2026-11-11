@@ -82,9 +82,9 @@ def dock_height() -> int:
 
 
 def row_height() -> int:
-    """El alto de la fila: lo marca el botón de pin, que llena el cristal."""
+    """El alto de la fila: el grosor del cristal, que marca el tema."""
     contents = qml(DOCK)
-    assert "height: Theme.dockHeight" in contents
+    assert "height: dock.vertical ? parent.height : Theme.dockHeight" in contents
     return dock_height()
 
 
@@ -109,8 +109,12 @@ def test_the_dock_row_centers_its_items() -> None:
 
 
 def test_the_music_card_keeps_its_distance_from_the_top_edge() -> None:
-    """La tarjeta de música respira por arriba y por abajo."""
-    music_height = number(qml(MUSIC_WIDGET), "implicitHeight")
+    """La tarjeta de música respira por arriba y por abajo.
+
+    Se mide el alto de la tarjeta en horizontal: en columna el widget crece
+    hacia abajo con los botones apilados.
+    """
+    music_height = number(qml(MUSIC_WIDGET), "cardHeight")
     top = top_offset(music_height)
 
     assert top >= MIN_MARGIN

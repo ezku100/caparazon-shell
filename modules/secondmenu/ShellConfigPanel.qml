@@ -142,6 +142,16 @@ Flickable {
             key: "top",
             label: "Arriba",
             note: "Espejado: se oculta hacia arriba y el borde caliente es el superior."
+        },
+        {
+            key: "left",
+            label: "Izquierda",
+            note: "Columna vertical: se oculta hacia la izquierda."
+        },
+        {
+            key: "right",
+            label: "Derecha",
+            note: "Columna vertical: se oculta hacia la derecha."
         }
     ]
 

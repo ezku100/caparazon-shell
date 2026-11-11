@@ -116,9 +116,34 @@ Item {
 
     property real displayPosition: 0
 
-    implicitWidth: hasPlayer ? 256 : 0
-    implicitHeight: 42
+    // En la columna vertical no cabe la tarjeta ancha: se queda la carátula y,
+    // al pasar el puntero, la tarjeta se estira hacia abajo con los controles.
+    property bool compact: false
+
+    // Lo pone el dock: el puntero está encima (despliega) y la orientación.
+    property bool hovering: false
+    property bool expanded: false
+
+    readonly property int cardHeight: 42
+    readonly property int buttonsHeight: 76
+
+    // Alto con los controles fuera: el dock usa `cardHeight` para calcular el
+    // largo del cristal con la tarjeta plegada.
+    readonly property int targetHeight: root.cardHeight
+        + (root.compact && root.expanded ? root.buttonsHeight : 0)
+
+    implicitWidth: compact ? 44 : (hasPlayer ? 256 : 0)
+    implicitHeight: root.cardHeight
+    // En columna los controles se guardan dentro de la tarjeta al plegarse.
+    clip: root.compact
+    // Se anima el alto real (no el implícito) para que la columna del dock
+    // acompañe el despliegue fotograma a fotograma.
+    height: root.targetHeight
     visible: hasPlayer
+
+    Behavior on height {
+        NumberAnimation { duration: 240; easing.type: Easing.OutCubic }
+    }
 
     function syncPosition() {
         root.displayPosition = root.player
@@ -174,7 +199,11 @@ Item {
 
     Rectangle {
         id: card
-        anchors.fill: parent
+        anchors.left: parent.left
+        anchors.right: parent.right
+        // En columna la tarjeta abraza sólo la carátula; los controles van
+        // sueltos sobre el cristal.
+        height: root.compact ? root.cardHeight : parent.height
         radius: 12
         color: Theme.chip
     }
@@ -182,13 +211,15 @@ Item {
     Row {
         id: row
         anchors.fill: parent
-        anchors.leftMargin: 8
-        anchors.rightMargin: 8
-        spacing: 7
+        anchors.leftMargin: root.compact ? 3 : 8
+        anchors.rightMargin: root.compact ? 3 : 8
+        spacing: root.compact ? 0 : 7
 
-        // Cover circular con anillo de progreso y giro lento.
+        // Cover circular con anillo de progreso y giro lento. En horizontal
+        // se centra en la fila; en columna va arriba porque los controles
+        // se apilan debajo.
         Item {
-            anchors.verticalCenter: parent.verticalCenter
+            y: root.compact ? 2 : Math.round((parent.height - height) / 2)
             width: 38
             height: 38
 
@@ -287,6 +318,7 @@ Item {
 
         Column {
             anchors.verticalCenter: parent.verticalCenter
+            visible: !root.compact
             width: 120
             spacing: 1
 
@@ -316,6 +348,7 @@ Item {
         Row {
             id: controls
             anchors.verticalCenter: parent.verticalCenter
+            visible: !root.compact
             width: 68
             spacing: 1
 
@@ -341,18 +374,64 @@ Item {
         }
     }
 
+    // Controles de la columna: mismos botones que en horizontal, apilados
+    // bajo la carátula. Se pliegan con la tarjeta.
+    Column {
+        id: compactControls
+        visible: root.compact
+        enabled: root.expanded
+        anchors.horizontalCenter: parent.horizontalCenter
+        y: root.cardHeight + 4
+        spacing: 0
+        opacity: root.expanded ? 1 : 0
+
+        Behavior on opacity {
+            NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
+        }
+
+        MusicButton {
+            icon: "media-skip-backward-symbolic"
+            available: root.player !== null && root.player.canGoPrevious
+            onActivated: if (root.player) root.player.previous()
+        }
+
+        MusicButton {
+            icon: root.player && root.player.isPlaying
+                ? "media-playback-pause-symbolic"
+                : "media-playback-start-symbolic"
+            available: root.player !== null && root.player.canTogglePlaying
+            onActivated: if (root.player) root.player.togglePlaying()
+        }
+
+        MusicButton {
+            icon: "media-skip-forward-symbolic"
+            available: root.player !== null && root.player.canGoNext
+            onActivated: if (root.player) root.player.next()
+        }
+    }
+
     // Clic en la carátula o el título para abrir el menú secundario (Música).
     // Queda declarado después de la fila para que esté por encima de la
     // carátula y el texto; su ancho se detiene antes de los controles para
-    // que los botones sigan recibiendo sus clics con normalidad.
+    // que los botones sigan recibiendo sus clics con normalidad. En columna
+    // no hay fila de controles que esquivar: cubre la carátula entera, que es
+    // todo el alto de la tarjeta, y deja libres los botones de debajo.
     MouseArea {
         id: openMenuArea
         x: 0
         y: 0
-        height: root.height
-        width: Math.max(0, row.x + controls.x - row.spacing)
+        height: root.compact ? root.cardHeight : root.height
+        width: root.compact
+            ? root.width
+            : Math.max(0, row.x + controls.x - row.spacing)
         acceptedButtons: Qt.LeftButton
         cursorShape: Qt.PointingHandCursor
         onClicked: root.activated()
+    }
+
+    // Sólo observa: no consume clics ni hover de la carátula.
+    HoverHandler {
+        id: tileHover
+        onHoveredChanged: root.hovering = hovered
     }
 }

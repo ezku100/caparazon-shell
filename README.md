@@ -12,16 +12,20 @@ animación de despedida.
   con contador de instancias, foco al instante y menú contextual con las
   acciones del `.desktop`. Un clic sobre el icono **enfoca** la ventana; el
   siguiente clic la **minimiza**, y si estaba minimizada la **restaura**.
-- **Dock inteligente**: el dock está **oculto** y sube al acercar el puntero al
-  borde inferior (y se puede usar encima de la ventana); se oculta otra vez al
-  dejarlo. Desde **Configs de Caparazón Shell** (kanji 猫) puede pasar a **anclado**:
+- **Dock inteligente**: el dock está **oculto** y sale al acercar el puntero al
+  borde donde vive (inferior, superior, izquierda o derecha; se puede usar
+  encima de la ventana); se oculta otra vez al dejarlo. Desde **Configs de Caparazón Shell** (kanji 猫) puede pasar a **anclado**:
   siempre visible y reservando su franja. El estado se guarda en
   `~/.config/caparazon/dock.json` (`"dockPinned": true`).
-- **Posición**: la barra puede vivir **arriba o abajo** y el dock **abajo o
-  arriba**, desde **Configs de Caparazón Shell** → *Posición*. No se rediseña:
-  la forma (curva cóncava pegada al filo), la sombra, la entrada y los menús de
-  bandeja se espejan. Se guarda en `~/.config/caparazon/display.json`
-  (`"barPosition"`, `"dockPosition"`).
+- **Posición**: la barra puede vivir **arriba o abajo** y el dock en los
+  **cuatro bordes** (abajo, arriba, izquierda o derecha), desde **Configs de
+  Caparazón Shell** → *Posición*. No se rediseña: la forma (curva cóncava
+  pegada al filo), la sombra y la entrada se llevan al borde elegido y los
+  menús de bandeja se espejan. En los laterales el dock pasa a **columna**: el
+  reproductor se queda con la carátula y, al pasar el puntero, la tarjeta se
+  estira con los controles (el cristal crece hacia abajo sin mover su borde
+  superior) y se recoge al salir. Se guarda en
+  `~/.config/caparazon/display.json` (`"barPosition"`, `"dockPosition"`).
 - **Multi-monitor**: barra y dock en cada pantalla, con cuatro interruptores
   en **Configs de Caparazón Shell** (principal y secundarios, por separado para barra
   y dock). Se toma como principal el que KDE designa como principal

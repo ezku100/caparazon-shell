@@ -35,8 +35,8 @@ const exclusiveZone = context.exclusiveZone;
 const metrics = {
     surfaceWidth: 1920,
     surfaceHeight: 64,
-    dockWidth: 360,
-    dockHeight: 52,
+    dockLength: 360,
+    dockThickness: 52,
     shadowPad: 12,
     position: "bottom",
     hotEdge: 6,
@@ -65,6 +65,20 @@ function same(left, right) {
 // Mismas medidas con el dock pegado al borde superior: la franja sensible y
 // el cuerpo quedan arriba y el aire de la sombra abajo.
 const topMetrics = Object.assign({}, metrics, { position: "top" });
+
+// Pantalla vertical (1080x1920) con el dock en un lado: la columna se centra
+// a lo alto y la ventana es una franja de 64 px pegada al filo.
+const leftMetrics = {
+    surfaceWidth: 64,
+    surfaceHeight: 1920,
+    dockLength: 360,
+    dockThickness: 52,
+    shadowPad: 12,
+    position: "left",
+    hotEdge: 6,
+    bottomGap: 0,
+};
+const rightMetrics = Object.assign({}, leftMetrics, { position: "right" });
 
 const cases = [
     {
@@ -144,6 +158,30 @@ const cases = [
         detail: "arriba y revelado, el cuerpo ocupa el filo superior",
         run: () => maskRect("revealed", topMetrics),
         expected: { x: 780, y: 0, width: 360, height: 52 },
+    },
+    {
+        id: "mascara-oculta-izquierda",
+        detail: "a la izquierda y apartado, la franja sensible queda en el filo",
+        run: () => maskRect("hidden", leftMetrics),
+        expected: { x: 0, y: 780, width: 6, height: 360 },
+    },
+    {
+        id: "mascara-revelada-izquierda",
+        detail: "a la izquierda y revelado, la columna ocupa el filo",
+        run: () => maskRect("revealed", leftMetrics),
+        expected: { x: 0, y: 780, width: 52, height: 360 },
+    },
+    {
+        id: "mascara-revelada-derecha",
+        detail: "a la derecha, la columna deja el aire de la sombra por dentro",
+        run: () => maskRect("revealed", rightMetrics),
+        expected: { x: 12, y: 780, width: 52, height: 360 },
+    },
+    {
+        id: "mascara-oculta-derecha",
+        detail: "a la derecha y apartado, la franja sensible queda al filo",
+        run: () => maskRect("hidden", rightMetrics),
+        expected: { x: 58, y: 780, width: 6, height: 360 },
     },
 ];
 

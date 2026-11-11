@@ -71,7 +71,9 @@ def test_the_hover_detector_is_not_blocked_by_the_app_icons() -> None:
 
     hit_block = contents.split("id: hitArea", 1)[1].split("\n    }", 1)[0]
     assert "HoverHandler" not in hit_block
-    assert contents.count("HoverHandler") == 1
+    # Sólo el del dock, en la raíz. El de la tarjeta del reproductor vive en
+    # MusicWidget.qml y únicamente despliega los controles.
+    assert contents.count("HoverHandler {") == 1
 
 
 def test_the_dock_uses_the_anchored_state() -> None:
@@ -88,4 +90,4 @@ def test_the_readme_documents_the_auto_hide_and_the_anchor() -> None:
 
     assert "oculto" in contents
     assert "anclado" in contents
-    assert "configs de la shell" in contents
+    assert "configs de caparazón shell" in contents

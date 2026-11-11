@@ -191,7 +191,25 @@ PanelWindow {
         ]
     }
 
-    readonly property int targetWidth: Math.max(308, dockRow.implicitWidth + 2 * Theme.padH + 16)
+    // Largo del contenido por su eje: la fila de siempre o la columna nueva.
+    readonly property int contentLength: dock.vertical
+        ? dockColumn.implicitHeight
+        : dockRow.implicitWidth
+
+    // En columna, el contenido sin los botones desplegados: el cristal se
+    // calcula con esto para que su borde superior no se mueva al desplegar (si
+    // se moviera, el puntero perdería la carátula y el despliegue parpadearía).
+    readonly property int restContent: dock.vertical
+        ? dockColumn.implicitHeight - musicTile.height + musicTile.cardHeight
+        : 0
+    readonly property int collapsedLength: Math.max(308,
+        dock.restContent + 2 * Theme.padH + 16)
+
+    readonly property int targetWidth: Math.max(
+        dock.vertical
+            ? dock.collapsedLength + (dock.contentLength - dock.restContent)
+            : 308,
+        dock.contentLength + 2 * Theme.padH + 16)
     property int dockWidth: 308
 
     // Al cambiar el contenido, el dock se pasa un poco del ancho objetivo
@@ -223,14 +241,25 @@ PanelWindow {
             dockWidth = targetWidth;
             return;
         }
+        if (dock.deployAnimating) {
+            // El contenido ya viene animado: seguirlo tal cual.
+            widthBounce.stop();
+            dockWidth = targetWidth;
+            return;
+        }
         animateDockWidth(targetWidth);
     }
     readonly property int bottomGap: 0
 
-    // Borde al que se pega el dock: "bottom" (por defecto) o "top".
-    // El escondite, el borde caliente, la sombra y la forma se espejan.
+    // Borde al que se pega el dock: "bottom" (por defecto), "top", "left"
+    // o "right". Con los laterales el dock pasa a columna vertical y tanto el
+    // escondite como el borde caliente, la sombra y la forma giran 90°.
     property string position: "bottom"
     readonly property bool atTop: dock.position === "top"
+    readonly property bool atBottom: dock.position === "bottom"
+    readonly property bool atLeft: dock.position === "left"
+    readonly property bool atRight: dock.position === "right"
+    readonly property bool vertical: dock.atLeft || dock.atRight
 
     // El puntero está sobre el dock o sobre su franja sensible.
     property bool pointerOnDock: false
@@ -239,6 +268,26 @@ PanelWindow {
 
     // Con un menú abierto el dock no se esconde, aunque el ratón salga de él.
     readonly property bool menuOpen: appMenu.opened || dock.trayMenuState > 0 || secondMenuState.opened
+
+    // En columna la tarjeta del reproductor se estira al pasar el puntero y
+    // vuelve a su sitio al salir: el despliegue va dentro del cristal, así que
+    // no hay hueco que cruzar ni hace falta temporizador de gracia.
+    readonly property bool musicExpanded: dock.vertical && musicTile.hovering
+
+    // Mientras se despliega el largo del cristal sigue al contenido sin rebote:
+    // el rebote se reiniciaría en cada fotograma y se vería tembloroso.
+    property bool deployAnimating: false
+
+    onMusicExpandedChanged: {
+        dock.deployAnimating = true;
+        deploySettle.restart();
+    }
+
+    Timer {
+        id: deploySettle
+        interval: 420
+        onTriggered: dock.deployAnimating = false
+    }
 
     // Al cerrar el menú el ratón ya no está sobre el dock: sin esta pauta
     // quedaba revelado para siempre, así que se rearranca la gracia.
@@ -253,28 +302,33 @@ PanelWindow {
     readonly property var metrics: ({
         surfaceWidth: dock.width,
         surfaceHeight: dock.height,
-        dockWidth: dock.dockWidth,
-        dockHeight: Theme.dockHeight,
+        // Largo a lo largo del borde y grosor hacia dentro: la librería ya
+        // razona en estos términos para los cuatro bordes.
+        dockLength: dock.dockWidth,
+        dockThickness: Theme.dockHeight,
         shadowPad: Theme.shadowPad,
         hotEdge: Theme.dockHotEdge,
         bottomGap: dock.bottomGap,
         position: dock.position
     })
 
+    // Horizontal: la ventana cruza toda la pantalla y sólo ocupa el grosor.
+    // Vertical: al revés, ocupa el grosor de ancho y cruza toda la altura.
     anchors {
-        top: dock.atTop
-        bottom: !dock.atTop
-        left: true
-        right: true
+        top: dock.atTop || dock.vertical
+        bottom: dock.atBottom || dock.vertical
+        left: dock.atLeft || !dock.vertical
+        right: dock.atRight || !dock.vertical
     }
 
     margins {
         top: dock.atTop ? dock.bottomGap : 0
-        bottom: dock.atTop ? 0 : dock.bottomGap
-        left: 0
-        right: 0
+        bottom: dock.atBottom ? dock.bottomGap : 0
+        left: dock.atLeft ? dock.bottomGap : 0
+        right: dock.atRight ? dock.bottomGap : 0
     }
 
+    implicitWidth: Theme.dockHeight + Theme.shadowPad
     implicitHeight: Theme.dockHeight + Theme.shadowPad
     exclusiveZone: DockSmartHide.exclusiveZone(dock.dockPinned, dock.metrics)
     color: "transparent"
@@ -339,16 +393,35 @@ PanelWindow {
 
     Item {
         id: frame
-        x: Math.round((parent.width - width) / 2)
-        // Abajo se esconde saliendo por debajo; arriba, por encima.
-        y: dock.atTop
-            ? -DockSmartHide.dockOffset(dock.smartState, dock.metrics)
-            : parent.height - height
-                + DockSmartHide.dockOffset(dock.smartState, dock.metrics)
-        width: dock.dockWidth + 2 * Theme.shadowPad
-        height: dock.reveal * (Theme.dockHeight + Theme.shadowPad)
+        readonly property int thickness: Theme.dockHeight + Theme.shadowPad
+        readonly property int hideOffset:
+            DockSmartHide.dockOffset(dock.smartState, dock.metrics)
+
+        // Horizontal: centrado a lo ancho y pegado al filo superior o inferior.
+        // Vertical: centrado a lo alto y el grosor crece desde el filo lateral.
+        x: dock.vertical
+            ? (dock.atLeft
+                ? -hideOffset
+                : parent.width - width + hideOffset)
+            : Math.round((parent.width - width) / 2)
+        // En columna el alto crece con el despliegue: el borde superior se
+        // ancla al largo plegado para que la carátula no se mueva.
+        y: dock.vertical
+            ? Math.round((parent.height
+                - (dock.collapsedLength + 2 * Theme.shadowPad)) / 2)
+            : (dock.atTop ? -hideOffset : parent.height - height + hideOffset)
+        width: dock.vertical
+            ? dock.reveal * thickness
+            : dock.dockWidth + 2 * Theme.shadowPad
+        height: dock.vertical
+            ? dock.dockWidth + 2 * Theme.shadowPad
+            : dock.reveal * thickness
         clip: true
         opacity: dock.smartState === "hidden" ? 0 : (0.25 + 0.75 * dock.reveal)
+
+        Behavior on x {
+            NumberAnimation { duration: Theme.dur; easing.type: Easing.OutCubic }
+        }
 
         Behavior on y {
             NumberAnimation { duration: Theme.dur; easing.type: Easing.OutCubic }
@@ -361,33 +434,34 @@ PanelWindow {
         MultiEffect {
             id: elevation
             source: glass
-            anchors { left: parent.left; leftMargin: Theme.shadowPad }
-            y: dock.atTop ? 0 : parent.height - height
-            width: parent.width - 2 * Theme.shadowPad
-            height: Theme.dockHeight
+            x: glass.x
+            y: glass.y
+            width: glass.width
+            height: glass.height
 
             blurMax: 32
             shadowEnabled: true
             shadowColor: Theme.shadowColor
             shadowOpacity: Theme.shadowOpacity
             shadowBlur: Theme.shadowBlur
-            shadowHorizontalOffset: 0
-            // La sombra cae hacia dentro: hacia arriba con el dock abajo y
-            // hacia abajo con el dock arriba.
+            // La sombra cae siempre hacia dentro: hacia arriba con el dock
+            // abajo, hacia abajo arriba y hacia dentro en los laterales.
+            shadowHorizontalOffset: dock.atLeft
+                ? Theme.shadowOffsetY
+                : (dock.atRight ? -Theme.shadowOffsetY : 0)
             shadowVerticalOffset: dock.atTop
-                ? Theme.shadowOffsetY : -Theme.shadowOffsetY
+                ? Theme.shadowOffsetY
+                : (dock.atBottom ? -Theme.shadowOffsetY : 0)
         }
 
         Shape {
             id: glass
-            anchors {
-                left: parent.left
-                leftMargin: Theme.shadowPad
-                right: parent.right
-                rightMargin: Theme.shadowPad
-            }
-            y: dock.atTop ? 0 : parent.height - height
-            height: Theme.dockHeight
+            // El cristal ocupa el mismo rectángulo que el contenido; el
+            // trazado se lleva al borde elegido mapeando sus puntos.
+            x: contentClip.x
+            y: contentClip.y
+            width: contentClip.width
+            height: contentClip.height
             antialiasing: true
             preferredRendererType: Shape.CurveRenderer
 
@@ -395,13 +469,32 @@ PanelWindow {
                 id: glassPath
                 readonly property int rt: Theme.radius
                 readonly property int rb: Theme.radiusTop
-                readonly property bool flip: dock.atTop
+                // Largo y grosor en el espacio del trazado (filo abajo).
+                readonly property real len: dock.vertical ? glass.height : glass.width
+                readonly property real thick: dock.vertical ? glass.width : glass.height
 
-                // Con el dock arriba el trazado se espeja: la curva cóncava
-                // ("labio") pasa al filo superior y las convexas abajo.
-                function y(value) { return flip ? glass.height - value : value }
+                // El trazado se dibuja siempre con el filo abajo y el labio
+                // cóncavo. Llevarlo al borde pedido es mapear cada punto:
+                // arriba es un espejo (invierte los arcos), a los lados un
+                // giro de 90° que conserva su sentido de recorrido.
+                function px(x, y) {
+                    if (dock.atLeft)
+                        return glassPath.thick - y;
+                    if (dock.atRight)
+                        return y;
+                    return x;
+                }
+                function py(x, y) {
+                    if (dock.atLeft)
+                        return x;
+                    if (dock.atRight)
+                        return glassPath.len - x;
+                    if (dock.atTop)
+                        return glassPath.thick - y;
+                    return y;
+                }
                 function inverse(value) {
-                    if (!flip)
+                    if (!dock.atTop)
                         return value;
                     return value === PathArc.Clockwise
                         ? PathArc.Counterclockwise : PathArc.Clockwise;
@@ -413,14 +506,17 @@ PanelWindow {
 
                 // Borde del filo intacto: el cuerpo se abre hacia el borde.
                 // Solo los dos arcos del filo curvan hacia adentro.
-                startX: 0
-                startY: glassPath.y(glass.height)
+                startX: glassPath.px(0, glassPath.thick)
+                startY: glassPath.py(0, glassPath.thick)
 
-                PathLine { x: glass.width; y: glassPath.y(glass.height) }
+                PathLine {
+                    x: glassPath.px(glassPath.len, glassPath.thick)
+                    y: glassPath.py(glassPath.len, glassPath.thick)
+                }
 
                 PathArc {
-                    x: glass.width - glassPath.rb
-                    y: glassPath.y(glass.height - glassPath.rb)
+                    x: glassPath.px(glassPath.len - glassPath.rb, glassPath.thick - glassPath.rb)
+                    y: glassPath.py(glassPath.len - glassPath.rb, glassPath.thick - glassPath.rb)
                     radiusX: glassPath.rb
                     radiusY: glassPath.rb
                     direction: glassPath.inverse(PathArc.Clockwise)
@@ -428,24 +524,13 @@ PanelWindow {
                 }
 
                 PathLine {
-                    x: glass.width - glassPath.rb
-                    y: glassPath.y(glassPath.rt)
+                    x: glassPath.px(glassPath.len - glassPath.rb, glassPath.rt)
+                    y: glassPath.py(glassPath.len - glassPath.rb, glassPath.rt)
                 }
 
                 PathArc {
-                    x: glass.width - glassPath.rb - glassPath.rt
-                    y: glassPath.y(0)
-                    radiusX: glassPath.rt
-                    radiusY: glassPath.rt
-                    direction: glassPath.inverse(PathArc.Counterclockwise)
-                    useLargeArc: false
-                }
-
-                PathLine { x: glassPath.rb + glassPath.rt; y: glassPath.y(0) }
-
-                PathArc {
-                    x: glassPath.rb
-                    y: glassPath.y(glassPath.rt)
+                    x: glassPath.px(glassPath.len - glassPath.rb - glassPath.rt, 0)
+                    y: glassPath.py(glassPath.len - glassPath.rb - glassPath.rt, 0)
                     radiusX: glassPath.rt
                     radiusY: glassPath.rt
                     direction: glassPath.inverse(PathArc.Counterclockwise)
@@ -453,13 +538,27 @@ PanelWindow {
                 }
 
                 PathLine {
-                    x: glassPath.rb
-                    y: glassPath.y(glass.height - glassPath.rb)
+                    x: glassPath.px(glassPath.rb + glassPath.rt, 0)
+                    y: glassPath.py(glassPath.rb + glassPath.rt, 0)
                 }
 
                 PathArc {
-                    x: 0
-                    y: glassPath.y(glass.height)
+                    x: glassPath.px(glassPath.rb, glassPath.rt)
+                    y: glassPath.py(glassPath.rb, glassPath.rt)
+                    radiusX: glassPath.rt
+                    radiusY: glassPath.rt
+                    direction: glassPath.inverse(PathArc.Counterclockwise)
+                    useLargeArc: false
+                }
+
+                PathLine {
+                    x: glassPath.px(glassPath.rb, glassPath.thick - glassPath.rb)
+                    y: glassPath.py(glassPath.rb, glassPath.thick - glassPath.rb)
+                }
+
+                PathArc {
+                    x: glassPath.px(0, glassPath.thick)
+                    y: glassPath.py(0, glassPath.thick)
                     radiusX: glassPath.rb
                     radiusY: glassPath.rb
                     direction: glassPath.inverse(PathArc.Clockwise)
@@ -470,11 +569,17 @@ PanelWindow {
 
         Item {
             id: contentClip
-            anchors.fill: glass
+            // El cuerpo se pega al filo; el recorte del revelado entra desde
+            // el lado de dentro.
+            x: dock.vertical ? (dock.atLeft ? 0 : parent.width - width) : 0
+            y: dock.vertical ? 0 : (dock.atTop ? 0 : parent.height - height)
+            width: dock.vertical ? Theme.dockHeight : parent.width
+            height: dock.vertical ? parent.height : Theme.dockHeight
             clip: true
 
             Row {
                 id: dockRow
+                visible: !dock.vertical
                 anchors.verticalCenter: parent.verticalCenter
                 x: Math.round((dock.dockWidth - dockRow.implicitWidth) / 2)
                 spacing: 6
@@ -493,6 +598,46 @@ PanelWindow {
 
                     delegate: DockApp {
                         y: Math.round((dockRow.height - height) / 2)
+                        app: modelData
+                        instanceCount: dock.countFor(modelData)
+                        focused: dock.isFocused(modelData)
+                        onActivated: function(newInstance) {
+                            appMenu.close();
+                            dock.launch(modelData, newInstance);
+                        }
+                        onMenuRequested: function(anchor) {
+                            dock.openAppMenu(modelData, anchor);
+                        }
+                    }
+                }
+            }
+
+            Column {
+                id: dockColumn
+                visible: dock.vertical
+                anchors.horizontalCenter: parent.horizontalCenter
+                // Centrada sobre el largo plegado: al desplegar, la carátula se
+                // queda donde está y la tarjeta sólo crece hacia abajo.
+                y: dock.vertical
+                    ? Math.round((dock.collapsedLength - dock.restContent) / 2)
+                    : Math.round((dock.dockWidth - dockColumn.implicitHeight) / 2)
+                spacing: 6
+
+                // En columna no cabe el reproductor entero: sólo la carátula,
+                // que se estira con los controles al pasar el puntero.
+                MusicWidget {
+                    id: musicTile
+                    compact: true
+                    expanded: dock.musicExpanded
+                    x: Math.round((dockColumn.width - width) / 2)
+                    onActivated: dock.openMusicMenu()
+                }
+
+                Repeater {
+                    model: dock.dockApps
+
+                    delegate: DockApp {
+                        x: Math.round((dockColumn.width - width) / 2)
                         app: modelData
                         instanceCount: dock.countFor(modelData)
                         focused: dock.isFocused(modelData)

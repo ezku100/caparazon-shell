@@ -20,6 +20,7 @@ Item {
     property bool dockOnSecondary: true
     // Borde de la pantalla donde se ancla cada elemento. La barra nace
     // pegada al borde: "top" (curva cóncava arriba) o "bottom" (espejada).
+    // El dock admite además "left" y "right" (columna vertical).
     property string barPosition: "top"
     property string dockPosition: "bottom"
     property bool loaded: false
@@ -112,8 +113,7 @@ Item {
         root.dockOnSecondary = value;
     }
 
-    // Sólo dos bordes posibles por elemento: la barra es horizontal y el
-    // dock también (la variante vertical no está soportada todavía).
+    // La barra es horizontal: dos bordes. El dock admite los cuatro.
     function setBarPosition(value) {
         if (value !== "top" && value !== "bottom")
             return;
@@ -123,7 +123,8 @@ Item {
     }
 
     function setDockPosition(value) {
-        if (value !== "top" && value !== "bottom")
+        if (value !== "top" && value !== "bottom"
+                && value !== "left" && value !== "right")
             return;
         if (root.dockPosition === value)
             return;
@@ -253,7 +254,8 @@ Item {
             // Valores desconocidos (archivo editado a mano) caen al borde
             // por defecto en vez de dejar la ventana sin anclaje.
             root.barPosition = adapter.barPosition === "bottom" ? "bottom" : "top";
-            root.dockPosition = adapter.dockPosition === "top" ? "top" : "bottom";
+            root.dockPosition = ["top", "left", "right"].indexOf(adapter.dockPosition) >= 0
+                ? adapter.dockPosition : "bottom";
             root.syncing = false;
             root.loaded = true;
         }
