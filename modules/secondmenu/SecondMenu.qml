@@ -48,7 +48,7 @@ PanelWindow {
         { key: "calendario", icon: "notifications", label: "Calendario" },
         { key: "musica", icon: "audio", label: "Música" },
         { key: "sistema", icon: "utilities-system-monitor", label: "Monitor del sistema" },
-        { key: "configs", glyph: "猫", label: "Configs de la shell" }
+        { key: "configs", glyph: "猫", label: "Configs de Caparazón Shell" }
     ]
 
     function close() {

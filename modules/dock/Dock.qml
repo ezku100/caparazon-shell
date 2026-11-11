@@ -227,6 +227,11 @@ PanelWindow {
     }
     readonly property int bottomGap: 0
 
+    // Borde al que se pega el dock: "bottom" (por defecto) o "top".
+    // El escondite, el borde caliente, la sombra y la forma se espejan.
+    property string position: "bottom"
+    readonly property bool atTop: dock.position === "top"
+
     // El puntero está sobre el dock o sobre su franja sensible.
     property bool pointerOnDock: false
 
@@ -252,17 +257,20 @@ PanelWindow {
         dockHeight: Theme.dockHeight,
         shadowPad: Theme.shadowPad,
         hotEdge: Theme.dockHotEdge,
-        bottomGap: dock.bottomGap
+        bottomGap: dock.bottomGap,
+        position: dock.position
     })
 
     anchors {
-        bottom: true
+        top: dock.atTop
+        bottom: !dock.atTop
         left: true
         right: true
     }
 
     margins {
-        bottom: dock.bottomGap
+        top: dock.atTop ? dock.bottomGap : 0
+        bottom: dock.atTop ? 0 : dock.bottomGap
         left: 0
         right: 0
     }
@@ -272,6 +280,7 @@ PanelWindow {
     color: "transparent"
 
     mask: Region { item: hitArea }
+
 
     Item {
         id: hitArea
@@ -331,7 +340,11 @@ PanelWindow {
     Item {
         id: frame
         x: Math.round((parent.width - width) / 2)
-        y: parent.height - height + DockSmartHide.dockOffset(dock.smartState, dock.metrics)
+        // Abajo se esconde saliendo por debajo; arriba, por encima.
+        y: dock.atTop
+            ? -DockSmartHide.dockOffset(dock.smartState, dock.metrics)
+            : parent.height - height
+                + DockSmartHide.dockOffset(dock.smartState, dock.metrics)
         width: dock.dockWidth + 2 * Theme.shadowPad
         height: dock.reveal * (Theme.dockHeight + Theme.shadowPad)
         clip: true
@@ -348,11 +361,8 @@ PanelWindow {
         MultiEffect {
             id: elevation
             source: glass
-            anchors {
-                left: parent.left
-                leftMargin: Theme.shadowPad
-                bottom: parent.bottom
-            }
+            anchors { left: parent.left; leftMargin: Theme.shadowPad }
+            y: dock.atTop ? 0 : parent.height - height
             width: parent.width - 2 * Theme.shadowPad
             height: Theme.dockHeight
 
@@ -362,7 +372,10 @@ PanelWindow {
             shadowOpacity: Theme.shadowOpacity
             shadowBlur: Theme.shadowBlur
             shadowHorizontalOffset: 0
-            shadowVerticalOffset: -Theme.shadowOffsetY
+            // La sombra cae hacia dentro: hacia arriba con el dock abajo y
+            // hacia abajo con el dock arriba.
+            shadowVerticalOffset: dock.atTop
+                ? Theme.shadowOffsetY : -Theme.shadowOffsetY
         }
 
         Shape {
@@ -372,8 +385,8 @@ PanelWindow {
                 leftMargin: Theme.shadowPad
                 right: parent.right
                 rightMargin: Theme.shadowPad
-                bottom: parent.bottom
             }
+            y: dock.atTop ? 0 : parent.height - height
             height: Theme.dockHeight
             antialiasing: true
             preferredRendererType: Shape.CurveRenderer
@@ -382,57 +395,74 @@ PanelWindow {
                 id: glassPath
                 readonly property int rt: Theme.radius
                 readonly property int rb: Theme.radiusTop
+                readonly property bool flip: dock.atTop
+
+                // Con el dock arriba el trazado se espeja: la curva cóncava
+                // ("labio") pasa al filo superior y las convexas abajo.
+                function y(value) { return flip ? glass.height - value : value }
+                function inverse(value) {
+                    if (!flip)
+                        return value;
+                    return value === PathArc.Clockwise
+                        ? PathArc.Counterclockwise : PathArc.Clockwise;
+                }
 
                 strokeWidth: 0
                 strokeColor: "transparent"
                 fillColor: Theme.surface
 
-                // Inferior intacta: el cuerpo se abre hacia el borde.
-                // Solo los dos arcos superiores curvan hacia adentro.
+                // Borde del filo intacto: el cuerpo se abre hacia el borde.
+                // Solo los dos arcos del filo curvan hacia adentro.
                 startX: 0
-                startY: glass.height
+                startY: glassPath.y(glass.height)
 
-                PathLine { x: glass.width; y: glass.height }
+                PathLine { x: glass.width; y: glassPath.y(glass.height) }
 
                 PathArc {
                     x: glass.width - glassPath.rb
-                    y: glass.height - glassPath.rb
+                    y: glassPath.y(glass.height - glassPath.rb)
                     radiusX: glassPath.rb
                     radiusY: glassPath.rb
-                    direction: PathArc.Clockwise
+                    direction: glassPath.inverse(PathArc.Clockwise)
                     useLargeArc: false
                 }
 
-                PathLine { x: glass.width - glassPath.rb; y: glassPath.rt }
+                PathLine {
+                    x: glass.width - glassPath.rb
+                    y: glassPath.y(glassPath.rt)
+                }
 
                 PathArc {
                     x: glass.width - glassPath.rb - glassPath.rt
-                    y: 0
+                    y: glassPath.y(0)
                     radiusX: glassPath.rt
                     radiusY: glassPath.rt
-                    direction: PathArc.Counterclockwise
+                    direction: glassPath.inverse(PathArc.Counterclockwise)
                     useLargeArc: false
                 }
 
-                PathLine { x: glassPath.rb + glassPath.rt; y: 0 }
+                PathLine { x: glassPath.rb + glassPath.rt; y: glassPath.y(0) }
 
                 PathArc {
                     x: glassPath.rb
-                    y: glassPath.rt
+                    y: glassPath.y(glassPath.rt)
                     radiusX: glassPath.rt
                     radiusY: glassPath.rt
-                    direction: PathArc.Counterclockwise
+                    direction: glassPath.inverse(PathArc.Counterclockwise)
                     useLargeArc: false
                 }
 
-                PathLine { x: glassPath.rb; y: glass.height - glassPath.rb }
+                PathLine {
+                    x: glassPath.rb
+                    y: glassPath.y(glass.height - glassPath.rb)
+                }
 
                 PathArc {
                     x: 0
-                    y: glass.height
+                    y: glassPath.y(glass.height)
                     radiusX: glassPath.rb
                     radiusY: glassPath.rb
-                    direction: PathArc.Clockwise
+                    direction: glassPath.inverse(PathArc.Clockwise)
                     useLargeArc: false
                 }
             }

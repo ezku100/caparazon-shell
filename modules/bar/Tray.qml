@@ -18,6 +18,8 @@ Item {
     // Plegada o desplegada. El estado se recuerda en
     // ~/.config/caparazon/tray.json, así que sobrevive al reinicio.
     property bool collapsed: false
+    // Barra abajo: los menús de bandeja tienen que abrir hacia arriba.
+    property bool menusAbove: false
     property bool syncing: false
 
     readonly property string configDir: Quickshell.env("HOME") + "/.config/caparazon"
@@ -407,6 +409,9 @@ Item {
                 menuHandle: item.modelData.menu
                 anchorItem: item
                 menuState: root.trayMenuState
+                menusAbove: root.menusAbove
+                anchorEdge: root.menusAbove ? Edges.Bottom : Edges.Top
+                anchorGravity: root.menusAbove ? Edges.Top : Edges.Bottom
 
                 onSubmenuRequested: function (handle, anchor) {
                     if (!handle)

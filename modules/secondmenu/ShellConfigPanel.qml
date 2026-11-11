@@ -7,7 +7,7 @@ import "../../theme"
 import "../icons"
 
 /*
-  Configs de la shell — estilo de color y modo del dock.
+  Configs de Caparazón Shell — estilo, monitores y posición.
 
   Las tres paletas las genera accent-theme con el acento de KDE: Material usa
   los roles oscuros tal cual, OLED parte de ellos y sube la saturación, y
@@ -119,6 +119,32 @@ Flickable {
         }
     ]
 
+    readonly property var barPositionRows: [
+        {
+            key: "top",
+            label: "Arriba",
+            note: "Nace del borde superior; la curva cóncava queda arriba."
+        },
+        {
+            key: "bottom",
+            label: "Abajo",
+            note: "Espejada: nace del borde inferior, con la sombra hacia arriba."
+        }
+    ]
+
+    readonly property var dockPositionRows: [
+        {
+            key: "bottom",
+            label: "Abajo",
+            note: "Se oculta y sube al acercar el ratón al borde inferior."
+        },
+        {
+            key: "top",
+            label: "Arriba",
+            note: "Espejado: se oculta hacia arriba y el borde caliente es el superior."
+        }
+    ]
+
     readonly property var dockModeRows: [
         {
             key: "dynamic",
@@ -189,7 +215,7 @@ Flickable {
 
             Text {
                 anchors.verticalCenter: parent.verticalCenter
-                text: "Configs de la shell"
+                text: "Configs de Caparazón Shell"
                 color: Theme.text
                 font.family: Theme.fontUI
                 font.pixelSize: 15
@@ -413,6 +439,64 @@ Flickable {
             note: "Apágalo para tener el dock sólo en el principal."
             value: ShellLayout.dockOnSecondary
             onToggled: ShellLayout.setDockOnSecondary(!ShellLayout.dockOnSecondary)
+        }
+
+        Text {
+            width: parent.width
+            text: "Posición"
+            color: Theme.textDim
+            font.family: Theme.fontUI
+            font.pixelSize: Theme.fontPx
+        }
+
+        // Barra y dock sólo cambian de borde: su forma (curva cóncava pegada
+        // al filo) y sus animaciones se espejan, no se rediseñan.
+        Text {
+            width: parent.width
+            text: "Barra"
+            color: Theme.textDim
+            font.family: Theme.fontUI
+            font.pixelSize: 11
+        }
+
+        SegmentedChoice {
+            width: parent.width
+            options: root.barPositionRows
+            value: ShellLayout.barPosition
+            onPicked: (key) => ShellLayout.setBarPosition(key)
+        }
+
+        Text {
+            width: parent.width
+            text: root.noteFor(root.barPositionRows, ShellLayout.barPosition)
+            color: Theme.textDim
+            font.family: Theme.fontUI
+            font.pixelSize: 11
+            elide: Text.ElideRight
+        }
+
+        Text {
+            width: parent.width
+            text: "Dock"
+            color: Theme.textDim
+            font.family: Theme.fontUI
+            font.pixelSize: 11
+        }
+
+        SegmentedChoice {
+            width: parent.width
+            options: root.dockPositionRows
+            value: ShellLayout.dockPosition
+            onPicked: (key) => ShellLayout.setDockPosition(key)
+        }
+
+        Text {
+            width: parent.width
+            text: root.noteFor(root.dockPositionRows, ShellLayout.dockPosition)
+            color: Theme.textDim
+            font.family: Theme.fontUI
+            font.pixelSize: 11
+            elide: Text.ElideRight
         }
 
         Text {

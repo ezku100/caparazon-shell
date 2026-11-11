@@ -323,6 +323,7 @@ ShellRoot {
         model: Quickshell.screens
         delegate: Bar {
             shown: ShellLayout.barShownFor(modelData)
+            position: ShellLayout.barPosition
             workspacesService: workspacesSvc
             powerMenuState: shellRoot.powerMenuState
             appMenuState: shellRoot.appMenuState
@@ -346,6 +347,7 @@ ShellRoot {
         model: ShellLayout.dockScreens
         delegate: Dock {
             screen: modelData
+            position: ShellLayout.dockPosition
             activeAppId: activeWindowService.appId
             windowAppIds: activeWindowService.windowAppIds
             trayMenuState: shellRoot.trayMenuState

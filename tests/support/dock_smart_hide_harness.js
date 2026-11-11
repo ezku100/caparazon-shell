@@ -38,6 +38,7 @@ const metrics = {
     dockWidth: 360,
     dockHeight: 52,
     shadowPad: 12,
+    position: "bottom",
     hotEdge: 6,
     bottomGap: 0,
 };
@@ -60,6 +61,10 @@ function same(left, right) {
         return Object.prototype.hasOwnProperty.call(right, key) && same(left[key], right[key]);
     });
 }
+
+// Mismas medidas con el dock pegado al borde superior: la franja sensible y
+// el cuerpo quedan arriba y el aire de la sombra abajo.
+const topMetrics = Object.assign({}, metrics, { position: "top" });
 
 const cases = [
     {
@@ -127,6 +132,18 @@ const cases = [
         detail: "sin pin, el dock no reserva nada",
         run: () => exclusiveZone(false, metrics),
         expected: 0,
+    },
+    {
+        id: "mascara-oculta-arriba",
+        detail: "arriba y apartado, la franja sensible queda en el filo superior",
+        run: () => maskRect("hidden", topMetrics),
+        expected: { x: 780, y: 0, width: 360, height: 6 },
+    },
+    {
+        id: "mascara-revelada-arriba",
+        detail: "arriba y revelado, el cuerpo ocupa el filo superior",
+        run: () => maskRect("revealed", topMetrics),
+        expected: { x: 780, y: 0, width: 360, height: 52 },
     },
 ];
 

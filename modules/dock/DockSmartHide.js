@@ -1,9 +1,9 @@
 // Estados del dock inteligente.
 //
 // El dock está oculto por defecto y sube al acercar el puntero al borde
-// inferior; se puede usar encima de cualquier ventana y se retira al dejarlo.
-// El modo anclado se elige en Configs de la shell: visible y reservando su
-// franja, como el dock de siempre.
+// donde vive (inferior o superior); se puede usar encima de cualquier ventana
+// y se retira al dejarlo. El modo anclado se elige en Configs de Caparazón
+// Shell: visible y reservando su franja, como el dock de siempre.
 //
 // Aquí sólo vive el cálculo: qué estado corresponde a cada situación, dónde
 // queda la zona clicable y cuánto espacio reserva el dock. Sin QML, para que
@@ -18,19 +18,22 @@ function stateFor(dockPinned, pointerOnDock) {
 
 // La franja que queda al apartar el dock cae dentro del rectángulo del dock
 // (58..64 está dentro de 12..64), así que al revelarse no se pierde el ratón.
+// Con el dock arriba la franja sensible y el cuerpo quedan pegados al filo
+// superior; abajo, al inferior (la sombra ocupa el aire del lado contrario).
 function maskRect(state, metrics) {
     var x = Math.round((metrics.surfaceWidth - metrics.dockWidth) / 2);
+    var atTop = metrics.position === "top";
     if (state === "hidden") {
         return {
             x: x,
-            y: metrics.surfaceHeight - metrics.hotEdge,
+            y: atTop ? 0 : metrics.surfaceHeight - metrics.hotEdge,
             width: metrics.dockWidth,
             height: metrics.hotEdge,
         };
     }
     return {
         x: x,
-        y: metrics.shadowPad,
+        y: atTop ? 0 : metrics.shadowPad,
         width: metrics.dockWidth,
         height: metrics.dockHeight,
     };

@@ -87,15 +87,21 @@ PanelWindow {
     }
 
     // Barra FLOTANTE: no abarca todo el ancho. Márgenes laterales simétricos
-    // => queda centrada y pegada al borde superior (de ahí "nace").
+    // => queda centrada y pegada al borde elegido (de ahí "nace").
     readonly property int sideMargin: Math.round(((screen ? screen.width : 1920) * (1 - Theme.barWidthFrac)) / 2)
 
-    anchors { top: true; left: true; right: true }
+    // Borde al que se pega: "top" (por defecto) o "bottom". Todo lo que mira
+    // al borde (forma, sombra, entrada, menús de bandeja) se espeja.
+    property string position: "top"
+    readonly property bool atBottom: bar.position === "bottom"
+
+    anchors { top: !bar.atBottom; bottom: bar.atBottom; left: true; right: true }
     // La ventana es más ancha que la barra por shadowPad: ese aire alberga
     // la sombra. Los márgenes laterales se descuentan para que la barra
     // visible siga midiendo exactamente barWidthFrac del monitor.
     margins {
         top: 0
+        bottom: 0
         left: bar.sideMargin - Theme.shadowPad
         right: bar.sideMargin - Theme.shadowPad
     }
@@ -113,14 +119,14 @@ PanelWindow {
     Item {
         id: hitArea
         x: Theme.shadowPad
-        y: 0
+        y: bar.atBottom ? parent.height - Theme.barHeight : 0
         width: parent.width - 2 * Theme.shadowPad
         height: Theme.barHeight
 
     }
 
-    // Efecto entrada: "nace del borde superior". La barra se destapa de
-    // arriba hacia abajo (crece desde el borde) con un leve fundido.
+    // Efecto entrada: "nace del borde". La barra se destapa desde el filo
+    // de la pantalla hacia dentro (crece desde el borde) con un leve fundido.
     property real reveal: 0
     Component.onCompleted: reveal = 1
     Behavior on reveal {
@@ -129,7 +135,9 @@ PanelWindow {
 
     Item {
         id: frame
-        anchors { left: parent.left; right: parent.right; top: parent.top }
+        anchors { left: parent.left; right: parent.right }
+        // Crece desde el filo: con la barra abajo, su base es el filo inferior.
+        y: bar.atBottom ? parent.height - height : 0
         height: bar.reveal * (Theme.barHeight + Theme.shadowPad)
         clip: true
         opacity: 0.25 + 0.75 * bar.reveal
@@ -140,7 +148,8 @@ PanelWindow {
         MultiEffect {
             id: elevation
             source: glass
-            anchors { left: parent.left; leftMargin: Theme.shadowPad; top: parent.top }
+            anchors { left: parent.left; leftMargin: Theme.shadowPad }
+            y: bar.atBottom ? parent.height - height : 0
             width: parent.width - 2 * Theme.shadowPad
             height: Theme.barHeight
 
@@ -150,7 +159,10 @@ PanelWindow {
             shadowOpacity: Theme.shadowOpacity
             shadowBlur: Theme.shadowBlur
             shadowHorizontalOffset: 0
-            shadowVerticalOffset: Theme.shadowOffsetY
+            // La sombra cae hacia dentro de la pantalla: al fondo de la barra
+            // cuando está arriba y por encima cuando está abajo.
+            shadowVerticalOffset: bar.atBottom
+                ? -Theme.shadowOffsetY : Theme.shadowOffsetY
         }
 
         // Vidrio "nacido del borde": el borde superior llega hasta el filo
@@ -164,14 +176,27 @@ PanelWindow {
             anchors {
                 left: parent.left; leftMargin: Theme.shadowPad
                 right: parent.right; rightMargin: Theme.shadowPad
-                top: parent.top
             }
+            y: bar.atBottom ? parent.height - height : 0
             height: Theme.barHeight
 
             ShapePath {
                 id: glassPath
                 readonly property int rt: Theme.radiusTop
                 readonly property int rb: Theme.radius
+                readonly property bool flip: bar.atBottom
+
+                // Con la barra abajo el trazado se espeja en vertical: la
+                // curva cóncava ("labio") queda pegada al filo inferior y
+                // las convexas arriba. y() e inverse() evitan duplicar el
+                // path; espejar invierte también el sentido de cada arco.
+                function y(value) { return flip ? glass.height - value : value }
+                function inverse(value) {
+                    if (!flip)
+                        return value;
+                    return value === PathArc.Clockwise
+                        ? PathArc.Counterclockwise : PathArc.Clockwise;
+                }
 
                 // Sin borde: la silueta la define el contraste de la
                 // superficie contra el fondo (estilo Material 3).
@@ -182,57 +207,63 @@ PanelWindow {
                 fillColor: Theme.surface
 
                 startX: 0
-                startY: 0
+                startY: glassPath.y(0)
 
-                // borde superior (pegado al filo de la pantalla)
-                PathLine { x: glass.width; y: 0 }
+                // borde pegado al filo de la pantalla
+                PathLine { x: glass.width; y: glassPath.y(0) }
 
-                // superior derecha: se vacía hacia dentro
+                // primera esquina del filo: se vacía hacia dentro
                 PathArc {
                     x: glass.width - glassPath.rt
-                    y: glassPath.rt
+                    y: glassPath.y(glassPath.rt)
                     radiusX: glassPath.rt
                     radiusY: glassPath.rt
-                    direction: PathArc.Counterclockwise
+                    direction: glassPath.inverse(PathArc.Counterclockwise)
                     useLargeArc: false
                 }
 
                 // lado derecho
-                PathLine { x: glass.width - glassPath.rt; y: glass.height - glassPath.rb }
+                PathLine {
+                    x: glass.width - glassPath.rt
+                    y: glassPath.y(glass.height - glassPath.rb)
+                }
 
-                // inferior derecha: convexa
+                // esquina opuesta al filo: convexa
                 PathArc {
                     x: glass.width - glassPath.rt - glassPath.rb
-                    y: glass.height
+                    y: glassPath.y(glass.height)
                     radiusX: glassPath.rb
                     radiusY: glassPath.rb
-                    direction: PathArc.Clockwise
+                    direction: glassPath.inverse(PathArc.Clockwise)
                     useLargeArc: false
                 }
 
-                // borde inferior
-                PathLine { x: glassPath.rt + glassPath.rb; y: glass.height }
+                // borde opuesto a la pantalla
+                PathLine {
+                    x: glassPath.rt + glassPath.rb
+                    y: glassPath.y(glass.height)
+                }
 
-                // inferior izquierda: convexa
+                // segunda esquina convexa
                 PathArc {
                     x: glassPath.rt
-                    y: glass.height - glassPath.rb
+                    y: glassPath.y(glass.height - glassPath.rb)
                     radiusX: glassPath.rb
                     radiusY: glassPath.rb
-                    direction: PathArc.Clockwise
+                    direction: glassPath.inverse(PathArc.Clockwise)
                     useLargeArc: false
                 }
 
                 // lado izquierdo
-                PathLine { x: glassPath.rt; y: glassPath.rt }
+                PathLine { x: glassPath.rt; y: glassPath.y(glassPath.rt) }
 
-                // superior izquierda: se vacía hacia dentro
+                // segunda esquina del filo: se vacía hacia dentro
                 PathArc {
                     x: 0
-                    y: 0
+                    y: glassPath.y(0)
                     radiusX: glassPath.rt
                     radiusY: glassPath.rt
-                    direction: PathArc.Counterclockwise
+                    direction: glassPath.inverse(PathArc.Counterclockwise)
                     useLargeArc: false
                 }
             }
@@ -346,6 +377,7 @@ PanelWindow {
                 Tray {
                     id: tray
                     trayMenuState: bar.trayMenuState
+                    menusAbove: bar.atBottom
                 }
 
                 // Iconos de estado juntos, con su ritmo interno corto.
@@ -371,7 +403,7 @@ PanelWindow {
     // actual y abra el nuevo en el mismo clic.
     MouseArea {
         x: hitArea.x
-        y: 0
+        y: hitArea.y
         width: Math.max(0, tray.mapToItem(hitArea, 0, 0).x)
         height: hitArea.height
         z: 100
@@ -382,7 +414,7 @@ PanelWindow {
 
     MouseArea {
         x: hitArea.x + tray.mapToItem(hitArea, 0, 0).x + tray.width
-        y: 0
+        y: hitArea.y
         width: Math.max(0, hitArea.width
             - tray.mapToItem(hitArea, 0, 0).x - tray.width)
         height: hitArea.height
@@ -415,7 +447,9 @@ PanelWindow {
 
                 Region {
                     x: hitArea.x + tray.mapToItem(hitArea, 0, 0).x
-                    y: 0
+                    y: bar.atBottom
+                        ? (bar.screen ? bar.screen.height : bar.height) - Theme.barHeight
+                        : 0
                     width: tray.width
                     height: Theme.barHeight
                     intersection: Intersection.Subtract

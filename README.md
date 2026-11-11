@@ -14,11 +14,16 @@ animación de despedida.
   siguiente clic la **minimiza**, y si estaba minimizada la **restaura**.
 - **Dock inteligente**: el dock está **oculto** y sube al acercar el puntero al
   borde inferior (y se puede usar encima de la ventana); se oculta otra vez al
-  dejarlo. Desde **Configs de la shell** (kanji 猫) puede pasar a **anclado**:
+  dejarlo. Desde **Configs de Caparazón Shell** (kanji 猫) puede pasar a **anclado**:
   siempre visible y reservando su franja. El estado se guarda en
   `~/.config/caparazon/dock.json` (`"dockPinned": true`).
+- **Posición**: la barra puede vivir **arriba o abajo** y el dock **abajo o
+  arriba**, desde **Configs de Caparazón Shell** → *Posición*. No se rediseña:
+  la forma (curva cóncava pegada al filo), la sombra, la entrada y los menús de
+  bandeja se espejan. Se guarda en `~/.config/caparazon/display.json`
+  (`"barPosition"`, `"dockPosition"`).
 - **Multi-monitor**: barra y dock en cada pantalla, con cuatro interruptores
-  en **Configs de la shell** (principal y secundarios, por separado para barra
+  en **Configs de Caparazón Shell** (principal y secundarios, por separado para barra
   y dock). Se toma como principal el que KDE designa como principal
   (`kscreen-doctor`), no el primero de la lista. La barra no puede apagarse en
   todas las pantallas porque es la entrada al panel; el dock sí. En las
@@ -354,7 +359,7 @@ Para ver el estado del motor:
 
 ### Estilos de color
 
-La shell trae tres estilos y se cambian en vivo desde **Configs de la shell**
+La shell trae tres estilos y se cambian en vivo desde **Configs de Caparazón Shell**
 (kanji 猫) en el menú secundario: **Material** (roles oscuros tal cual),
 **OLED** (negro puro con los mismos tokens) y **Perla** (roles claros para
 fondos claros). El estilo activo se guarda en `~/.config/caparazon/style.json`

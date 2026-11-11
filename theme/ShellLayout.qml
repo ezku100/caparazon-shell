@@ -3,9 +3,9 @@ import Quickshell
 import Quickshell.Io
 import QtQuick
 
-// Dónde vive la shell: las dos opciones del panel ("barra en monitores
-// secundarios" y "dock en monitores secundarios") se guardan en
-// ~/.config/caparazon/display.json.
+// Dónde vive la shell: qué monitores llevan barra y dock, y en qué borde
+// de la pantalla se anclan ("barra arriba/abajo", "dock abajo/arriba").
+// Todo se guarda en ~/.config/caparazon/display.json.
 //
 // El monitor principal es el que KDE considera principal, no el primero de
 // la lista: se pregunta a kscreen (la misma prioridad que reporta
@@ -18,6 +18,10 @@ Item {
     property bool barOnSecondary: true
     property bool dockOnPrimary: true
     property bool dockOnSecondary: true
+    // Borde de la pantalla donde se ancla cada elemento. La barra nace
+    // pegada al borde: "top" (curva cóncava arriba) o "bottom" (espejada).
+    property string barPosition: "top"
+    property string dockPosition: "bottom"
     property bool loaded: false
     property bool syncing: false
 
@@ -108,11 +112,31 @@ Item {
         root.dockOnSecondary = value;
     }
 
+    // Sólo dos bordes posibles por elemento: la barra es horizontal y el
+    // dock también (la variante vertical no está soportada todavía).
+    function setBarPosition(value) {
+        if (value !== "top" && value !== "bottom")
+            return;
+        if (root.barPosition === value)
+            return;
+        root.barPosition = value;
+    }
+
+    function setDockPosition(value) {
+        if (value !== "top" && value !== "bottom")
+            return;
+        if (root.dockPosition === value)
+            return;
+        root.dockPosition = value;
+    }
+
     // Al leer el archivo no se reescribe; al cambiarlo desde el panel sí.
     onBarOnPrimaryChanged: if (!root.syncing) root.save()
     onBarOnSecondaryChanged: if (!root.syncing) root.save()
     onDockOnPrimaryChanged: if (!root.syncing) root.save()
     onDockOnSecondaryChanged: if (!root.syncing) root.save()
+    onBarPositionChanged: if (!root.syncing) root.save()
+    onDockPositionChanged: if (!root.syncing) root.save()
 
     function save() {
         if (!root.loaded)
@@ -124,7 +148,9 @@ Item {
             "{\"barPrimary\":" + (root.barOnPrimary ? "true" : "false")
                 + ",\"barSecondary\":" + (root.barOnSecondary ? "true" : "false")
                 + ",\"dockPrimary\":" + (root.dockOnPrimary ? "true" : "false")
-                + ",\"dockSecondary\":" + (root.dockOnSecondary ? "true" : "false") + "}",
+                + ",\"dockSecondary\":" + (root.dockOnSecondary ? "true" : "false")
+                + ",\"barPosition\":\"" + root.barPosition + "\""
+                + ",\"dockPosition\":\"" + root.dockPosition + "\"}",
             root.configPath
         ];
         writer.running = true;
@@ -184,7 +210,8 @@ Item {
             "bash", "-c",
             "mkdir -p \"$1\"; [ -f \"$2\" ] || "
                 + "printf '%s\\n' '{\"barPrimary\":true,\"barSecondary\":true,"
-                + "\"dockPrimary\":true,\"dockSecondary\":true}' > \"$2\"",
+                + "\"dockPrimary\":true,\"dockSecondary\":true,"
+                + "\"barPosition\":\"top\",\"dockPosition\":\"bottom\"}' > \"$2\"",
             "bash",
             root.configDir,
             root.configPath
@@ -209,6 +236,8 @@ Item {
             property bool barSecondary: true
             property bool dockPrimary: true
             property bool dockSecondary: true
+            property string barPosition: "top"
+            property string dockPosition: "bottom"
         }
     }
 
@@ -221,6 +250,10 @@ Item {
             root.barOnSecondary = adapter.barSecondary !== false;
             root.dockOnPrimary = adapter.dockPrimary !== false;
             root.dockOnSecondary = adapter.dockSecondary !== false;
+            // Valores desconocidos (archivo editado a mano) caen al borde
+            // por defecto en vez de dejar la ventana sin anclaje.
+            root.barPosition = adapter.barPosition === "bottom" ? "bottom" : "top";
+            root.dockPosition = adapter.dockPosition === "top" ? "top" : "bottom";
             root.syncing = false;
             root.loaded = true;
         }

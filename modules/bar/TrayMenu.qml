@@ -19,6 +19,8 @@ PopupWindow {
     property var parentMenu: null
     // El menú raíz lleva cola; los submenús son burbujas limpias sin cola.
     property bool showArrow: true
+    // La barra está abajo: burbuja por encima del icono y cola hacia abajo.
+    property bool menusAbove: false
     property bool opened: false
     // El puntero está dentro de la burbuja; el icono de la bandeja lo usa
     // para no cerrar el menú al pasar del icono a la burbuja.
@@ -158,12 +160,18 @@ PopupWindow {
     // PopupAnchor centra el popup en el eje horizontal.
     // +6 deja la cola casi tocando el filo de la barra, con un aire mínimo.
     anchor.rect.x: showArrow ? (anchorItem ? anchorItem.width / 2 : 0) : 0
-    anchor.rect.y: showArrow ? barBottomInItem + 6 : 0
+    anchor.rect.y: showArrow
+        ? (menusAbove
+            ? -(Theme.barHeight - (anchorItem ? anchorItem.height : 0)) / 2 - 6
+            : barBottomInItem + 6)
+        : 0
     anchor.rect.width: showArrow ? 1 : (anchorItem ? anchorItem.width : 1)
     anchor.rect.height: showArrow ? 1 : (anchorItem ? anchorItem.height : 1)
 
     implicitWidth: menuWidth + bleed * 2
-    implicitHeight: topPad + (showArrow ? arrowH : 0) + body.height + bleed
+    implicitHeight: menusAbove
+        ? bleed + body.height + (showArrow ? arrowH : 0)
+        : topPad + (showArrow ? arrowH : 0) + body.height + bleed
 
     // El área transparente alrededor de la burbuja no debe capturar clics.
     mask: Region { item: body }
@@ -217,7 +225,9 @@ PopupWindow {
         Item {
             id: body
             x: root.bleed
-            y: root.topPad + (root.showArrow ? root.arrowH - 1 : 0)
+            y: root.menusAbove
+                ? root.bleed
+                : root.topPad + (root.showArrow ? root.arrowH - 1 : 0)
             width: root.menuWidth
 
             readonly property int contentHeight: menuColumn.implicitHeight + 12
@@ -405,7 +415,8 @@ PopupWindow {
             id: tail
             visible: root.showArrow
             x: Math.round(root.bleed + root.arrowCenter - root.arrowW / 2)
-            y: 0
+            y: root.menusAbove ? body.y + body.height - 1 : 0
+            rotation: root.menusAbove ? 180 : 0
             width: root.arrowW
             height: root.arrowH + 1
             antialiasing: true
