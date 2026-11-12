@@ -374,6 +374,9 @@ PanelWindow {
     DockMenu {
         id: appMenu
         menuState: dock.trayMenuState
+        // La burbuja se abre hacia dentro de la pantalla desde el borde
+        // donde esté el dock.
+        placement: dock.position
 
         onPinRequested: dock.pinApp(appMenu.app)
         onUnpinRequested: dock.unpinApp(appMenu.app)

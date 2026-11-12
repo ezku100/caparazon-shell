@@ -2,13 +2,14 @@ import Quickshell
 import Quickshell.Widgets
 import QtQuick
 import QtQuick.Layouts
-import QtQuick.Shapes
 import QtQuick.Effects
 import "../../theme"
 import "../icons"
 
 // Menú contextual de las apps del dock. Reutiliza el lenguaje visual del
-// menú de bandeja: burbuja M3, sombra suave, filas de 40 px y cola inferior.
+// menú de bandeja: burbuja M3, sombra suave y filas de 40 px. Sin cola: la
+// burbuja se abre hacia el lado interior del icono sea cual sea el borde
+// donde viva el dock.
 PopupWindow {
     id: root
 
@@ -19,15 +20,28 @@ PopupWindow {
     property bool pinned: false
     property bool opened: false
     property var menuState: null
+    // Borde de la pantalla donde está el dock: "bottom", "top", "left" o
+    // "right". Decide hacia dónde crece la burbuja.
+    property string placement: "bottom"
 
     property int menuWidth: 252
-    property bool showArrow: true
 
-    readonly property int arrowW: 16
-    readonly property int arrowH: 8
+    // Aire transparente alrededor de la burbuja: la sombra del MultiEffect
+    // necesita ese margen para no quedar recortada. Es simétrico, de modo
+    // que la burbuja se ve a la misma distancia del cristal en los cuatro
+    // bordes.
     readonly property int bleed: 14
-    readonly property int topPad: bleed
-    readonly property real arrowCenter: menuWidth / 2
+    // Separación visible entre el cristal del dock y la burbuja.
+    readonly property int gap: 6
+    // Punto de anclaje: se mete dentro del icono lo que sobra después de
+    // descontar `bleed`, y así la burbuja queda a `gap` del cristal en vez
+    // de a `bleed + gap`.
+    readonly property int anchorInset: Math.max(0, bleed - gap)
+
+    readonly property bool atTop: placement === "top"
+    readonly property bool atLeft: placement === "left"
+    readonly property bool atRight: placement === "right"
+    readonly property bool side: atLeft || atRight
 
     readonly property int maxMenuHeight: Math.min(360, (screen ? screen.height : 1080) - 160)
 
@@ -110,25 +124,47 @@ PopupWindow {
     // come los clics del dock. El cierre exterior lo hace el catcher del Dock.
     grabFocus: false
 
+    // La burbuja se pega al cristal por el lado interior del icono:
+    //   bottom -> crece hacia arriba (ancla en el borde superior del icono)
+    //   top    -> crece hacia abajo  (ancla en el borde inferior)
+    //   left   -> crece hacia la derecha (ancla en el borde derecho)
+    //   right  -> crece hacia la izquierda (ancla en el borde izquierdo)
+    // En los laterales la primera fila queda alineada con la parte alta
+    // del icono, como en un menú de contexto normal.
     anchor.item: root.anchorItem
-    anchor.edges: Edges.Bottom
-    anchor.gravity: Edges.Top
-    anchor.adjustment: PopupAdjustment.SlideX
+    anchor.edges: root.atTop
+        ? Edges.Top
+        : root.side
+            ? (root.atLeft ? (Edges.Left | Edges.Top) : (Edges.Right | Edges.Top))
+            : Edges.Bottom
+    anchor.gravity: root.atTop
+        ? Edges.Bottom
+        : root.side
+            ? (root.atLeft ? (Edges.Right | Edges.Bottom) : (Edges.Left | Edges.Bottom))
+            : Edges.Top
+    anchor.adjustment: root.side
+        ? PopupAdjustment.SlideY
+        : PopupAdjustment.SlideX
 
-    // El dock mide 52 px y la app 44 px: su borde superior queda 4 px por
-    // debajo del borde real del dock. El popup termina 6 px por encima del
-    // icono; la cola ocupa los 8 px restantes.
-    readonly property real anchorY: anchorItem
-        ? -(Theme.dockHeight - anchorItem.height) / 2 - 6
-        : 0
-
-    anchor.rect.x: anchorItem ? anchorItem.width / 2 : 0
-    anchor.rect.y: root.anchorY
+    anchor.rect.x: !root.anchorItem
+        ? 0
+        : root.side
+            ? (root.atLeft
+                ? root.anchorItem.width - root.anchorInset
+                : root.anchorInset)
+            : root.anchorItem.width / 2
+    anchor.rect.y: !root.anchorItem
+        ? 0
+        : root.side
+            ? -root.anchorInset
+            : (root.atTop
+                ? root.anchorItem.height - root.anchorInset
+                : root.anchorInset)
     anchor.rect.width: 1
     anchor.rect.height: 1
 
     implicitWidth: menuWidth + bleed * 2
-    implicitHeight: topPad + body.height + arrowH
+    implicitHeight: body.height + bleed * 2
 
     // Sólo la burbuja captura clics, no el margen transparente.
     mask: Region { item: body }
@@ -153,7 +189,7 @@ PopupWindow {
         Item {
             id: body
             x: root.bleed
-            y: root.topPad
+            y: root.bleed
             width: root.menuWidth
             height: Math.max(40, Math.min(menuColumn.implicitHeight + 12,
                 root.maxMenuHeight))
@@ -250,29 +286,6 @@ PopupWindow {
                         }
                     }
                 }
-            }
-        }
-
-        // Cola inferior: apunta al icono del dock.
-        Shape {
-            id: tail
-            visible: root.showArrow
-            x: Math.round(root.bleed + root.arrowCenter - root.arrowW / 2)
-            y: body.y + body.height
-            width: root.arrowW
-            height: root.arrowH + 1
-            antialiasing: true
-            preferredRendererType: Shape.CurveRenderer
-
-            ShapePath {
-                strokeWidth: 0
-                strokeColor: "transparent"
-                fillColor: bubble.color
-                startX: 0
-                startY: 0
-                PathLine { x: tail.width / 2; y: tail.height }
-                PathLine { x: tail.width; y: 0 }
-                PathLine { x: 0; y: 0 }
             }
         }
     }
