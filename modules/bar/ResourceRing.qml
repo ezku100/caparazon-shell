@@ -20,6 +20,8 @@ Item {
     property color backgroundColor: "transparent"
     property bool wheelEnabled: false
     property bool tipVisible: false
+    // Barra abajo: el globo abre hacia arriba, con la cola hacia abajo.
+    property bool tipAbove: false
 
     // Unidad del globo de ayuda: los medidores de uso van en %, la
     // temperatura en grados.
@@ -136,146 +138,61 @@ Item {
             grabFocus: false
 
             readonly property int bleed: 14
-            readonly property int arrowW: 18
-            readonly property int arrowH: 8
-            readonly property int bubbleRadius: 16
             readonly property int bodyWidth: Math.max(96, tipText.implicitWidth + 28)
             readonly property int bodyHeight: 36
 
             anchor.item: root
-            anchor.edges: Edges.Top
-            anchor.gravity: Edges.Bottom
+            anchor.edges: root.tipAbove ? Edges.Bottom : Edges.Top
+            anchor.gravity: root.tipAbove ? Edges.Top : Edges.Bottom
             anchor.adjustment: PopupAdjustment.SlideX
             anchor.rect.x: Math.round(root.width / 2)
-            // Igual que TrayMenu: el pico de la cola debe tocar el borde de la barra.
-            anchor.rect.y: Math.round((Theme.barHeight + root.height) / 2 + 6)
+            // Sin cola: la burbuja flota junto al borde de la barra. Arriba:
+            // el borde inferior de la barra en coordenadas del anillo; abajo:
+            // el superior (espejado). El +6 deja un aire mínimo contra la barra.
+            anchor.rect.y: root.tipAbove
+                ? -(Theme.barHeight - root.height) / 2 - 6
+                : Math.round((Theme.barHeight + root.height) / 2 + 6)
             anchor.rect.width: 1
             anchor.rect.height: 1
 
             implicitWidth: bodyWidth + bleed * 2
-            // El bleed inferior evita que se recorte la sombra del globo.
-            implicitHeight: arrowH + bodyHeight + bleed
+            // Aire simétrico: la sombra cabe en ambos bordes.
+            implicitHeight: bodyHeight + bleed * 2
 
-            mask: Region { item: balloon }
+            mask: Region { item: bubble }
 
             Item {
                 id: body
                 x: tip.bleed
-                y: 0
+                y: tip.bleed
                 width: tip.bodyWidth
-                height: tip.arrowH + tip.bodyHeight
+                height: tip.bodyHeight
 
-                // Sombra: se proyecta desde la silueta completa (cuerpo + cola).
+                // Sombra hacia dentro de la pantalla en ambos bordes.
                 MultiEffect {
-                    source: balloon
-                    anchors.fill: balloon
+                    source: bubble
+                    anchors.fill: bubble
                     blurMax: 24
                     shadowEnabled: true
                     shadowColor: Theme.shadowColor
                     shadowOpacity: 0.20
                     shadowBlur: 0.32
                     shadowHorizontalOffset: 0
-                    shadowVerticalOffset: 3
+                    shadowVerticalOffset: root.tipAbove ? -3 : 3
                 }
 
-                // Globo de texto: un solo contorno (rectángulo redondeado + cola
-                // centrada con la punta suavizada), sin costuras entre piezas.
-                // Dentro de un ShapePath, "width"/"height" sin prefijo NO son los
-                // del Shape, así que todo se calcula desde balloonPath.
-                Shape {
-                    id: balloon
+                // Globo de texto: burbuja simple sin cola, centrada sobre el
+                // anillo. Se adapta igual a la barra arriba o abajo.
+                Rectangle {
+                    id: bubble
                     anchors.fill: parent
-                    antialiasing: true
-                    preferredRendererType: Shape.CurveRenderer
-
-                    ShapePath {
-                        id: balloonPath
-                        readonly property real w: tip.bodyWidth
-                        readonly property real h: tip.bodyHeight
-                        readonly property real a: tip.arrowH
-                        readonly property real tw: tip.arrowW
-                        readonly property real r: tip.bubbleRadius
-                        readonly property real cx: w / 2
-
-                        strokeWidth: 0
-                        strokeColor: "transparent"
-                        fillColor: Theme.surface
-
-                        startX: r
-                        startY: a
-
-                        // borde superior hasta la base de la cola
-                        PathLine { x: balloonPath.cx - balloonPath.tw / 2; y: balloonPath.a }
-
-                        // cola: lados a 45° y punta redondeada
-                        PathLine { x: balloonPath.cx - 2.2; y: 1.4 }
-                        PathQuad {
-                            x: balloonPath.cx + 2.2
-                            y: 1.4
-                            controlX: balloonPath.cx
-                            controlY: -0.9
-                        }
-                        PathLine { x: balloonPath.cx + balloonPath.tw / 2; y: balloonPath.a }
-
-                        // resto del borde superior
-                        PathLine { x: balloonPath.w - balloonPath.r; y: balloonPath.a }
-
-                        // superior derecha
-                        PathArc {
-                            x: balloonPath.w
-                            y: balloonPath.a + balloonPath.r
-                            radiusX: balloonPath.r
-                            radiusY: balloonPath.r
-                            direction: PathArc.Clockwise
-                            useLargeArc: false
-                        }
-
-                        // lado derecho
-                        PathLine { x: balloonPath.w; y: balloonPath.a + balloonPath.h - balloonPath.r }
-
-                        // inferior derecha
-                        PathArc {
-                            x: balloonPath.w - balloonPath.r
-                            y: balloonPath.a + balloonPath.h
-                            radiusX: balloonPath.r
-                            radiusY: balloonPath.r
-                            direction: PathArc.Clockwise
-                            useLargeArc: false
-                        }
-
-                        // borde inferior
-                        PathLine { x: balloonPath.r; y: balloonPath.a + balloonPath.h }
-
-                        // inferior izquierda
-                        PathArc {
-                            x: 0
-                            y: balloonPath.a + balloonPath.h - balloonPath.r
-                            radiusX: balloonPath.r
-                            radiusY: balloonPath.r
-                            direction: PathArc.Clockwise
-                            useLargeArc: false
-                        }
-
-                        // lado izquierdo
-                        PathLine { x: 0; y: balloonPath.a + balloonPath.r }
-
-                        // superior izquierda (cierra en el punto de inicio)
-                        PathArc {
-                            x: balloonPath.r
-                            y: balloonPath.a
-                            radiusX: balloonPath.r
-                            radiusY: balloonPath.r
-                            direction: PathArc.Clockwise
-                            useLargeArc: false
-                        }
-                    }
+                    radius: 16
+                    color: Theme.surface
                 }
 
                 Text {
                     id: tipText
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    y: tip.arrowH + Math.round((tip.bodyHeight - height) / 2)
-                    width: implicitWidth
+                    anchors.centerIn: parent
                     text: root.tipText
                     color: Theme.m3OnSurface
                     font.family: Theme.fontUI

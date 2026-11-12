@@ -362,6 +362,7 @@ PanelWindow {
                 network: bar.networkUsage
                 temperature: bar.resources ? bar.resources.temperature : 0
                 resources: bar.resources
+                tipAbove: bar.atBottom
                 onActivated: bar.openSecondMenu("sistema")
             }
 

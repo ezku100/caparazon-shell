@@ -21,6 +21,9 @@ Item {
     // estado sea el mismo en todas las barras.
     property var resources: null
 
+    // Barra abajo: los globos de ayuda de los anillos abren hacia arriba.
+    property bool tipAbove: false
+
     // Al pulsar cualquier anillo se abre la categoría del monitor del
     // sistema en el menú secundario.
     signal activated()
@@ -41,6 +44,7 @@ Item {
         spacing: 4
 
         ResourceRing {
+            tipAbove: root.tipAbove
             label: "CPU"
             value: root.cpu
             visible: !root.isHidden("cpu")
@@ -49,6 +53,7 @@ Item {
         }
 
         ResourceRing {
+            tipAbove: root.tipAbove
             label: "RAM"
             value: root.ram
             visible: !root.isHidden("ram")
@@ -57,6 +62,7 @@ Item {
         }
 
         ResourceRing {
+            tipAbove: root.tipAbove
             label: "GPU"
             value: root.gpu
             visible: !root.isHidden("gpu")
@@ -65,6 +71,7 @@ Item {
         }
 
         ResourceRing {
+            tipAbove: root.tipAbove
             label: "Swap"
             value: root.swap
             visible: !root.isHidden("swap")
@@ -73,6 +80,7 @@ Item {
         }
 
         ResourceRing {
+            tipAbove: root.tipAbove
             label: "Red"
             value: root.network
             visible: !root.isHidden("network")
@@ -80,6 +88,7 @@ Item {
         }
 
         ResourceRing {
+            tipAbove: root.tipAbove
             label: "Temp"
             value: root.temperature
             unit: "°C"
