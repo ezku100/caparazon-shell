@@ -456,7 +456,7 @@ Item {
                 menuHandle: null
                 anchorItem: item
                 parentMenu: trayMenu
-                showArrow: false
+                centerAnchor: false
                 grabFocus: false
                 // Se abre a la izquierda y alineado con la fila que lo invoca.
                 anchorEdge: Edges.Left | Edges.Top

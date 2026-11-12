@@ -2,7 +2,6 @@ import Quickshell
 import Quickshell.Widgets
 import QtQuick
 import QtQuick.Layouts
-import QtQuick.Shapes
 import QtQuick.Effects
 import "../../theme"
 
@@ -17,8 +16,9 @@ PopupWindow {
 
     // Menú padre cuando este es un submenú. Permite cerrar toda la cadena.
     property var parentMenu: null
-    // El menú raíz lleva cola; los submenús son burbujas limpias sin cola.
-    property bool showArrow: true
+    // Menú raíz: se ancla centrado en el icono. Los submenús anclan a la
+    // izquierda y alineados con la fila que los invoca.
+    property bool centerAnchor: true
     // La barra está abajo: burbuja por encima del icono y cola hacia abajo.
     property bool menusAbove: false
     property bool opened: false
@@ -32,12 +32,7 @@ PopupWindow {
     property int anchorGravity: Edges.Bottom
     property int anchorAdjustment: PopupAdjustment.SlideX
 
-    readonly property int arrowW: 16
-    readonly property int arrowH: 8
     readonly property int bleed: 14
-    // Sin aire arriba cuando hay cola: la punta debe tocar la barra.
-    readonly property int topPad: showArrow ? 0 : bleed
-    property real arrowCenter: width / 2
     property var childMenu: null
 
     readonly property int maxMenuHeight: Math.min(720, (screen ? screen.height : 1080) - 160)
@@ -70,7 +65,6 @@ PopupWindow {
             menuState.activate(root);
         opened = true;
         notifyOpened(menuHandle);
-        Qt.callLater(updateArrow);
     }
 
     function close() {
@@ -126,15 +120,6 @@ PopupWindow {
         close();
     }
 
-    // El menú está centrado bajo el icono, así que la cola debe quedar en el
-    // centro del cuerpo. mapFromItem() en un PopupWindow añade el bleed y
-    // desplazaba la cola hacia la derecha.
-    function updateArrow() {
-        if (!showArrow || !width)
-            return;
-        arrowCenter = width / 2 - bleed;
-    }
-
     visible: opened
     color: "transparent"
     // Sin grabFocus, Quickshell crea la ventana como Qt::ToolTip y NO
@@ -150,56 +135,30 @@ PopupWindow {
 
     // El icono mide 26 px y está centrado en la barra de 40 px: su borde
     // inferior queda 7 px por encima del borde real. Anclamos el popup al
-    // borde inferior de la barra, no al del icono.
+    // borde real de la barra, no al del icono.
     readonly property real barBottomInItem: anchorItem
         ? (Theme.barHeight + anchorItem.height) / 2
         : 0
 
-    // Punto de anclaje en el centro horizontal del icono y en el borde
-    // inferior real de la barra. Con edges/gravity verticales solamente,
-    // PopupAnchor centra el popup en el eje horizontal.
-    // +6 deja la cola casi tocando el filo de la barra, con un aire mínimo.
-    anchor.rect.x: showArrow ? (anchorItem ? anchorItem.width / 2 : 0) : 0
-    anchor.rect.y: showArrow
+    // Sin cola: la burbuja flota junto al borde real de la barra (el cuerpo
+    // queda inset bleed por la sombra, igual que los globos de los anillos).
+    // Menú raíz: punto central en el icono. Submenú: todo el alto del icono.
+    anchor.rect.x: centerAnchor ? (anchorItem ? anchorItem.width / 2 : 0) : 0
+    anchor.rect.y: centerAnchor
         ? (menusAbove
             ? -(Theme.barHeight - (anchorItem ? anchorItem.height : 0)) / 2 - 6
             : barBottomInItem + 6)
         : 0
-    anchor.rect.width: showArrow ? 1 : (anchorItem ? anchorItem.width : 1)
-    anchor.rect.height: showArrow ? 1 : (anchorItem ? anchorItem.height : 1)
+    anchor.rect.width: centerAnchor ? 1 : (anchorItem ? anchorItem.width : 1)
+    anchor.rect.height: centerAnchor ? 1 : (anchorItem ? anchorItem.height : 1)
 
     implicitWidth: menuWidth + bleed * 2
-    implicitHeight: menusAbove
-        ? bleed + body.height + (showArrow ? arrowH : 0)
-        : topPad + (showArrow ? arrowH : 0) + body.height + bleed
+    implicitHeight: bleed + body.height + bleed
 
     // El área transparente alrededor de la burbuja no debe capturar clics.
     mask: Region { item: body }
 
     onClosed: close()
-    onOpenedChanged: {
-        if (opened)
-            Qt.callLater(updateArrow);
-    }
-    onXChanged: updateArrow()
-    onWidthChanged: updateArrow()
-
-    Connections {
-        target: root.anchor
-        function onAnchoring() {
-            root.updateArrow();
-        }
-    }
-
-    Connections {
-        target: root.anchorItem
-        function onXChanged() {
-            root.updateArrow();
-        }
-        function onWidthChanged() {
-            root.updateArrow();
-        }
-    }
 
     Shortcut {
         sequence: "Escape"
@@ -221,13 +180,11 @@ PopupWindow {
             NumberAnimation { duration: 110; easing.type: Easing.OutCubic }
         }
 
-        // Hueco superior para la cola. El cuerpo empieza justo debajo.
+        // Cuerpo de la burbuja (la sombra vive en el bleed que lo rodea).
         Item {
             id: body
             x: root.bleed
-            y: root.menusAbove
-                ? root.bleed
-                : root.topPad + (root.showArrow ? root.arrowH - 1 : 0)
+            y: root.bleed
             width: root.menuWidth
 
             readonly property int contentHeight: menuColumn.implicitHeight + 12
@@ -407,30 +364,6 @@ PopupWindow {
                         }
                     }
                 }
-            }
-        }
-
-        // Cola superior: mismo relleno que la burbuja, sin borde.
-        Shape {
-            id: tail
-            visible: root.showArrow
-            x: Math.round(root.bleed + root.arrowCenter - root.arrowW / 2)
-            y: root.menusAbove ? body.y + body.height - 1 : 0
-            rotation: root.menusAbove ? 180 : 0
-            width: root.arrowW
-            height: root.arrowH + 1
-            antialiasing: true
-            preferredRendererType: Shape.CurveRenderer
-
-            ShapePath {
-                strokeWidth: 0
-                strokeColor: "transparent"
-                fillColor: bubble.color
-                startX: 0
-                startY: tail.height
-                PathLine { x: tail.width / 2; y: 0 }
-                PathLine { x: tail.width; y: tail.height }
-                PathLine { x: 0; y: tail.height }
             }
         }
     }
