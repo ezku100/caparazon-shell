@@ -195,12 +195,16 @@ Item {
         delegate: HoverChip {
             id: item
             required property var modelData
+            required property int index
 
             implicitWidth: 26
             implicitHeight: 26
             // Siguen reservando su sitio para que la fila no salte; se
-            // funden y encogen, de derecha a izquierda.
+            // funden y encogen, de derecha a izquierda. Al terminar el
+            // fundido desaparecen del todo (visible false): la fila deja de
+            // desbordarse sobre los anillos y robarles el hover.
             enabled: !root.collapsed
+            visible: !root.collapsed || opacity > 0.01
             opacity: root.collapsed ? 0 : 1
             scale: root.collapsed ? 0.7 : 1
 
