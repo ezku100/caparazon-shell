@@ -607,6 +607,7 @@ PanelWindow {
                         app: modelData
                         instanceCount: dock.countFor(modelData)
                         focused: dock.isFocused(modelData)
+                        placement: dock.position
                         onActivated: function(newInstance) {
                             appMenu.close();
                             dock.launch(modelData, newInstance);
@@ -649,6 +650,7 @@ PanelWindow {
                         app: modelData
                         instanceCount: dock.countFor(modelData)
                         focused: dock.isFocused(modelData)
+                        placement: dock.position
                         onActivated: function(newInstance) {
                             appMenu.close();
                             dock.launch(modelData, newInstance);

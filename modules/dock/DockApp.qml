@@ -11,6 +11,15 @@ Item {
     property var app: ({})
     property int instanceCount: 0
     property bool focused: false
+    // Borde de la pantalla donde vive el dock: "bottom", "top", "left" o
+    // "right". Coloca el punto de app abierta del lado exterior del icono,
+    // hacia el filo del cristal.
+    property string placement: "bottom"
+
+    readonly property bool atTop: placement === "top"
+    readonly property bool atLeft: placement === "left"
+    readonly property bool atRight: placement === "right"
+    readonly property bool side: atLeft || atRight
 
     signal activated(bool newInstance)
     signal menuRequested(var anchorItem)
@@ -128,14 +137,18 @@ function iconSourceFromCandidates() {
         easing.type: Easing.OutCubic
     }
 
-    // Indicador de app abierta: punto inferior, sin cápsula de fondo.
+    // Indicador de app abierta: punto del lado exterior, sin cápsula de
+    // fondo. Bajo el icono con el dock abajo, sobre él si está arriba, y a
+    // la izquierda o derecha según el borde lateral.
     Rectangle {
         id: runningDot
         visible: root.running
-        anchors {
-            horizontalCenter: parent.horizontalCenter
-            bottom: parent.bottom
-        }
+        x: root.side
+            ? (root.atRight ? parent.width - width : 0)
+            : Math.round((parent.width - width) / 2)
+        y: root.side
+            ? Math.round((parent.height - height) / 2)
+            : (root.atTop ? 0 : parent.height - height)
         width: 4
         height: 4
         radius: width / 2
