@@ -8,8 +8,11 @@ set -u
 
 SERVICE="app-caparazon@autostart.service"
 AUTOSTART="${XDG_CONFIG_HOME:-$HOME/.config}/autostart/caparazon.desktop"
+REPORT="$HOME/caparazon-repair.log"
 shell_dir="$(cd "$(dirname "$0")/.." && pwd)"
 launcher="$shell_dir/scripts/caparazon-shell"
+
+exec > >(tee "$REPORT") 2>&1
 
 say() {
     printf '%s\n' "$*"
@@ -73,4 +76,4 @@ say "--- diario ---"
 journalctl --user -u "$SERVICE" -n 12 --no-pager 2>/dev/null | tail -n 12
 say "--- ejecucion directa (aqui sale el error real) ---"
 timeout 8 quickshell -p "$shell_dir" 2>&1 | tail -n 25
-say "== fin: haz una foto de esta ventana =="
+say "== fin: manda el fichero $REPORT =="
