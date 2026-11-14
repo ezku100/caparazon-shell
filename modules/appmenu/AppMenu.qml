@@ -16,6 +16,10 @@ PanelWindow {
 
     required property var menuState
     property var clipboardHistory: null
+    // Pantalla que instancia este menú (la de su barra). Se pasa como valor
+    // plano: la propiedad `screen` de la ventana se re-resuelve al
+    // mapearse y, si `visible` depende de ella, Qt avisa de un ciclo.
+    required property var menuScreen
 
     readonly property bool opened: menuState ? menuState.opened : false
     readonly property bool active: opened && menuState.activeScreen === screen
@@ -418,7 +422,7 @@ PanelWindow {
     // que abrio el menu y durante su despedida.
     visible: (root.opened || root.closing)
         && root.menuState
-        && root.menuState.activeScreen === root.screen
+        && root.menuState.activeScreen === root.menuScreen
     anchors { top: true; left: true; right: true; bottom: true }
     exclusionMode: ExclusionMode.Ignore
     aboveWindows: true

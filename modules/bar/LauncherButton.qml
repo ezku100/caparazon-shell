@@ -7,6 +7,8 @@ import "../../theme"
 Item {
     id: root
 
+    // En la barra vertical el resto de botones lleva un círculo de fondo
+    // permanente; el lanzador lleva el kanji limpio.
     signal activated()
 
     implicitWidth: 28
@@ -17,6 +19,7 @@ Item {
         width: 26
         height: 26
         radius: width / 2
+        // Sólo al pasar el puntero: el kanji va sin fondo en ambas barras.
         color: hover.hovered ? Qt.lighter(Theme.chipHover, 1.45) : "transparent"
 
         Behavior on color {

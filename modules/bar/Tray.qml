@@ -4,6 +4,7 @@ import Quickshell.Services.SystemTray
 import Quickshell.Widgets
 import QtQuick
 import QtQuick.Effects
+import QtQuick.Shapes
 import "../../components"
 import "../../theme"
 import "../icons"
@@ -20,6 +21,10 @@ Item {
     property bool collapsed: false
     // Barra abajo: los menús de bandeja tienen que abrir hacia arriba.
     property bool menusAbove: false
+    // Barra vertical: la cápsula se apila en columna y crece hacia arriba.
+    property bool vertical: false
+    // Barra pegada al borde izquierdo: los menús salen hacia la derecha.
+    property bool barAtLeft: false
     property bool syncing: false
 
     readonly property string configDir: Quickshell.env("HOME") + "/.config/caparazon"
@@ -136,11 +141,35 @@ Item {
     // cápsula de siempre. El ancho se anima para que el resto de la barra
     // acompañe en vez de saltar.
     implicitWidth: root.width
-    width: root.collapsed ? 26 : trayRow.implicitWidth + capsulePad * 2
     implicitHeight: 26
-    visible: rep.count > 0
+    // En vertical el ancho no cambia al desplegarse: la celda crece en alto
+    // y hacia arriba desde el borde inferior, donde viven los botones de
+    // sistema. Así el borde de abajo nunca se mueve. Si el ancho variase,
+    // el grupo de la barra se re-anchuraba y la bandeja y los botones de
+    // sistema se iban de lado.
+    width: root.vertical
+        ? 26
+        : (root.collapsed ? 26 : trayRow.implicitWidth + capsulePad * 2)
+    // En vertical el alto es explícito y animado: la bandeja se abre hacia
+    // arriba y los anillos que se apoyan en ella la acompañan en el mismo
+    // plazo, sin saltos.
+    height: root.vertical
+        ? (root.collapsed ? 26 : trayRow.implicitHeight + capsulePad * 2)
+        : 26
+    // `shown` lo usa la barra para montar la bandeja solo en la vertical;
+    // el conteo de items manda igualmente.
+    property bool shown: true
+    visible: root.shown && rep.count > 0
 
     Behavior on width {
+        NumberAnimation {
+            duration: root.foldDuration
+            easing.type: Easing.OutCubic
+        }
+    }
+
+    Behavior on height {
+        enabled: root.vertical
         NumberAnimation {
             duration: root.foldDuration
             easing.type: Easing.OutCubic
@@ -151,11 +180,18 @@ Item {
     // al encogimiento: los iconos se meten detrás del borde redondeado.
     Rectangle {
         id: capsule
-        anchors.verticalCenter: parent.verticalCenter
-        anchors.right: parent.right
-        width: root.width
-        height: root.collapsed ? 26 : root.capsuleHeight
-        radius: height / 2
+        anchors.verticalCenter: root.vertical ? undefined : parent.verticalCenter
+        anchors.horizontalCenter: root.vertical ? parent.horizontalCenter : undefined
+        anchors.right: root.vertical ? undefined : parent.right
+        anchors.bottom: parent.bottom
+        width: root.vertical ? 26 : root.width
+        // En vertical la cápsula llena la celda y se ancla al borde
+        // inferior: al plegarse se encoge hacia arriba y su base no se
+        // mueve. Ahí el alto ya lo anima el contenedor.
+        height: root.vertical
+            ? root.height
+            : (root.collapsed ? 26 : root.capsuleHeight)
+        radius: Math.min(width, height) / 2
         clip: true
         // Plegada usa el acento de los círculos de estado; desplegada,
         // el tinte translúcido de la cápsula.
@@ -167,6 +203,7 @@ Item {
                 Theme.m3Primary.b, toggleHover.hovered ? 0.22 : 0.16)
 
         Behavior on height {
+            enabled: !root.vertical
             NumberAnimation {
                 duration: Theme.durFast
                 easing.type: Easing.OutCubic
@@ -181,12 +218,19 @@ Item {
         }
     }
 
-    Row {
+    Grid {
         id: trayRow
-        anchors.verticalCenter: parent.verticalCenter
-        anchors.right: parent.right
+        // Una fila en horizontal; una columna en vertical.
+        columns: root.vertical ? 1 : Math.max(1, rep.count + 1)
+        flow: Grid.LeftToRight
+        anchors.verticalCenter: root.vertical ? undefined : parent.verticalCenter
+        anchors.horizontalCenter: root.vertical ? parent.horizontalCenter : undefined
+        anchors.right: root.vertical ? undefined : parent.right
         anchors.rightMargin: root.capsulePad * root.open
-        spacing: 2
+        anchors.bottom: root.vertical ? parent.bottom : undefined
+        anchors.bottomMargin: root.vertical ? root.capsulePad * root.open : 0
+        columnSpacing: 2
+        rowSpacing: 2
 
         Repeater {
             id: rep
@@ -414,6 +458,8 @@ Item {
                 anchorItem: item
                 menuState: root.trayMenuState
                 menusAbove: root.menusAbove
+                vertical: root.vertical
+                barAtLeft: root.barAtLeft
                 anchorEdge: root.menusAbove ? Edges.Bottom : Edges.Top
                 anchorGravity: root.menusAbove ? Edges.Top : Edges.Bottom
 
@@ -458,6 +504,8 @@ Item {
                 parentMenu: trayMenu
                 centerAnchor: false
                 grabFocus: false
+                vertical: root.vertical
+                barAtLeft: root.barAtLeft
                 // Se abre a la izquierda y alineado con la fila que lo invoca.
                 anchorEdge: Edges.Left | Edges.Top
                 anchorGravity: Edges.Left | Edges.Bottom
@@ -498,42 +546,67 @@ Item {
             implicitWidth: root.collapsed ? 26 : 22
             implicitHeight: 26
             color: "transparent"
-
             HoverHandler {
                 id: toggleHover
                 cursorShape: Qt.PointingHandCursor
-            }
-
-            IconImage {
-                anchors.centerIn: parent
-                implicitSize: root.collapsed ? 16 : 14
-                source: IconResolver.firstOf([
-                    "pan-end-symbolic",
-                    "go-next-symbolic"
-                ])
-                rotation: root.collapsed ? 180 : 0
-                transformOrigin: Item.Center
-
-                Behavior on rotation {
-                    NumberAnimation {
-                        duration: root.foldDuration - 80
-                        easing.type: Easing.OutCubic
-                    }
-                }
-
-                layer.enabled: true
-                layer.effect: MultiEffect {
-                    colorization: 1.0
-                    colorizationColor: root.collapsed
-                        ? Theme.m3OnPrimary
-                        : Theme.iconTintMuted
-                }
             }
 
             MouseArea {
                 anchors.fill: parent
                 cursorShape: Qt.PointingHandCursor
                 onClicked: root.setCollapsed(!root.collapsed)
+            }
+        }
+
+    }
+
+    // Chevron dibujado en vez del icono del tema: el glifo traía aire
+    // asimétrico y al girarlo el trazo quedaba 2 px fuera del centro del
+    // círculo. Va anclado a la cápsula (el propio círculo) y el trazo se
+    // dibuja alrededor de su centro exacto.
+    Shape {
+        id: chevron
+        readonly property real thickness: 1.8
+        readonly property real halfWidth: (root.collapsed ? 5 : 4.5) / 2
+        readonly property real halfHeight: (root.collapsed ? 9 : 8) / 2
+        readonly property real centerX: width / 2
+        readonly property real centerY: height / 2
+        width: 26
+        height: 26
+        anchors.right: root.vertical ? undefined : capsule.right
+        anchors.verticalCenter: root.vertical ? undefined : capsule.verticalCenter
+        anchors.bottom: root.vertical ? capsule.bottom : undefined
+        anchors.horizontalCenter: root.vertical ? capsule.horizontalCenter : undefined
+        preferredRendererType: Shape.CurveRenderer
+        rotation: root.vertical
+            ? (root.collapsed ? -90 : 90)
+            : (root.collapsed ? 180 : 0)
+        transformOrigin: Item.Center
+
+        Behavior on rotation {
+            NumberAnimation {
+                duration: root.foldDuration - 80
+                easing.type: Easing.OutCubic
+            }
+        }
+
+        ShapePath {
+            strokeWidth: chevron.thickness
+            strokeColor: root.collapsed
+                ? Theme.m3OnPrimary
+                : Theme.iconTintMuted
+            fillColor: "transparent"
+            capStyle: ShapePath.RoundCap
+            joinStyle: ShapePath.RoundJoin
+            startX: chevron.centerX - chevron.halfWidth
+            startY: chevron.centerY - chevron.halfHeight
+            PathLine {
+                x: chevron.centerX + chevron.halfWidth
+                y: chevron.centerY
+            }
+            PathLine {
+                x: chevron.centerX - chevron.halfWidth
+                y: chevron.centerY + chevron.halfHeight
             }
         }
     }

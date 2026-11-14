@@ -174,7 +174,7 @@ def test_chip_sits_left_of_the_clock() -> None:
 def test_chip_animates_in_like_the_notification() -> None:
     chip = CHIP.read_text(encoding="utf-8")
 
-    assert "width: shown ? 26 : 0" in chip
+    assert "width: shown ? (root.vertical ? Theme.barHeight : 26) : 0" in chip
     assert "visible: shown || width > 0.5" in chip
     assert "Behavior on width" in chip
 

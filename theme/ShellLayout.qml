@@ -23,6 +23,9 @@ Item {
     // El dock admite además "left" y "right" (columna vertical).
     property string barPosition: "top"
     property string dockPosition: "bottom"
+    // Barra anclada (siempre visible y reservando franja) o dinámica
+    // (oculta hasta que el ratón toca el borde), como el dock.
+    property bool barAnchored: true
     property bool loaded: false
     property bool syncing: false
 
@@ -87,6 +90,12 @@ Item {
     readonly property var dockScreens:
         root.screensFor(root.dockOnPrimary, root.dockOnSecondary)
 
+    function setBarAnchored(value) {
+        if (root.barAnchored === value)
+            return;
+        root.barAnchored = value;
+    }
+
     function setBarOnPrimary(value) {
         if (root.barOnPrimary === value)
             return;
@@ -113,9 +122,10 @@ Item {
         root.dockOnSecondary = value;
     }
 
-    // La barra es horizontal: dos bordes. El dock admite los cuatro.
+    // La barra admite los cuatro bordes: dos horizontales y dos verticales.
     function setBarPosition(value) {
-        if (value !== "top" && value !== "bottom")
+        if (value !== "top" && value !== "bottom"
+                && value !== "left" && value !== "right")
             return;
         if (root.barPosition === value)
             return;
@@ -137,6 +147,7 @@ Item {
     onDockOnPrimaryChanged: if (!root.syncing) root.save()
     onDockOnSecondaryChanged: if (!root.syncing) root.save()
     onBarPositionChanged: if (!root.syncing) root.save()
+    onBarAnchoredChanged: if (!root.syncing) root.save()
     onDockPositionChanged: if (!root.syncing) root.save()
 
     function save() {
@@ -151,7 +162,8 @@ Item {
                 + ",\"dockPrimary\":" + (root.dockOnPrimary ? "true" : "false")
                 + ",\"dockSecondary\":" + (root.dockOnSecondary ? "true" : "false")
                 + ",\"barPosition\":\"" + root.barPosition + "\""
-                + ",\"dockPosition\":\"" + root.dockPosition + "\"}",
+                + ",\"dockPosition\":\"" + root.dockPosition + "\""
+                + ",\"barAnchored\":" + (root.barAnchored ? "true" : "false") + "}",
             root.configPath
         ];
         writer.running = true;
@@ -239,6 +251,8 @@ Item {
             property bool dockSecondary: true
             property string barPosition: "top"
             property string dockPosition: "bottom"
+            // false = barra dinámica (se oculta y sale al borde).
+            property bool barAnchored: true
         }
     }
 
@@ -253,9 +267,13 @@ Item {
             root.dockOnSecondary = adapter.dockSecondary !== false;
             // Valores desconocidos (archivo editado a mano) caen al borde
             // por defecto en vez de dejar la ventana sin anclaje.
-            root.barPosition = adapter.barPosition === "bottom" ? "bottom" : "top";
+            root.barPosition = adapter.barPosition === "bottom"
+                || adapter.barPosition === "left"
+                || adapter.barPosition === "right"
+                ? adapter.barPosition : "top";
             root.dockPosition = ["top", "left", "right"].indexOf(adapter.dockPosition) >= 0
                 ? adapter.dockPosition : "bottom";
+            root.barAnchored = adapter.barAnchored !== false;
             root.syncing = false;
             root.loaded = true;
         }

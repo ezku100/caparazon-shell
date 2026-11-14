@@ -1,8 +1,9 @@
 """Contrato de la posición de barra y dock.
 
-La barra y el dock sólo cambian de borde (arriba/abajo): su forma —la curva
-cóncava pegada al filo—, la sombra y las animaciones se espejan, no se
-rediseñan. La preferencia vive en display.json y se elige en el panel.
+La barra y el dock cambian de borde (arriba/abajo/izquierda/derecha): su
+forma —la curva cóncava pegada al filo—, la sombra y las animaciones se
+espejan, no se rediseñan. La preferencia vive en display.json y se elige en
+el panel.
 """
 
 from pathlib import Path
@@ -31,16 +32,19 @@ def test_the_positions_persist_in_display_json() -> None:
 def test_only_the_known_edges_are_accepted() -> None:
     """Un valor raro a mano no deja la ventana sin anclaje.
 
-    La barra sólo tiene dos bordes; el dock admite los cuatro. Al leer el
+    La barra admite los cuatro bordes; el dock, los tres que usa. Al leer el
     archivo, cualquier cosa que no sea un borde conocido vuelve al defecto.
     """
     contents = LAYOUT.read_text(encoding="utf-8")
 
     assert "function setBarPosition(value)" in contents
     assert "function setDockPosition(value)" in contents
-    assert 'if (value !== "top" && value !== "bottom")' in contents
+    assert 'if (value !== "top" && value !== "bottom"' in contents
     assert '&& value !== "left" && value !== "right")' in contents
-    assert 'adapter.barPosition === "bottom" ? "bottom" : "top"' in contents
+    assert 'adapter.barPosition === "bottom"' in contents
+    assert '|| adapter.barPosition === "left"' in contents
+    assert '|| adapter.barPosition === "right"' in contents
+    assert '? adapter.barPosition : "top"' in contents
     assert '["top", "left", "right"].indexOf(adapter.dockPosition) >= 0' in contents
 
 
@@ -56,29 +60,41 @@ def test_the_bar_mirrors_shape_shadow_and_entry() -> None:
 
     assert 'property string position: "top"' in contents
     assert "readonly property bool atBottom: bar.position" in contents
-    # Espejo del trazado sin duplicarlo: y() e inverse() voltean el path.
-    assert "readonly property bool flip: bar.atBottom" in contents
-    assert "function y(value) { return flip ? glass.height - value : value }" in contents
+    assert "readonly property bool atLeft: bar.position" in contents
+    assert "readonly property bool atRight: bar.position" in contents
+    assert "readonly property bool vertical: bar.atLeft || bar.atRight" in contents
+    # Espejo del trazado sin duplicarlo: px()/py()/inverse() voltean el path.
+    assert "function px(x, y)" in contents
+    assert "function py(x, y)" in contents
     assert "function inverse(value)" in contents
-    # La sombra cae hacia dentro de la pantalla en ambos bordes.
-    assert "? -Theme.shadowOffsetY : Theme.shadowOffsetY" in contents
-    # La franja clicable y las barreras modales siguen el borde.
-    assert "y: bar.atBottom ? parent.height - Theme.barHeight : 0" in contents
+    assert "readonly property bool flip" not in contents
+    # La sombra cae hacia dentro de la pantalla en los cuatro bordes.
+    assert "shadowHorizontalOffset: bar.atLeft" in contents
+    assert "(bar.atRight ? -Theme.shadowOffsetY : 0)" in contents
+    assert "(bar.atBottom ? -Theme.shadowOffsetY : Theme.shadowOffsetY)" in contents
+    # La franja clicable y las barreras modales siguen el borde (la máscara
+    # la calcula BarSmartHide según el borde y el estado de la barra).
+    assert "BarSmartHide.maskRect(bar.smartState" in contents
+    assert "position: bar.position" in contents
     assert "y: hitArea.y" in contents
 
 
 def test_the_tray_menus_open_away_from_the_edge() -> None:
     tray = TRAY.read_text(encoding="utf-8")
     menu = TRAY_MENU.read_text(encoding="utf-8")
+    bar = BAR.read_text(encoding="utf-8")
 
     assert "property bool menusAbove: false" in tray
-    assert "menusAbove: bar.atBottom" in (REPOSITORY_ROOT / "modules" / "bar" / "Bar.qml").read_text(
-        encoding="utf-8"
-    )
+    assert "menusAbove: bar.atBottom" in bar
     assert "root.menusAbove ? Edges.Bottom : Edges.Top" in tray
     assert "root.menusAbove ? Edges.Top : Edges.Bottom" in tray
-    assert "property bool menusAbove: false" in menu
-    assert "rotation: root.menusAbove ? 180 : 0" in menu
+    # En vertical la bandeja abre su menú hacia el interior y sin cola.
+    assert "menusAbove: true" in bar
+    assert "vertical: true" in bar
+    assert "barAtLeft: bar.atLeft" in bar
+    assert "anchor.edges: root.vertical" in menu
+    assert "root.barAtLeft" in menu
+    assert "rotation: root.menusAbove ? 180 : 0" not in menu
 
 
 def test_the_dock_follows_all_four_edges() -> None:

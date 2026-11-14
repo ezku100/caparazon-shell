@@ -24,6 +24,12 @@ Item {
     // Barra abajo: los globos de ayuda de los anillos abren hacia arriba.
     property bool tipAbove: false
 
+    // Barra vertical: los anillos se apilan en columna.
+    property bool vertical: false
+
+    // Barra pegada al borde izquierdo: los globos salen hacia la derecha.
+    property bool barAtLeft: false
+
     // Al pulsar cualquier anillo se abre la categoría del monitor del
     // sistema en el menú secundario.
     signal activated()
@@ -35,16 +41,23 @@ Item {
         return resources ? resources.isHidden(key) : false;
     }
 
-    implicitWidth: row.implicitWidth
-    implicitHeight: Theme.barHeight
+    implicitWidth: grid.implicitWidth
+    implicitHeight: root.vertical ? grid.implicitHeight : Theme.barHeight
 
-    Row {
-        id: row
-        anchors.verticalCenter: parent.verticalCenter
-        spacing: 4
+    Grid {
+        id: grid
+        // Una fila con los anillos activos; uno por fila en vertical.
+        columns: root.vertical ? 1 : 6
+        flow: Grid.LeftToRight
+        anchors.verticalCenter: root.vertical ? undefined : parent.verticalCenter
+        anchors.horizontalCenter: root.vertical ? parent.horizontalCenter : undefined
+        columnSpacing: 4
+        rowSpacing: 4
 
         ResourceRing {
             tipAbove: root.tipAbove
+            vertical: root.vertical
+            barAtLeft: root.barAtLeft
             label: "CPU"
             value: root.cpu
             visible: !root.isHidden("cpu")
@@ -54,6 +67,8 @@ Item {
 
         ResourceRing {
             tipAbove: root.tipAbove
+            vertical: root.vertical
+            barAtLeft: root.barAtLeft
             label: "RAM"
             value: root.ram
             visible: !root.isHidden("ram")
@@ -63,6 +78,8 @@ Item {
 
         ResourceRing {
             tipAbove: root.tipAbove
+            vertical: root.vertical
+            barAtLeft: root.barAtLeft
             label: "GPU"
             value: root.gpu
             visible: !root.isHidden("gpu")
@@ -72,6 +89,8 @@ Item {
 
         ResourceRing {
             tipAbove: root.tipAbove
+            vertical: root.vertical
+            barAtLeft: root.barAtLeft
             label: "Swap"
             value: root.swap
             visible: !root.isHidden("swap")
@@ -81,6 +100,8 @@ Item {
 
         ResourceRing {
             tipAbove: root.tipAbove
+            vertical: root.vertical
+            barAtLeft: root.barAtLeft
             label: "Red"
             value: root.network
             visible: !root.isHidden("network")
@@ -89,6 +110,8 @@ Item {
 
         ResourceRing {
             tipAbove: root.tipAbove
+            vertical: root.vertical
+            barAtLeft: root.barAtLeft
             label: "Temp"
             value: root.temperature
             unit: "°C"

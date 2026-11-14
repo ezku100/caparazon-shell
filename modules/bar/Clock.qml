@@ -7,13 +7,23 @@ Item {
     id: root
 
     property bool compact: false
+    // Vertical: hora, minutos y AM/PM se apilan en tres líneas dentro del
+    // ancho de la barra.
+    property bool vertical: false
 
     signal activated()
 
-    implicitWidth: row.implicitWidth
-    implicitHeight: Theme.barHeight
+    implicitWidth: root.vertical ? Theme.barHeight : row.implicitWidth
+    implicitHeight: root.vertical ? column.implicitHeight : Theme.barHeight
 
     readonly property var clockLocale: Qt.locale("es_MX")
+
+    // Qt sólo interpreta "h" como hora de 12 h cuando va junto a "AP"; a
+    // solas devuelve 24 h. Calculamos la hora 12 h a mano.
+    readonly property int hour12: {
+        const h = clock.date.getHours() % 12;
+        return h === 0 ? 12 : h;
+    }
 
     SystemClock {
         id: clock
@@ -22,6 +32,7 @@ Item {
 
     Row {
         id: row
+        visible: !root.vertical
         anchors.centerIn: parent
         spacing: 9
 
@@ -49,6 +60,43 @@ Item {
             font.family: Theme.fontUI
             font.pixelSize: 12
             text: root.clockLocale.toString(clock.date, "ddd d MMM")
+        }
+    }
+
+    // Vertical: hora, minutos y AM/PM apilados en ese orden, siempre en 12 h.
+    Column {
+        id: column
+        visible: root.vertical
+        anchors.centerIn: parent
+        spacing: 0
+
+        Text {
+            anchors.horizontalCenter: parent.horizontalCenter
+            color: Theme.text
+            font.family: Theme.fontUI
+            font.pixelSize: 13
+            font.weight: Font.DemiBold
+            // Dos dígitos siempre: la columna no cambia de ancho al pasar
+            // de las 9 a las 10 y la hora se lee alineada.
+            text: String(root.hour12).padStart(2, "0")
+        }
+
+        Text {
+            anchors.horizontalCenter: parent.horizontalCenter
+            color: Theme.text
+            font.family: Theme.fontUI
+            font.pixelSize: 13
+            font.weight: Font.DemiBold
+            text: root.clockLocale.toString(clock.date, "mm")
+        }
+
+        Text {
+            anchors.horizontalCenter: parent.horizontalCenter
+            color: Theme.textDim
+            font.family: Theme.fontUI
+            font.pixelSize: 9
+            font.weight: Font.Medium
+            text: root.clockLocale.toString(clock.date, "AP")
         }
     }
 

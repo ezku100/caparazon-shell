@@ -13,6 +13,8 @@ Item {
 
     property string appId: ""
     property bool compact: false
+    // Vertical: sólo el icono; el nombre no cabe en 40 px.
+    property bool vertical: false
 
     readonly property bool isDesktop: root.appId === "plasmashell"
 
@@ -66,7 +68,7 @@ Item {
     }
 
     implicitWidth: visible ? row.implicitWidth : 0
-    implicitHeight: Theme.barHeight
+    implicitHeight: root.vertical ? 26 : Theme.barHeight
     visible: appId !== ""
 
     Row {
@@ -101,7 +103,7 @@ Item {
 
         Text {
             anchors.verticalCenter: parent.verticalCenter
-            visible: root.appName !== ""
+            visible: !root.vertical && root.appName !== ""
             width: Math.min(root.compact ? 110 : 170, implicitWidth)
             text: root.appName
             color: Theme.text

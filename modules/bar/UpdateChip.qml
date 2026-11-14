@@ -13,10 +13,13 @@ Item {
 
     signal activated()
 
+    // Vertical: ocupa el ancho de la barra para quedar centrado en la columna.
+    property bool vertical: false
+
     readonly property bool shown: UpdateStatus.pending
         && UpdateStatus.state !== "updating"
 
-    width: shown ? 26 : 0
+    width: shown ? (root.vertical ? Theme.barHeight : 26) : 0
     height: Theme.barHeight
     visible: shown || width > 0.5
     opacity: shown ? 1 : 0

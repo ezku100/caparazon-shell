@@ -10,11 +10,19 @@ import "../../theme"
 //   - estado: busctl --json=short (JSON limpio, parseable con JSON.parse)
 //   - cambios en vivo: dbus-monitor escuchando la interfaz de KWin
 //   - cambiar: org.kde.KWin.setCurrentDesktop(int) (1-based)
-Row {
+Grid {
     id: root
 
+    // Vertical: los escritorios se apilan en columna.
+    property bool vertical: false
+
     visible: true
-    spacing: 4
+    // Todos en una fila en horizontal; uno por fila en vertical. Grid se
+    // dimensiona solo, sin atar width a implicitWidth (eso rompía la fila).
+    columns: root.vertical ? 1 : Math.max(1, root.desks ? root.desks.length : 0)
+    flow: Grid.LeftToRight
+    columnSpacing: 4
+    rowSpacing: 4
 
     property var service: null
     property string screenName: ""

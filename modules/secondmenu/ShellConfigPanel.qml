@@ -129,6 +129,16 @@ Flickable {
             key: "bottom",
             label: "Abajo",
             note: "Espejada: nace del borde inferior, con la sombra hacia arriba."
+        },
+        {
+            key: "left",
+            label: "Izquierda",
+            note: "Vertical: todo el alto del monitor y el mismo grosor que la horizontal."
+        },
+        {
+            key: "right",
+            label: "Derecha",
+            note: "Vertical espejada: nace del borde derecho."
         }
     ]
 
@@ -164,6 +174,19 @@ Flickable {
         {
             key: "anchored",
             label: "Anclado",
+            note: "Siempre visible y reserva su franja en pantalla."
+        }
+    ]
+
+    readonly property var barModeRows: [
+        {
+            key: "dynamic",
+            label: "Dinámica",
+            note: "Se oculta y sale al acercar el ratón al borde."
+        },
+        {
+            key: "anchored",
+            label: "Anclada",
             note: "Siempre visible y reserva su franja en pantalla."
         }
     ]
@@ -411,6 +434,17 @@ Flickable {
             font.pixelSize: Theme.fontPx
         }
 
+        // Cada elemento junta aquí todo lo suyo: dónde se muestra, en qué
+        // borde y cómo se comporta. Mezclarlos dejaba medias opciones en
+        // sitios distintos del panel.
+        Text {
+            width: parent.width
+            text: "Barra"
+            color: Theme.textDim
+            font.family: Theme.fontUI
+            font.pixelSize: Theme.fontPx
+        }
+
         // El principal es el que KDE marca como principal (prioridad 1 de
         // kscreen), así que la shell coincide con lo que decide Plasma.
         // La barra no se puede apagar en todas las pantallas: es la única
@@ -435,35 +469,11 @@ Flickable {
             onToggled: ShellLayout.setBarOnSecondary(!ShellLayout.barOnSecondary)
         }
 
-        ToggleRow {
-            width: parent.width
-            label: "Dock en el monitor principal"
-            note: "El dock es opcional en cualquier pantalla."
-            value: ShellLayout.dockOnPrimary
-            onToggled: ShellLayout.setDockOnPrimary(!ShellLayout.dockOnPrimary)
-        }
-
-        ToggleRow {
-            width: parent.width
-            label: "Dock en monitores secundarios"
-            note: "Apágalo para tener el dock sólo en el principal."
-            value: ShellLayout.dockOnSecondary
-            onToggled: ShellLayout.setDockOnSecondary(!ShellLayout.dockOnSecondary)
-        }
-
-        Text {
-            width: parent.width
-            text: "Posición"
-            color: Theme.textDim
-            font.family: Theme.fontUI
-            font.pixelSize: Theme.fontPx
-        }
-
         // Barra y dock sólo cambian de borde: su forma (curva cóncava pegada
         // al filo) y sus animaciones se espejan, no se rediseñan.
         Text {
             width: parent.width
-            text: "Barra"
+            text: "Posición"
             color: Theme.textDim
             font.family: Theme.fontUI
             font.pixelSize: 11
@@ -487,7 +497,56 @@ Flickable {
 
         Text {
             width: parent.width
+            text: "Modo"
+            color: Theme.textDim
+            font.family: Theme.fontUI
+            font.pixelSize: 11
+        }
+
+        SegmentedChoice {
+            width: parent.width
+            options: root.barModeRows
+            value: ShellLayout.barAnchored ? "anchored" : "dynamic"
+            onPicked: (key) => ShellLayout.setBarAnchored(key === "anchored")
+        }
+
+        Text {
+            width: parent.width
+            text: root.noteFor(root.barModeRows,
+                ShellLayout.barAnchored ? "anchored" : "dynamic")
+            color: Theme.textDim
+            font.family: Theme.fontUI
+            font.pixelSize: 11
+            elide: Text.ElideRight
+        }
+
+        Text {
+            width: parent.width
             text: "Dock"
+            color: Theme.textDim
+            font.family: Theme.fontUI
+            font.pixelSize: Theme.fontPx
+        }
+
+        ToggleRow {
+            width: parent.width
+            label: "Dock en el monitor principal"
+            note: "El dock es opcional en cualquier pantalla."
+            value: ShellLayout.dockOnPrimary
+            onToggled: ShellLayout.setDockOnPrimary(!ShellLayout.dockOnPrimary)
+        }
+
+        ToggleRow {
+            width: parent.width
+            label: "Dock en monitores secundarios"
+            note: "Apágalo para tener el dock sólo en el principal."
+            value: ShellLayout.dockOnSecondary
+            onToggled: ShellLayout.setDockOnSecondary(!ShellLayout.dockOnSecondary)
+        }
+
+        Text {
+            width: parent.width
+            text: "Posición"
             color: Theme.textDim
             font.family: Theme.fontUI
             font.pixelSize: 11
@@ -503,6 +562,31 @@ Flickable {
         Text {
             width: parent.width
             text: root.noteFor(root.dockPositionRows, ShellLayout.dockPosition)
+            color: Theme.textDim
+            font.family: Theme.fontUI
+            font.pixelSize: 11
+            elide: Text.ElideRight
+        }
+
+        Text {
+            width: parent.width
+            text: "Modo"
+            color: Theme.textDim
+            font.family: Theme.fontUI
+            font.pixelSize: 11
+        }
+
+        SegmentedChoice {
+            width: parent.width
+            options: root.dockModeRows
+            value: root.dockAnchored ? "anchored" : "dynamic"
+            onPicked: (key) => root.setDockAnchored(key === "anchored")
+        }
+
+        Text {
+            width: parent.width
+            text: root.noteFor(root.dockModeRows,
+                root.dockAnchored ? "anchored" : "dynamic")
             color: Theme.textDim
             font.family: Theme.fontUI
             font.pixelSize: 11
@@ -666,30 +750,6 @@ Flickable {
             elide: Text.ElideRight
         }
 
-        Text {
-            width: parent.width
-            text: "Dock"
-            color: Theme.textDim
-            font.family: Theme.fontUI
-            font.pixelSize: Theme.fontPx
-        }
-
-        SegmentedChoice {
-            width: parent.width
-            options: root.dockModeRows
-            value: root.dockAnchored ? "anchored" : "dynamic"
-            onPicked: (key) => root.setDockAnchored(key === "anchored")
-        }
-
-        Text {
-            width: parent.width
-            text: root.noteFor(root.dockModeRows,
-                root.dockAnchored ? "anchored" : "dynamic")
-            color: Theme.textDim
-            font.family: Theme.fontUI
-            font.pixelSize: 11
-            elide: Text.ElideRight
-        }
     }
 
     FileView {

@@ -21,6 +21,10 @@ PopupWindow {
     property bool centerAnchor: true
     // La barra está abajo: burbuja por encima del icono y cola hacia abajo.
     property bool menusAbove: false
+    // Barra vertical: el menú sale hacia el interior de la pantalla a la
+    // altura del icono (derecha si la barra está a la izquierda y viceversa).
+    property bool vertical: false
+    property bool barAtLeft: false
     property bool opened: false
     // El puntero está dentro de la burbuja; el icono de la bandeja lo usa
     // para no cerrar el menú al pasar del icono a la burbuja.
@@ -129,9 +133,17 @@ PopupWindow {
     grabFocus: false
 
     anchor.item: anchorItem
-    anchor.edges: anchorEdge
-    anchor.gravity: anchorGravity
-    anchor.adjustment: anchorAdjustment
+    anchor.edges: root.vertical
+        ? (root.barAtLeft
+            ? (root.centerAnchor ? Edges.Right : (Edges.Right | Edges.Top))
+            : (root.centerAnchor ? Edges.Left : (Edges.Left | Edges.Top)))
+        : anchorEdge
+    anchor.gravity: root.vertical
+        ? (root.barAtLeft
+            ? (root.centerAnchor ? Edges.Right : (Edges.Right | Edges.Bottom))
+            : (root.centerAnchor ? Edges.Left : (Edges.Left | Edges.Bottom)))
+        : anchorGravity
+    anchor.adjustment: root.vertical ? PopupAdjustment.SlideY : anchorAdjustment
 
     // El icono mide 26 px y está centrado en la barra de 40 px: su borde
     // inferior queda 7 px por encima del borde real. Anclamos el popup al
@@ -139,15 +151,28 @@ PopupWindow {
     readonly property real barBottomInItem: anchorItem
         ? (Theme.barHeight + anchorItem.height) / 2
         : 0
+    // En vertical, borde interior de la barra en coordenadas del icono.
+    readonly property real barInnerInItem: anchorItem
+        ? (root.barAtLeft
+            ? (Theme.barHeight + anchorItem.width) / 2
+            : -(Theme.barHeight - anchorItem.width) / 2)
+        : 0
 
     // Sin cola: la burbuja flota junto al borde real de la barra (el cuerpo
     // queda inset bleed por la sombra, igual que los globos de los anillos).
     // Menú raíz: punto central en el icono. Submenú: todo el alto del icono.
-    anchor.rect.x: centerAnchor ? (anchorItem ? anchorItem.width / 2 : 0) : 0
+    anchor.rect.x: centerAnchor
+        ? (root.vertical
+            ? Math.round(root.barInnerInItem
+                + (root.barAtLeft ? 6 : -6))
+            : (anchorItem ? anchorItem.width / 2 : 0))
+        : 0
     anchor.rect.y: centerAnchor
-        ? (menusAbove
-            ? -(Theme.barHeight - (anchorItem ? anchorItem.height : 0)) / 2 - 6
-            : barBottomInItem + 6)
+        ? (root.vertical
+            ? Math.round((anchorItem ? anchorItem.height : 0) / 2)
+            : (menusAbove
+                ? -(Theme.barHeight - (anchorItem ? anchorItem.height : 0)) / 2 - 6
+                : barBottomInItem + 6))
         : 0
     anchor.rect.width: centerAnchor ? 1 : (anchorItem ? anchorItem.width : 1)
     anchor.rect.height: centerAnchor ? 1 : (anchorItem ? anchorItem.height : 1)
@@ -198,8 +223,10 @@ PopupWindow {
                 shadowColor: Theme.shadowColor
                 shadowOpacity: 0.20
                 shadowBlur: 0.32
-                shadowHorizontalOffset: 0
-                shadowVerticalOffset: 3
+                shadowHorizontalOffset: root.vertical
+                    ? (root.barAtLeft ? 3 : -3)
+                    : 0
+                shadowVerticalOffset: root.vertical ? 0 : 3
             }
 
             Rectangle {

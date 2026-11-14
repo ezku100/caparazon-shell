@@ -324,6 +324,7 @@ ShellRoot {
         delegate: Bar {
             shown: ShellLayout.barShownFor(modelData)
             position: ShellLayout.barPosition
+            anchored: ShellLayout.barAnchored
             workspacesService: workspacesSvc
             powerMenuState: shellRoot.powerMenuState
             appMenuState: shellRoot.appMenuState

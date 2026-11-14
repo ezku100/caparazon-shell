@@ -22,6 +22,10 @@ Item {
     property bool tipVisible: false
     // Barra abajo: el globo abre hacia arriba, con la cola hacia abajo.
     property bool tipAbove: false
+    // Barra vertical: el globo sale hacia el interior de la pantalla a la
+    // altura del anillo (derecha si la barra está a la izquierda y viceversa).
+    property bool vertical: false
+    property bool barAtLeft: false
 
     // Unidad del globo de ayuda: los medidores de uso van en %, la
     // temperatura en grados.
@@ -142,16 +146,31 @@ Item {
             readonly property int bodyHeight: 36
 
             anchor.item: root
-            anchor.edges: root.tipAbove ? Edges.Bottom : Edges.Top
-            anchor.gravity: root.tipAbove ? Edges.Top : Edges.Bottom
-            anchor.adjustment: PopupAdjustment.SlideX
-            anchor.rect.x: Math.round(root.width / 2)
+            // Horizontal: el globo nace del borde superior o inferior de la
+            // barra. Vertical: nace del costado interior a la altura del anillo.
+            anchor.edges: root.vertical
+                ? (root.barAtLeft ? Edges.Right : Edges.Left)
+                : (root.tipAbove ? Edges.Bottom : Edges.Top)
+            anchor.gravity: root.vertical
+                ? (root.barAtLeft ? Edges.Right : Edges.Left)
+                : (root.tipAbove ? Edges.Top : Edges.Bottom)
+            anchor.adjustment: root.vertical ? PopupAdjustment.SlideY : PopupAdjustment.SlideX
+            // Punto de anclaje: centro horizontal del anillo en horizontal;
+            // en vertical, el centro vertical del anillo pegado al costado
+            // interior de la barra (con 6 px de aire).
+            anchor.rect.x: root.vertical
+                ? (root.barAtLeft
+                    ? Math.round((Theme.barHeight + root.width) / 2 + 6)
+                    : -Math.round((Theme.barHeight - root.width) / 2 + 6))
+                : Math.round(root.width / 2)
             // Sin cola: la burbuja flota junto al borde de la barra. Arriba:
             // el borde inferior de la barra en coordenadas del anillo; abajo:
             // el superior (espejado). El +6 deja un aire mínimo contra la barra.
-            anchor.rect.y: root.tipAbove
-                ? -(Theme.barHeight - root.height) / 2 - 6
-                : Math.round((Theme.barHeight + root.height) / 2 + 6)
+            anchor.rect.y: root.vertical
+                ? Math.round(root.height / 2)
+                : (root.tipAbove
+                    ? -(Theme.barHeight - root.height) / 2 - 6
+                    : Math.round((Theme.barHeight + root.height) / 2 + 6))
             anchor.rect.width: 1
             anchor.rect.height: 1
 
@@ -177,8 +196,10 @@ Item {
                     shadowColor: Theme.shadowColor
                     shadowOpacity: 0.20
                     shadowBlur: 0.32
-                    shadowHorizontalOffset: 0
-                    shadowVerticalOffset: root.tipAbove ? -3 : 3
+                    shadowHorizontalOffset: root.vertical
+                        ? (root.barAtLeft ? 3 : -3)
+                        : 0
+                    shadowVerticalOffset: root.vertical ? 0 : (root.tipAbove ? -3 : 3)
                 }
 
                 // Globo de texto: burbuja simple sin cola, centrada sobre el

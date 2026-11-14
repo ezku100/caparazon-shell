@@ -14,6 +14,10 @@ PanelWindow {
     id: root
 
     required property var menuState
+    // Pantalla que instancia este menú (la de su barra). Se pasa como
+    // valor plano: la propiedad `screen` de la ventana se re-resuelve al
+    // mapearse y, si `visible` depende de ella, Qt avisa de un ciclo.
+    required property var menuScreen
 
     readonly property bool opened: menuState ? menuState.opened : false
     readonly property bool active: opened
@@ -171,7 +175,7 @@ PanelWindow {
     // que abrio el menu y durante su despedida.
     visible: (opened || closing)
         && root.menuState
-        && root.menuState.activeScreen === root.screen
+        && root.menuState.activeScreen === root.menuScreen
     anchors { top: true; left: true; right: true; bottom: true }
     // Ignora las zonas exclusivas de barra/dock: así la capa cubre el
     // monitor completo, no sólo el área de trabajo.

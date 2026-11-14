@@ -1,6 +1,7 @@
 import Quickshell
 import Quickshell.Services.Mpris
 import QtQuick
+import QtQuick.Layouts
 import "../../theme"
 
 // Aviso efímero al cambiar de canción. Los reproductores MPRIS no mandan
@@ -8,6 +9,9 @@ import "../../theme"
 // el metadata y muestra el cambio en el mismo grupo central.
 Item {
     id: root
+
+    // Vertical: sólo la carátula, con el ancho de la barra.
+    property bool vertical: false
 
     readonly property var players: Mpris.players && Mpris.players.values
         ? Mpris.players.values
@@ -28,16 +32,42 @@ Item {
     property string shownArt: ""
     property bool active: false
 
-    width: active ? Math.min(320, content.implicitWidth + 16) : 0
+    width: active
+        ? (root.vertical ? Theme.barHeight : Math.min(320, content.implicitWidth + 16))
+        : 0
     height: Theme.barHeight
     visible: active || width > 0.5
-    opacity: active ? 1 : 0
+
+    // Mismo gesto que el aviso: fundido + "pop" con rebote + desliz de 6 px
+    // desde el filo interior, todo desde un solo driver.
+    property real presence: active ? 1 : 0
+    Behavior on presence {
+        NumberAnimation {
+            duration: root.active ? 280 : 150
+            easing.type: root.active ? Easing.OutBack : Easing.InCubic
+            easing.overshoot: 1.12
+        }
+    }
+    opacity: presence
+    scale: 0.84 + 0.16 * presence
+    transformOrigin: Item.Center
+    transform: Translate {
+        x: (1 - root.presence) * (root.vertical ? -6 : 6)
+    }
+
+    // Hueco animado en la columna vertical: la carátula entra y el resto se
+    // desliza en vez de dar un salto.
+    property real slot: root.vertical && root.active ? 26 : 0
+    Behavior on slot {
+        NumberAnimation { duration: 260; easing.type: Easing.OutCubic }
+    }
+    Layout.preferredWidth: root.vertical
+        ? (root.active ? Theme.barHeight : 0)
+        : Theme.barHeight
+    Layout.preferredHeight: root.vertical ? root.slot : root.height
 
     Behavior on width {
         NumberAnimation { duration: Theme.dur; easing.type: Easing.OutCubic }
-    }
-    Behavior on opacity {
-        NumberAnimation { duration: Theme.durFast; easing.type: Easing.OutCubic }
     }
 
     Timer {
@@ -80,17 +110,19 @@ Item {
     Rectangle {
         id: pill
         anchors.verticalCenter: parent.verticalCenter
-        width: root.width
-        height: 30
-        radius: 10
+        anchors.horizontalCenter: parent.horizontalCenter
+        width: root.vertical ? 26 : root.width
+        height: root.vertical ? 26 : 30
+        radius: root.vertical ? width / 2 : 10
         color: Theme.chip
         clip: true
 
         Row {
             id: content
             anchors.verticalCenter: parent.verticalCenter
-            anchors.left: parent.left
+            anchors.left: root.vertical ? undefined : parent.left
             anchors.leftMargin: 8
+            anchors.horizontalCenter: root.vertical ? parent.horizontalCenter : undefined
             spacing: 7
 
             Image {
@@ -107,6 +139,7 @@ Item {
 
             Column {
                 anchors.verticalCenter: parent.verticalCenter
+                visible: !root.vertical
                 width: Math.min(240, Math.max(title.implicitWidth, artist.implicitWidth))
                 spacing: 0
 

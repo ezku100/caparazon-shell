@@ -155,9 +155,15 @@ def test_los_menus_no_se_recrean_en_cada_apertura() -> None:
 
 def test_los_menus_solo_se_mapean_en_la_pantalla_que_abrio() -> None:
     for path in (APPMENU, SECONDMENU, POWERMENU):
-        assert "root.menuState.activeScreen === root.screen" in source(path), (
+        assert "root.menuState.activeScreen === root.menuScreen" in source(path), (
             f"{path}: el menu debe mapearse solo en su pantalla"
         )
+    # La pantalla llega como valor plano (menuScreen): leer `screen` dentro
+    # del menu re-resuelve la ventana y el binding de `visible` cyclicalia.
+    bar = source(BAR)
+    assert bar.count("menuScreen: bar.modelData") == 3, (
+        "la barra debe pasar su pantalla a los tres menus"
+    )
 
 
 def test_el_cierre_no_espera_mas_de_lo_que_dura_la_animacion() -> None:
