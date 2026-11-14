@@ -1,0 +1,76 @@
+#!/usr/bin/env bash
+# Repara el arranque de Caparazón cuando la shell no aparece.
+#
+# Hace lo que haría alguien a mano: comprobar el lanzador, arreglar permisos,
+# dejar el arranque automático apuntando a esta carpeta, recargar systemd,
+# reiniciar la shell y, si no arranca, dejar el error a la vista.
+set -u
+
+SERVICE="app-caparazon@autostart.service"
+AUTOSTART="${XDG_CONFIG_HOME:-$HOME/.config}/autostart/caparazon.desktop"
+shell_dir="$(cd "$(dirname "$0")/.." && pwd)"
+launcher="$shell_dir/scripts/caparazon-shell"
+
+say() {
+    printf '%s\n' "$*"
+}
+
+rewrite_autostart() {
+    mkdir -p "$(dirname "$AUTOSTART")"
+    sed -e "s|@SHELL_PATH@|$shell_dir|g" \
+        "$shell_dir/integration/autostart/caparazon.desktop.in" > "$AUTOSTART"
+}
+
+say "== Caparazon: reparacion =="
+say "Carpeta: $shell_dir"
+
+if [ ! -f "$launcher" ]; then
+    say "ERROR: no existe $launcher"
+    say "La actualizacion quedo a medias; vuelve a clonar el repositorio."
+    exit 1
+fi
+
+chmod 755 "$launcher" 2>/dev/null
+say "Lanzador: $(stat -c '%A' "$launcher" 2>/dev/null)"
+
+if [ ! -f "$AUTOSTART" ]; then
+    say "No habia arranque automatico: lo creo."
+    rewrite_autostart
+else
+    exec_line="$(sed -n 's/^Exec=//p' "$AUTOSTART" | head -n 1)"
+    if [ "$exec_line" = "$launcher" ]; then
+        say "Arranque automatico: correcto."
+    else
+        say "Arranque automatico: apuntaba a '$exec_line'; lo corrijo."
+        rewrite_autostart
+    fi
+fi
+
+systemctl --user daemon-reload 2>/dev/null || true
+say "Reiniciando la shell..."
+
+started=0
+if systemctl --user restart "$SERVICE" 2>/dev/null; then
+    started=1
+fi
+if [ "$started" -eq 0 ]; then
+    say "Systemd no pudo: la lanzo directamente."
+    setsid sh "$launcher" >/dev/null 2>&1 &
+fi
+sleep 5
+
+if pgrep -f "quickshell -p $shell_dir" >/dev/null 2>&1; then
+    say ""
+    say "LISTO: la shell esta en marcha. Si no la ves, mira la pantalla."
+    exit 0
+fi
+
+say ""
+say "La shell no arranco. Copia de los errores:"
+say "--- systemd ---"
+systemctl --user status "$SERVICE" --no-pager -l 2>/dev/null | tail -n 8
+say "--- diario ---"
+journalctl --user -u "$SERVICE" -n 12 --no-pager 2>/dev/null | tail -n 12
+say "--- ejecucion directa (aqui sale el error real) ---"
+timeout 8 quickshell -p "$shell_dir" 2>&1 | tail -n 25
+say "== fin: haz una foto de esta ventana =="

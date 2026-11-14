@@ -61,6 +61,20 @@ def test_the_installer_keeps_the_launcher_executable() -> None:
     assert 'chmod 755 "$SHELL_DIR/scripts/caparazon-shell"' in contents
 
 
+def test_the_repair_script_fixes_the_launch() -> None:
+    """Un solo comando para quien no quiere tocar systemd a mano."""
+    import os
+
+    script = REPOSITORY_ROOT / "scripts" / "caparazon-repair"
+    contents = script.read_text(encoding="utf-8")
+
+    assert os.access(script, os.X_OK)
+    assert "chmod 755" in contents
+    assert "rewrite_autostart" in contents
+    assert "daemon-reload" in contents
+    assert "quickshell -p" in contents
+
+
 def test_the_guardian_relaunches_a_missing_shell() -> None:
     """Si la shell no arranca, el vigilante la recupera solo."""
     contents = GUARDIAN.read_text(encoding="utf-8")

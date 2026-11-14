@@ -358,6 +358,9 @@ case "${1:-instalar}" in
         if [ -n "$EXISTING_SHELL_DIR" ] && [ "$EXISTING_SHELL_DIR" != "$SHELL_DIR" ]; then
             echo "Reutilizando la shell de $EXISTING_SHELL_DIR"
             echo "No se crea una copia en $SHELL_DIR ni se toca el arranque automatico"
+            if [ -f "$EXISTING_SHELL_DIR/scripts/caparazon-shell" ]; then
+                chmod 755 "$EXISTING_SHELL_DIR/scripts/caparazon-shell"
+            fi
             ACTIVE_SHELL_DIR="$EXISTING_SHELL_DIR"
         else
             install_shell
