@@ -24,7 +24,9 @@ def launch(tmp_path: Path, scale_text: str | None) -> subprocess.CompletedProces
     config_dir = tmp_path / "config"
     if scale_text is not None:
         (config_dir / "caparazon").mkdir(parents=True, exist_ok=True)
-        (config_dir / "caparazon" / "scale").write_text(scale_text, encoding="utf-8")
+        (config_dir / "caparazon" / "scale.env").write_text(
+            scale_text, encoding="utf-8"
+        )
 
     environment = {
         "PATH": f"{bin_dir}:/usr/bin:/bin",
@@ -37,7 +39,7 @@ def launch(tmp_path: Path, scale_text: str | None) -> subprocess.CompletedProces
 
 
 def test_the_launcher_forwards_the_chosen_scale(tmp_path: Path) -> None:
-    result = launch(tmp_path, "1.5\n")
+    result = launch(tmp_path, "QT_SCALE_FACTOR=1.5\n")
 
     assert result.stdout.startswith("1.5|")
     assert f"-p {REPOSITORY_ROOT} -d" in result.stdout
@@ -48,8 +50,8 @@ def test_the_launcher_defaults_to_one_without_a_file(tmp_path: Path) -> None:
 
 
 def test_the_launcher_rejects_unknown_scales(tmp_path: Path) -> None:
-    assert launch(tmp_path, "9\n").stdout.startswith("1|")
-    assert launch(tmp_path, "grande\n").stdout.startswith("1|")
+    assert launch(tmp_path, "QT_SCALE_FACTOR=9\n").stdout.startswith("1|")
+    assert launch(tmp_path, "basura\n").stdout.startswith("1|")
 
 
 def test_the_launcher_is_executable() -> None:

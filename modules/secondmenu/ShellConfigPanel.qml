@@ -222,7 +222,7 @@ Flickable {
     ]
 
     readonly property string scaleValue: {
-        const held = scaleFile.text().trim();
+        const held = scaleFile.text().trim().replace(/^QT_SCALE_FACTOR=/, "");
         for (let i = 0; i < root.scaleRows.length; i++) {
             if (root.scaleRows[i].key === held)
                 return held;
@@ -230,18 +230,24 @@ Flickable {
         return "1";
     }
 
-    // La escala es una variable de entorno del proceso, no un ajuste de QML:
-    // el lanzador la lee de este fichero al arrancar y la pasa con
-    // QT_SCALE_FACTOR. Se escribe atómico para no dejar texto a medias.
+    // La escala es una variable de entorno del servicio, no un ajuste de QML:
+    // el drop-in de systemd lee este fichero al arrancar. Se escribe atómico
+    // para no dejar texto a medias si la shell se reinicia en ese momento.
+    // El drop-in se reescribe aquí también porque quien actualice con un
+    // simple git pull no habrá pasado por install.sh.
     readonly property string scalePatch: [
         "import os, sys",
         "path = sys.argv[1]",
         "wanted = sys.argv[2]",
+        "dropin = sys.argv[3]",
         "os.makedirs(os.path.dirname(path), exist_ok=True)",
         "tmp = path + '.tmp'",
         "with open(tmp, 'w', encoding='utf-8') as handle:",
-        "    handle.write(wanted + '\\n')",
-        "os.replace(tmp, path)"
+        "    handle.write('QT_SCALE_FACTOR=' + wanted + '\\n')",
+        "os.replace(tmp, path)",
+        "os.makedirs(os.path.dirname(dropin), exist_ok=True)",
+        "with open(dropin, 'w', encoding='utf-8') as handle:",
+        "    handle.write('[Service]\\nEnvironmentFile=-%h/.config/caparazon/scale.env\\n')"
     ].join("\n")
 
     // Parche mínimo de dock.json: python3 toca sólo "dockPinned" y conserva
@@ -291,8 +297,10 @@ Flickable {
             return;
         scaleWriter.command = [
             "python3", "-c", root.scalePatch,
-            ThemeStyle.configDir + "/scale",
-            key
+            ThemeStyle.configDir + "/scale.env",
+            key,
+            ThemeStyle.configDir + "/../systemd/user/"
+                + "app-caparazon@autostart.service.d/scale.conf"
         ];
         scaleWriter.running = true;
     }
@@ -867,7 +875,7 @@ Flickable {
 
     FileView {
         id: scaleFile
-        path: ThemeStyle.configDir + "/scale"
+        path: ThemeStyle.configDir + "/scale.env"
         watchChanges: true
         printErrors: false
         onFileChanged: reload()
@@ -884,7 +892,7 @@ Flickable {
         id: shellRestart
         command: [
             "setsid", "sh", "-c",
-            "sleep 0.5; systemctl --user restart app-caparazon@autostart.service"
+            "sleep 0.5; systemctl --user daemon-reload; systemctl --user restart app-caparazon@autostart.service"
         ]
     }
 

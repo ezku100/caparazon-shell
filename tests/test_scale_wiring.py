@@ -28,10 +28,12 @@ def test_the_panel_offers_the_scale_selector() -> None:
 def test_the_panel_writes_the_scale_file_and_restarts() -> None:
     contents = PANEL.read_text(encoding="utf-8")
 
-    assert 'ThemeStyle.configDir + "/scale"' in contents
+    assert 'ThemeStyle.configDir + "/scale.env"' in contents
+    assert "QT_SCALE_FACTOR=" in contents
     assert "function setScale(key)" in contents
     assert 'os.replace(tmp, path)' in contents
     assert "systemctl --user restart app-caparazon@autostart.service" in contents
+    assert "app-caparazon@autostart.service.d/scale.conf" in contents
     assert '"setsid", "sh", "-c"' in contents
 
 
@@ -41,10 +43,24 @@ def test_the_scale_sits_before_the_colour_style() -> None:
     assert contents.index('text: "Escala"') < contents.index('text: "Estilo de color"')
 
 
-def test_the_autostart_uses_the_scale_launcher() -> None:
-    assert "Exec=@SHELL_PATH@/scripts/caparazon-shell" in DESKTOP.read_text(
-        encoding="utf-8"
+def test_the_autostart_stays_on_plain_quickshell() -> None:
+    """El arranque no puede depender de permisos de un script: si el script
+    no es ejecutable, systemd falla con 203/EXEC y el escritorio se queda
+    sin barra ni menús."""
+    contents = DESKTOP.read_text(encoding="utf-8")
+
+    assert (
+        "Exec=env MALLOC_ARENA_MAX=2 MALLOC_TRIM_THRESHOLD_=131072 "
+        "mesa_glthread=false quickshell -p @SHELL_PATH@ -d" in contents
     )
+
+
+def test_the_installer_adds_the_scale_dropin() -> None:
+    contents = INSTALLER.read_text(encoding="utf-8")
+
+    assert "EnvironmentFile=-%h/.config/caparazon/scale.env" in contents
+    assert "app-caparazon@autostart.service.d" in contents
+    assert "install_scale" in contents
 
 
 def test_the_installer_and_guardian_still_find_the_shell() -> None:

@@ -1,25 +1,24 @@
 #!/usr/bin/env bash
-# Caparazón — lanzador de la shell con escala.
+# Caparazón — lanzador manual de la shell con escala.
 #
-# La escala de la interfaz se aplica a todo el proceso con QT_SCALE_FACTOR:
-# Qt sigue dibujando a resolución física y sólo cambia el tamaño de las
-# medidas, así que el texto queda tan nítido como a escala 1. El valor lo
-# escribe Configs en ~/.config/caparazon/scale; sin fichero (o con algo que
-# no sea una escala válida) se usa 1.
+# El arranque automático no pasa por aquí: systemd aplica la escala con un
+# drop-in (EnvironmentFile). Este script sirve para lanzarla a mano desde una
+# terminal conservando la escala elegida en Configs.
 set -u
 
 shell_dir="$(cd "$(dirname "$0")/.." && pwd)"
 config_dir="${XDG_CONFIG_HOME:-$HOME/.config}/caparazon"
-scale_file="$config_dir/scale"
 
 scale=1
-if [ -r "$scale_file" ]; then
-    offered=""
-    read -r offered < "$scale_file" || true
-    case "$offered" in
-        0.5|0.75|1|1.25|1.5) scale="$offered" ;;
+for candidate in "$config_dir/scale.env" "$config_dir/scale"; do
+    [ -r "$candidate" ] || continue
+    held="$(sed -n 's/^QT_SCALE_FACTOR=//p' "$candidate" | head -n 1)"
+    [ -n "$held" ] || held="$(head -n 1 "$candidate")"
+    case "$held" in
+        0.5|0.75|1|1.25|1.5) scale="$held" ;;
     esac
-fi
+    break
+done
 
 export QT_SCALE_FACTOR="$scale"
 exec env MALLOC_ARENA_MAX=2 MALLOC_TRIM_THRESHOLD_=131072 mesa_glthread=false \

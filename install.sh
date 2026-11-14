@@ -135,6 +135,21 @@ install_updater() {
         > "$UPDATE_CONF"
 }
 
+install_scale() {
+    # La escala de la interfaz viaja como variable de entorno del servicio.
+    # El arranque automático sigue siendo el de siempre (env ... quickshell):
+    # si este drop-in falta o el fichero no existe, systemd arranca igual con
+    # escala 1, así que nunca puede dejar la shell sin arrancar.
+    local dropin_dir="$CONFIG_HOME/systemd/user/app-caparazon@autostart.service.d"
+    echo "Preparando la escala de la interfaz"
+    mkdir -p "$dropin_dir"
+    cat > "$dropin_dir/scale.conf" <<'EOF'
+[Service]
+EnvironmentFile=-%h/.config/caparazon/scale.env
+EOF
+    systemctl --user daemon-reload 2>/dev/null || true
+}
+
 install_autostart() {
     echo "Registrando el arranque automatico"
     mkdir -p "$AUTOSTART_DIR"
@@ -367,6 +382,7 @@ case "${1:-instalar}" in
             install_autostart
             ACTIVE_SHELL_DIR="$SHELL_DIR"
         fi
+        install_scale
         install_shortcut "$ACTIVE_SHELL_DIR"
         refresh_shortcut_hint
         install_bridge
