@@ -193,6 +193,57 @@ Flickable {
 
     readonly property bool dockAnchored: dockConfig.dockPinned === true
 
+    readonly property var scaleRows: [
+        {
+            key: "0.5",
+            label: "50 %",
+            note: "Todo a la mitad: cabe mucho más en pantallas pequeñas."
+        },
+        {
+            key: "0.75",
+            label: "75 %",
+            note: "Algo más compacto que el tamaño de diseño."
+        },
+        {
+            key: "1",
+            label: "100 %",
+            note: "Tamaño de diseño de la shell."
+        },
+        {
+            key: "1.25",
+            label: "125 %",
+            note: "Algo más grande, para pantallas de mucha resolución."
+        },
+        {
+            key: "1.5",
+            label: "150 %",
+            note: "Todo a 1.5x: más cómodo en pantallas muy densas."
+        }
+    ]
+
+    readonly property string scaleValue: {
+        const held = scaleFile.text().trim();
+        for (let i = 0; i < root.scaleRows.length; i++) {
+            if (root.scaleRows[i].key === held)
+                return held;
+        }
+        return "1";
+    }
+
+    // La escala es una variable de entorno del proceso, no un ajuste de QML:
+    // el lanzador la lee de este fichero al arrancar y la pasa con
+    // QT_SCALE_FACTOR. Se escribe atómico para no dejar texto a medias.
+    readonly property string scalePatch: [
+        "import os, sys",
+        "path = sys.argv[1]",
+        "wanted = sys.argv[2]",
+        "os.makedirs(os.path.dirname(path), exist_ok=True)",
+        "tmp = path + '.tmp'",
+        "with open(tmp, 'w', encoding='utf-8') as handle:",
+        "    handle.write(wanted + '\\n')",
+        "os.replace(tmp, path)"
+    ].join("\n")
+
     // Parche mínimo de dock.json: python3 toca sólo "dockPinned" y conserva
     // la lista de apps ancladas que administra el dock. Escritura atómica
     // (a .tmp y renombrando) para que el watcher del dock nunca lea a medias.
@@ -233,6 +284,17 @@ Flickable {
             anchored ? "1" : "0"
         ];
         dockModeWriter.running = true;
+    }
+
+    function setScale(key) {
+        if (root.scaleValue === key)
+            return;
+        scaleWriter.command = [
+            "python3", "-c", root.scalePatch,
+            ThemeStyle.configDir + "/scale",
+            key
+        ];
+        scaleWriter.running = true;
     }
 
     Column {
@@ -595,6 +657,39 @@ Flickable {
 
         Text {
             width: parent.width
+            text: "Escala"
+            color: Theme.textDim
+            font.family: Theme.fontUI
+            font.pixelSize: Theme.fontPx
+        }
+
+        SegmentedChoice {
+            width: parent.width
+            options: root.scaleRows
+            value: root.scaleValue
+            onPicked: (key) => root.setScale(key)
+        }
+
+        Text {
+            width: parent.width
+            text: root.noteFor(root.scaleRows, root.scaleValue)
+            color: Theme.textDim
+            font.family: Theme.fontUI
+            font.pixelSize: 11
+            elide: Text.ElideRight
+        }
+
+        Text {
+            width: parent.width
+            text: "Se aplica al reiniciar la shell: al elegir, se reinicia sola."
+            color: Theme.textDim
+            font.family: Theme.fontUI
+            font.pixelSize: 11
+            elide: Text.ElideRight
+        }
+
+        Text {
+            width: parent.width
             text: "Estilo de color"
             color: Theme.textDim
             font.family: Theme.fontUI
@@ -768,6 +863,29 @@ Flickable {
     Process {
         id: dockModeWriter
         onExited: dockConfigFile.reload()
+    }
+
+    FileView {
+        id: scaleFile
+        path: ThemeStyle.configDir + "/scale"
+        watchChanges: true
+        printErrors: false
+        onFileChanged: reload()
+    }
+
+    Process {
+        id: scaleWriter
+        onExited: shellRestart.running = true
+    }
+
+    // El reinicio va desacoplado en su propia sesión: si muriera con la shell
+    // no llegaría a relanzarla.
+    Process {
+        id: shellRestart
+        command: [
+            "setsid", "sh", "-c",
+            "sleep 0.5; systemctl --user restart app-caparazon@autostart.service"
+        ]
     }
 
     FileView {

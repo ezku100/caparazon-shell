@@ -154,6 +154,10 @@ existing_shell_dir() {
     local path
     [ -f "$autostart" ] || return 1
     path="$(sed -n 's/.*quickshell -p \([^ ]*\).*/\1/p' "$autostart" | head -n 1)"
+    # Arranque con el lanzador (aplica la escala): sale la ruta del script.
+    if [ -z "$path" ]; then
+        path="$(sed -n 's|^Exec=\(.*\)/scripts/caparazon-shell$|\1|p' "$autostart" | head -n 1)"
+    fi
     [ -n "$path" ] || return 1
     [ -f "$path/shell.qml" ] || return 1
     printf '%s\n' "$path"

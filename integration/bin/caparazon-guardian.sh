@@ -20,6 +20,10 @@ AUTOSTART="$HOME/.config/autostart/caparazon.desktop"
 
 # La ruta de la shell es la del arranque automático real del usuario.
 SHELL_PATH="$(sed -n 's/.*quickshell -p \([^ ]*\).*/\1/p' "$AUTOSTART" 2>/dev/null | head -n 1)"
+# Arranque con el lanzador (aplica la escala): sale la ruta del script.
+if [ -z "$SHELL_PATH" ]; then
+    SHELL_PATH="$(sed -n 's|^Exec=\(.*\)/scripts/caparazon-shell$|\1|p' "$AUTOSTART" 2>/dev/null | head -n 1)"
+fi
 if [ -z "$SHELL_PATH" ]; then
     echo "caparazon-guardian: no encuentro la ruta de la shell en $AUTOSTART" >&2
     exit 1

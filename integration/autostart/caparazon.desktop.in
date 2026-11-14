@@ -2,7 +2,7 @@
 Type=Application
 Name=Caparazón
 Comment=Shell de escritorio para Plasma 6 (Quickshell)
-Exec=env MALLOC_ARENA_MAX=2 MALLOC_TRIM_THRESHOLD_=131072 mesa_glthread=false quickshell -p @SHELL_PATH@ -d
+Exec=@SHELL_PATH@/scripts/caparazon-shell
 Icon=quickshell
 Terminal=false
 NoDisplay=false
