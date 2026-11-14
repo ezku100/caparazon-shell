@@ -52,3 +52,18 @@ def test_the_installer_and_guardian_still_find_the_shell() -> None:
 
     assert marker in INSTALLER.read_text(encoding="utf-8")
     assert marker in GUARDIAN.read_text(encoding="utf-8")
+
+
+def test_the_installer_keeps_the_launcher_executable() -> None:
+    """Sin permiso de ejecución el arranque muere con 203/EXEC."""
+    contents = INSTALLER.read_text(encoding="utf-8")
+
+    assert 'chmod 755 "$SHELL_DIR/scripts/caparazon-shell"' in contents
+
+
+def test_the_guardian_relaunches_a_missing_shell() -> None:
+    """Si la shell no arranca, el vigilante la recupera solo."""
+    contents = GUARDIAN.read_text(encoding="utf-8")
+
+    assert "missing_polls=$((missing_polls + 1))" in contents
+    assert 'setsid sh "$SHELL_PATH/scripts/caparazon-shell"' in contents

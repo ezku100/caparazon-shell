@@ -31,9 +31,26 @@ fi
 
 current_log=""
 tail_pid=""
+missing_polls=0
+missing_limit=15
 
 while true; do
     pid="$(pgrep -f "quickshell -p $SHELL_PATH" 2>/dev/null | head -n 1 || true)"
+
+    # Arranque fallido (permisos, error de QML, unidad rota): sin shell no
+    # hay ni barra ni menús, así que si lleva ~30 s ausente se relanza.
+    if [ -n "$pid" ]; then
+        missing_polls=0
+    else
+        missing_polls=$((missing_polls + 1))
+        if [ "$missing_polls" -ge "$missing_limit" ]; then
+            missing_polls=0
+            if ! systemctl --user restart "$SERVICE" 2>/dev/null; then
+                setsid sh "$SHELL_PATH/scripts/caparazon-shell" >/dev/null 2>&1 &
+            fi
+        fi
+    fi
+
     log=""
     if [ -n "$pid" ] && [ -e "$RUNTIME_DIR/quickshell/by-pid/$pid/log.log" ]; then
         log="$RUNTIME_DIR/quickshell/by-pid/$pid/log.log"

@@ -138,6 +138,15 @@ install_updater() {
 install_autostart() {
     echo "Registrando el arranque automatico"
     mkdir -p "$AUTOSTART_DIR"
+    # El arranque llama a este lanzador: sin permiso de ejecución systemd
+    # falla con 203/EXEC y la shell no arranca (pasa si el repo se copió
+    # desde un zip o un montaje que pierde los permisos).
+    if [ -f "$SHELL_DIR/scripts/caparazon-shell" ]; then
+        chmod 755 "$SHELL_DIR/scripts/caparazon-shell"
+    fi
+    if [ ! -x "$SHELL_DIR/scripts/caparazon-shell" ]; then
+        echo "AVISO: falta $SHELL_DIR/scripts/caparazon-shell o no es ejecutable" >&2
+    fi
     sed -e "s|@SHELL_PATH@|$SHELL_DIR|g" \
         "$REPO/integration/autostart/caparazon.desktop.in" \
         > "$AUTOSTART_DIR/caparazon.desktop"

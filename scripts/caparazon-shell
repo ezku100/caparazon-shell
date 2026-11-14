@@ -8,7 +8,7 @@
 # no sea una escala válida) se usa 1.
 set -u
 
-shell_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+shell_dir="$(cd "$(dirname "$0")/.." && pwd)"
 config_dir="${XDG_CONFIG_HOME:-$HOME/.config}/caparazon"
 scale_file="$config_dir/scale"
 
