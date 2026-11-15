@@ -45,6 +45,13 @@ def test_the_launcher_forwards_the_chosen_scale(tmp_path: Path) -> None:
     assert f"-p {REPOSITORY_ROOT} -d" in result.stdout
 
 
+def test_the_launcher_forwards_the_intermediate_scales(tmp_path: Path) -> None:
+    for scale in ("0.8", "0.9"):
+        result = launch(tmp_path, f"QT_SCALE_FACTOR={scale}\n")
+
+        assert result.stdout.startswith(f"{scale}|")
+
+
 def test_the_launcher_defaults_to_one_without_a_file(tmp_path: Path) -> None:
     assert launch(tmp_path, None).stdout.startswith("1|")
 

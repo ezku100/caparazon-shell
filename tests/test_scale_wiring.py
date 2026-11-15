@@ -19,7 +19,15 @@ def test_the_panel_offers_the_scale_selector() -> None:
     contents = PANEL.read_text(encoding="utf-8")
 
     assert 'text: "Escala"' in contents
-    for key in ('key: "0.5"', 'key: "0.75"', 'key: "1"', 'key: "1.25"', 'key: "1.5"'):
+    for key in (
+        'key: "0.5"',
+        'key: "0.75"',
+        'key: "0.8"',
+        'key: "0.9"',
+        'key: "1"',
+        'key: "1.25"',
+        'key: "1.5"',
+    ):
         assert key in contents
     assert "options: root.scaleRows" in contents
     assert "value: root.scaleValue" in contents

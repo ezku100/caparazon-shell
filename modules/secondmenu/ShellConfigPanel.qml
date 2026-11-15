@@ -205,6 +205,16 @@ Flickable {
             note: "Algo más compacto que el tamaño de diseño."
         },
         {
+            key: "0.8",
+            label: "80 %",
+            note: "Más compacta sin perder demasiada legibilidad."
+        },
+        {
+            key: "0.9",
+            label: "90 %",
+            note: "Ligeramente más pequeña que el tamaño de diseño."
+        },
+        {
             key: "1",
             label: "100 %",
             note: "Tamaño de diseño de la shell."

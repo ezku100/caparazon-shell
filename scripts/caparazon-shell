@@ -15,7 +15,7 @@ for candidate in "$config_dir/scale.env" "$config_dir/scale"; do
     held="$(sed -n 's/^QT_SCALE_FACTOR=//p' "$candidate" | head -n 1)"
     [ -n "$held" ] || held="$(head -n 1 "$candidate")"
     case "$held" in
-        0.5|0.75|1|1.25|1.5) scale="$held" ;;
+        0.5|0.75|0.8|0.9|1|1.25|1.5) scale="$held" ;;
     esac
     break
 done
