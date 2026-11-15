@@ -179,7 +179,10 @@ PanelWindow {
     anchors { top: true; left: true; right: true; bottom: true }
     // Ignora las zonas exclusivas de barra/dock: así la capa cubre el
     // monitor completo, no sólo el área de trabajo.
-    exclusionMode: ExclusionMode.Ignore
+    // ExclusionMode.Ignore usa -1 como centinela, pero Quickshell 0.3.2
+    // lo escala con QT_SCALE_FACTOR y a DPR < 1 llega a KWin como 0
+    // ("respetar exclusivas"). -2 conserva el signo en todas las escalas.
+    exclusiveZone: -2
     aboveWindows: true
     focusable: active
     color: "transparent"

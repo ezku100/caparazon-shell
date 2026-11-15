@@ -33,3 +33,21 @@ def test_the_power_menu_keeps_its_deliberate_blur() -> None:
     assert "BackgroundEffect.blurRegion" in contents, (
         "el menú de apagado/sesión sí lleva desenfoque a propósito"
     )
+
+
+def test_the_power_menu_ignores_exclusive_zones_at_scaled_dprs() -> None:
+    """La capa debe cubrir barra y dock también con QT_SCALE_FACTOR < 1.
+
+    Quickshell 0.3.2 escala el centinela ``-1`` de ``ExclusionMode.Ignore``;
+    con DPR 0.5 o 0.75 llega a KWin como ``0``, que significa respetar las
+    zonas exclusivas. Un valor negativo suficientemente distante de cero conserva
+    la semántica de "ignorar exclusivas" en todas las escalas soportadas.
+    """
+    contents = POWER_MENU.read_text(encoding="utf-8")
+
+    assert "exclusiveZone: -2" in contents, (
+        "el menú de sesión debe ignorar las zonas exclusivas de barra y dock"
+    )
+    assert "exclusionMode: ExclusionMode.Ignore" not in contents, (
+        "ExclusionMode.Ignore pierde su centinela al aplicar QT_SCALE_FACTOR"
+    )
