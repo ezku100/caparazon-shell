@@ -840,7 +840,13 @@ PanelWindow {
     }
 
     Loader {
-        active: true
+        // El menu de apps se monta al abrir y se destruye al terminar el
+        // cierre: no se retienen su escena, sus iconos ni sus cachés. La
+        // animacion de entrada sigue funcionando gracias a `armed` (ver
+        // AppMenu.qml), que enciende `active` un turno despues del montaje.
+        active: bar.appMenuState
+            ? (bar.appMenuState.opened || bar.appMenuState.closing)
+            : false
         sourceComponent: AppMenu {
             screen: bar.screen
             menuScreen: bar.modelData
@@ -850,7 +856,12 @@ PanelWindow {
     }
 
     Loader {
-        active: true
+        // Igual que el menu de apps: el submenu (musica, calendario, monitor,
+        // configs) se monta solo mientras esta abierto o cerrando. Es la
+        // escena mas pesada, asi que es la que mas memoria libera al cerrar.
+        active: bar.secondMenuState
+            ? (bar.secondMenuState.opened || bar.secondMenuState.closing)
+            : false
         sourceComponent: SecondMenu {
             screen: bar.screen
             menuScreen: bar.modelData

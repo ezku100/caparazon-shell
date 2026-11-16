@@ -22,7 +22,12 @@ PanelWindow {
     required property var menuScreen
 
     readonly property bool opened: menuState ? menuState.opened : false
-    readonly property bool active: opened && menuState.activeScreen === screen
+    // El Loader de la barra monta esta ventana al abrir. Sin `armed` nacería
+    // ya con `active` en true y los Behavior de entrada no tendrían ninguna
+    // transición que animar; se enciende un turno después del montaje.
+    property bool armed: false
+    readonly property bool active: armed && opened
+        && menuState.activeScreen === screen
     property bool closing: false
 
     readonly property int animDuration: 220
@@ -454,6 +459,12 @@ PanelWindow {
     }
 
     Component.onCompleted: {
+        // El Loader monta la ventana al abrir: `armed` se enciende un turno
+        // después para que los Behavior de entrada tengan transición, y va
+        // antes del callLater de foco para que éste ya vea `active` en true.
+        Qt.callLater(function() {
+            root.armed = true;
+        });
         if (root.opened) {
             searchInput.text = "";
             root.appRevision += 1;

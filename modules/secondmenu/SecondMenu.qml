@@ -32,8 +32,23 @@ PanelWindow {
     property var resources: null
 
     readonly property bool opened: menuState ? menuState.opened : false
-    readonly property bool active: opened && menuState.activeScreen === screen
+    // El Loader de la barra monta esta ventana al abrir. Sin `armed` nacería
+    // ya con `active` en true y los Behavior de entrada no tendrían ninguna
+    // transición que animar; se enciende un turno después del montaje.
+    property bool armed: false
+    readonly property bool active: armed && opened
+        && menuState.activeScreen === screen
     property bool closing: false
+
+    Component.onCompleted: Qt.callLater(function() {
+        root.armed = true;
+        // Si la ventana se monta ya abierta, onOpenedChanged no dispara:
+        // se aplica aquí el ajuste inicial que haría esa señal.
+        if (root.opened && root.category === "calendario"
+                && panelLoader.item
+                && typeof panelLoader.item.resetToToday === "function")
+            panelLoader.item.resetToToday();
+    })
     property bool overlayOpen: false
 
     readonly property int animDuration: 220

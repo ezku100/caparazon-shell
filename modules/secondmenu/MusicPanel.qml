@@ -709,6 +709,13 @@ Item {
                                 id: coverImage
                                 anchors.fill: parent
                                 source: root.artUrl
+                                // Decodifica solo al tamaño que se pinta: el
+                                // arte nativo de 3000 px costaba ~36 MB por
+                                // carátula. 512 de tope cubre cualquier stage.
+                                sourceSize.width: Math.min(512,
+                                    Math.max(128, Math.ceil(stage.coverSize)))
+                                sourceSize.height: Math.min(512,
+                                    Math.max(128, Math.ceil(stage.coverSize)))
                                 fillMode: Image.PreserveAspectCrop
                                 smooth: true
                                 asynchronous: true
