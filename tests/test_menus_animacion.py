@@ -107,11 +107,11 @@ def test_la_sombra_del_borde_es_estatica() -> None:
         )
 
 
-def test_el_scrim_usa_el_tiempo_abrir_o_cerrar() -> None:
+def test_los_menus_no_oscurecen_el_escritorio() -> None:
     for path in (APPMENU, SECONDMENU):
-        assert re.search(
-            r"opened ? \? (root\.)*animOpen : (root\.)*animClose", source(path)
-        ), f"{path}: el scrim debe elegir entre animOpen y animClose"
+        assert "id: scrim" not in source(path), (
+            f"{path}: el menu ya no lleva velo negro al abrir"
+        )
 
 
 def test_los_tiles_del_menu_de_apps_entran_en_ola_con_micro_pop() -> None:

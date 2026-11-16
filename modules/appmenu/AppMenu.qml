@@ -496,20 +496,6 @@ PanelWindow {
         onActivated: root.close()
     }
 
-    Rectangle {
-        id: scrim
-        anchors.fill: parent
-        color: "#000000"
-        opacity: root.opened ? 0.26 : 0
-
-        Behavior on opacity {
-            NumberAnimation {
-                duration: root.opened ? root.animOpen : root.animClose
-                easing.type: root.opened ? Easing.OutQuint : Easing.OutCubic
-            }
-        }
-    }
-
     MouseArea {
         anchors.fill: parent
         acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
