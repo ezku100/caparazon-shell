@@ -55,10 +55,10 @@ PanelWindow {
     // Lenguaje unificado de apertura/cierre (ver tests/test_menus_animacion.py).
     readonly property int animOpen: 260
     readonly property int animClose: 170
-    readonly property int cardWidth: Math.min(760,
-        Math.max(600, Math.round((screen ? screen.width : 1920) * 0.52)))
-    readonly property int cardHeight: Math.min(500,
-        Math.max(400, Math.round((screen ? screen.height : 1080) * 0.68)))
+    readonly property int cardWidth: Math.min(800,
+        Math.max(620, Math.round((screen ? screen.width : 1920) * 0.55)))
+    readonly property int cardHeight: Math.min(550,
+        Math.max(430, Math.round((screen ? screen.height : 1080) * 0.70)))
     readonly property int railWidth: 60
     readonly property int railInset: 8
     readonly property string category: menuState ? menuState.category : "calendario"

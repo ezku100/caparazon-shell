@@ -158,7 +158,7 @@ def test_the_panel_clips_and_scrolls_instead_of_spilling() -> None:
 
 
 def test_the_submenu_grows_with_the_screen() -> None:
-    """La tarjeta aprovecha más alto en pantallas pequeñas (0,68 y no 0,50)."""
+    """La tarjeta aprovecha más alto en pantallas pequeñas (0,70 y no 0,50)."""
     contents = SECOND_MENU.read_text(encoding="utf-8")
 
-    assert "* 0.68" in contents
+    assert "* 0.70" in contents
