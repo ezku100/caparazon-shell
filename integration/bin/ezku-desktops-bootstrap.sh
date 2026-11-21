@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Arranca el puente de escritorios (demonio + script KWin) si falta.
 # Idempotente: se puede correr en cada login sin duplicar nada.
+# En niri sólo corre el demonio; el script KWin no aplica.
 DAEMON="$HOME/.local/bin/ezku-desktops-daemon.py"
 SCRIPT="$HOME/.local/share/kwin/scripts/ezkudesktops/contents/code/main.js"
 
@@ -8,6 +9,11 @@ pgrep -f "ezku-desktops-daemon.py" >/dev/null || {
     nohup python3 "$DAEMON" >/tmp/ezku-desktops.log 2>&1 &
     disown
 }
+
+COMPOSITOR="$(caparazon-wm detect 2>/dev/null || echo kwin)"
+if [ "$COMPOSITOR" != "kwin" ]; then
+    exit 0
+fi
 
 for _ in $(seq 1 30); do
     qdbus6 --session org.ezku.Desktops /Desktops org.ezku.Desktops.GetState >/dev/null 2>&1 && break
