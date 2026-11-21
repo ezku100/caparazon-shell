@@ -28,8 +28,9 @@ animación de despedida.
   `~/.config/caparazon/display.json` (`"barPosition"`, `"dockPosition"`).
 - **Multi-monitor**: barra y dock en cada pantalla, con cuatro interruptores
   en **Configs de Caparazón Shell** (principal y secundarios, por separado para barra
-  y dock). Se toma como principal el que KDE designa como principal
-  (`kscreen-doctor`), no el primero de la lista. La barra no puede apagarse en
+  y dock). El monitor principal lo resuelve `caparazon-wm primary-output`
+  (dentro del CLI: KWin usa la prioridad de kscreen; niri la prioridad de sus
+  outputs). La barra no puede apagarse en
   todas las pantallas porque es la entrada al panel; el dock sí. En las
   pantallas donde está apagada la barra, sus menús (apps, configs, calendario,
   música) siguen abriéndose desde el dock o los atajos: la ventana se oculta,
@@ -56,18 +57,23 @@ animación de despedida.
 
 ## Requisitos
 
-- KDE Plasma 6 sobre **Wayland** (KWin).
+- Compositor: **KWin** (KDE Plasma 6 sobre Wayland) o **niri ≥ 26.04**.
 - `quickshell` 0.3.x o superior.
-- Herramientas de KDE: `qdbus6`, `busctl`, `dbus-monitor` y `kscreen-doctor`
-  (monitor principal).
-- `wl-paste` (historial de portapapeles) y `gdbus` (puente con KWin).
-- Para el tema dinámico: `matugen`, `inotify-tools` (`inotifywait`),
+- `caparazon-wm` (se instala con el resto en `~/.local/bin`): único punto de
+  contacto con el compositor (detect, escritorios, ventanas, pantalla activa,
+  logout).
+- En KWin: `qdbus6`, `busctl`, `dbus-monitor`, `gdbus` y `kscreen-doctor`
+  (monitor principal, sólo dentro de `caparazon-wm`).
+- En niri: el binario `niri` (IPC `niri msg`); no hace falta kscreen-doctor.
+- `wl-paste` (historial de portapapeles).
+- Para el tema dinámico en Plasma: `matugen`, `inotify-tools` (`inotifywait`),
   `util-linux` (`flock`), `libkf6config-bin` (`kreadconfig6`), `git` y
-  `python3`.
+  `python3`. En niri no hace falta ninguno: el motor accent-theme es
+  exclusivo de KDE y la shell usa su paleta Material por defecto.
 - Opcionales: `wtype` o `ydotool` (pegar emojis),
   `python3` con `PyGObject` (puente de escritorios).
 
-En PikaOS:
+En PikaOS (Plasma):
 
 ```bash
 sudo apt install quickshell qdbus6 dbus-tools \
@@ -86,6 +92,28 @@ El instalador copia la shell a `~/.config/quickshell/caparazon`, instala el
 puente de escritorios (`~/.local/bin` y el script de KWin), registra el
 arranque automático en `~/.config/autostart` y deja el atajo global listo:
 la tecla **Meta** abre el menú central.
+
+El instalador se adapta al compositor de la sesión:
+
+- En **Plasma** instala además el motor de tema `accent-theme` (que necesita
+  `kreadconfig6`) y registra el atajo global en `kglobalshortcutsrc`.
+- En **niri** se salta el motor de tema —la shell arranca con su paleta
+  Material por defecto—, no toca `kglobalshortcutsrc` (los atajos los aporta
+  el bloque `binds` de `~/.config/niri/config.kdl`) y **pregunta** antes de
+  copiar el dotfile de niri:
+
+  ```text
+  Copiar el dotfile de niri a ~/.config/niri/config.kdl? [S/n]
+  ```
+
+  Si contestas `n` no se copia nada. Con `./install.sh -y` (o
+  `CAPARAZON_ASSUME_YES=1`) se acepta sin preguntar, para instalaciones no
+  interactivas.
+
+Da igual el compositor que tengas: **funciona igual en una máquina sólo con
+KDE** (no hace falta niri para instalar) **o sólo con niri** (no hace falta
+KDE). El arranque automático no está limitado a KDE, así que la shell arranca
+en ambos.
 
 Si el arranque automático ya apunta a otra copia —por ejemplo, tu clon de
 trabajo—, el instalador la reutiliza: no copia la shell ni cambia el
@@ -205,10 +233,29 @@ escritorios, recursos, portapapeles y notificaciones) y reparte el estado a
 las barras y docks de cada monitor, de modo que no se duplica ningún proceso
 por pantalla.
 
-## Integración con KDE
+## Integración con el compositor
 
-KWin no expone por D-Bus todo lo que una shell necesita, así que la shell
-carga scripts propios en KWin:
+La shell no habla con el compositor de forma directa: todo pasa por
+`caparazon-wm` (`integration/bin/caparazon-wm.py`, instalado en
+`~/.local/bin/caparazon-wm`), que detecta el compositor activo y despacha a
+un backend KWin o niri:
+
+```bash
+caparazon-wm detect            # kwin | niri
+caparazon-wm workspaces        # shape JSON de escritorios (igual en ambos)
+caparazon-wm windows           # appId, title, appIds de la ventana activa
+caparazon-wm primary-output    # nombre del monitor principal
+caparazon-wm window-action …   # clic del dock: enfoca / minimiza / restaura
+caparazon-wm logout            # cierra sesión en el compositor actual
+```
+
+Los watchers (`watch-workspaces`, `watch-windows`) emiten una línea JSON por
+evento; el QML sólo parsea esa salida.
+
+### En KWin
+
+KWin no expone por D-Bus todo lo que una shell necesita, así que el backend
+KWin del CLI carga scripts propios:
 
 - `KWinActiveTitle.js` publica la ventana activa y la lista de ventanas.
 - `KWinWindowAction.js` enfoca, minimiza o restaura la ventana de una app.
@@ -216,12 +263,111 @@ carga scripts propios en KWin:
   ventanas ocupadas a `org.ezku.Desktops`, un pequeño demonio en Python.
 
 Los datos viajan por el journal del compositor y se leen con `journalctl -f`,
-lo que evita un proceso por monitor.
+lo que evita un proceso por monitor. El monitor principal se resuelve con la
+prioridad de kscreen (mismo criterio que Plasma) dentro de `primary-output`.
+
+### En niri (≥ 26.04)
+
+El backend niri usa el IPC `niri msg --json` (outputs, workspaces, windows,
+event-stream). No hace falta `kscreen-doctor`, `busctl` ni scripts de KWin.
+El dotfile de sesión vive en `integration/niri/config.kdl` (gaps, bordes,
+sombra, animaciones y blur de las capas de la shell); `install.sh` **pregunta**
+antes de copiarlo a `~/.config/niri/config.kdl` y **sólo lo hace si el destino
+no existe** (nunca pisa una config propia; si ya hay una, avisa y sugiere
+`diff`).
+
+Notas de comportamiento en niri:
+
+- El segundo clic del dock **no minimiza**: niri no expone minimize por IPC;
+  si la ventana ya está enfocada, el clic no hace nada (se documenta como
+  limitación; el primer clic siempre enfoca).
+- La ocupación de escritorios se deriva de `windows[].workspace_id` (el
+  objeto Workspace de niri no trae `window_count`).
+- El `layer-rule` de blur apunta al namespace `quickshell`; si `niri msg
+  layers` en tu sesión reporta otro namespace para la shell, ajusta el
+  `match namespace="…"` en `integration/niri/config.kdl` (o en tu copia de
+  `~/.config/niri/`).
+
+#### Atajos de teclado en niri
+
+Vienen en el bloque `binds` de `integration/niri/config.kdl`:
+
+| Atajo | Qué hace |
+| --- | --- |
+| `Meta+Q` | Cerrar la ventana activa |
+| `Meta+1` … `Meta+9` | Ir al escritorio N |
+| `Meta+Shift+1` … `Meta+Shift+9` | Mover la ventana al escritorio N |
+| `Meta+←` / `Meta+→` | Mover la ventana a la izquierda / derecha (mismo escritorio) |
+| `Meta+↑` / `Meta+↓` | Mover la ventana arriba / abajo (mismo escritorio) |
+| `Meta+Ctrl+←` / `→` / `↑` / `↓` | Mover sólo el foco, sin mover la ventana |
+| `Meta+Space` o `Meta+D` | Menú de aplicaciones de Caparazón |
+| `Meta+Shift+C` | Submenú del reloj (calendario) |
+| `Meta+Shift+A` | Panel de música |
+| `Meta+Shift+M` | Monitor del sistema (ajustes rápidos) |
+| `Meta+Shift+S` | Configs de Caparazón Shell |
+| `Meta+Shift+E` | Menú de sesión (bloquear, cerrar sesión, reiniciar, apagar) |
+| `Meta+Shift+P` | Apagar los monitores |
+| `Meta+T` | Terminal (kitty) |
+| `Meta+O` | Vista general de niri (overview) |
+| `Meta+Shift+/` | Overlay de atajos de niri |
+
+Dos diferencias con los valores por defecto de niri, a propósito:
+
+- niri mueve el **foco** con `Meta+flechas` y la **ventana** con
+  `Meta+Ctrl+flechas`; aquí se invierte para que `Meta+flechas` mueva la
+  ventana, como pedía el diseño.
+- `Meta+Ctrl+1` … `Meta+Ctrl+9` sigue moviendo la **columna** completa a otro
+  escritorio (default de niri); `Meta+Shift+N` mueve sólo la ventana activa.
+
+Los menús se abren con `caparazon-shell-ipc`, un wrapper que descubre dónde
+está viva la shell (lee el lanzador de arranque automático) y llama a
+`quickshell … ipc call`. Se instala en `~/.local/bin` junto a `caparazon-wm`.
+
+La sesión de prueba en vivo de niri queda cubierta por tests con fixtures
+(`tests/test_caparazon_wm.py`); si no hay sesión niri abierta, esa es la
+cobertura de referencia.
 
 El tema de iconos es la excepción: el proceso lo lee una sola vez al arrancar,
 así que al cambiarlo en KDE la shell seguiría con los iconos viejos.
 Caparazón vigila `kdeglobals` y se reinicia sola en cuanto el tema cambia de
 verdad; el reinicio tarda un segundo y vacía el historial del portapapeles.
+
+## Perfil energético
+
+El chip de la barra (icono de batería) cambia el perfil de energía con la
+rueda del ratón: ahorro → equilibrado → rendimiento. El estado real y los
+perfiles disponibles los da `caparazon-wm power-profile`, que elige el motor
+según el compositor de la sesión:
+
+| Sesión | Motor | Herramienta |
+| --- | --- | --- |
+| Plasma (KWin) | KDE Solid (`org.kde.Solid.PowerManagement`) | `qdbus6` |
+| niri y cualquier otro | power-profiles-daemon | `powerprofilesctl` |
+
+Los tres nombres (`power-saver`, `balanced`, `performance`) son los mismos en
+ambos motores, así que no hace falta traducir nada. El chip cicla sólo por los
+perfiles que el motor declara: power-profiles-daemon no ofrece `performance`
+en todo el hardware.
+
+En niri hace falta `power-profiles-daemon`, que no viene instalado:
+
+```bash
+sudo apt install power-profiles-daemon
+```
+
+**Instálalo sólo si vas a usar niri.** En Plasma el perfil lo lleva el
+powerdevil de KDE, y tener los dos motores a la vez puede pelear por el
+governor de la CPU. El instalador detecta la sesión niri y avisa de que falta
+el paquete, pero no lo instala por su cuenta.
+
+Sin ningún motor disponible el chip se atenúa y no hace nada.
+
+A mano, el mismo estado se consulta y se fija con:
+
+```bash
+caparazon-wm power-profile
+caparazon-wm power-profile --set balanced
+```
 
 ## Música
 
