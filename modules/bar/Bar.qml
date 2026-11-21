@@ -35,7 +35,6 @@ PanelWindow {
     property int gpuUsage: 0
     property int swapUsage: 0
     property int networkUsage: 0
-    property string powerProfile: "balanced"
     property var resources: null
 
     readonly property var activeTrayMenu: trayMenuState ? trayMenuState.active : null
@@ -560,7 +559,7 @@ PanelWindow {
                     spacing: 4
 
                     Network {}
-                    PowerProfile { profile: bar.powerProfile }
+                    PowerProfile {}
                     BluetoothIndicator {}
                     MicVolume {}
                     Volume {}
@@ -674,7 +673,6 @@ PanelWindow {
                 PowerProfile {
                     Layout.fillWidth: false
                     Layout.alignment: Qt.AlignHCenter
-                    profile: bar.powerProfile
                 }
                 BluetoothIndicator {
                     Layout.fillWidth: false

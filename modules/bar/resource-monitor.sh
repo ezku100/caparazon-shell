@@ -123,11 +123,11 @@ while true; do
         prev_tx=$tx
     fi
 
-    # Perfil de energía de PowerDevil; se consulta cada 6 s para ahorrar CPU/DBus.
+    # Perfil de energía; lo consulta caparazon-wm (Solid en Plasma,
+    # power-profiles-daemon en niri) cada 6 s para ahorrar CPU y D-Bus.
     if (( tick % 6 == 1 )); then
-        profile=$(qdbus6 org.kde.Solid.PowerManagement \
-            /org/kde/Solid/PowerManagement/Actions/PowerProfile \
-            org.kde.Solid.PowerManagement.Actions.PowerProfile.currentProfile 2>/dev/null || true)
+        profile=$(caparazon-wm power-profile 2>/dev/null \
+            | sed -n 's/.*"profile": *"\([^"]*\)".*/\1/p')
         case "$profile" in
             performance|balanced|power-saver) power_profile=$profile ;;
         esac

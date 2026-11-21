@@ -1,4 +1,5 @@
 import Quickshell
+import Quickshell.Io
 import Quickshell.Widgets
 import QtQuick
 import QtQuick.Effects
@@ -11,10 +12,14 @@ import "../../theme"
 Item {
     id: root
 
-    property string profile: "balanced"
-    property string displayProfile: profile
+    property string profile: ""
+    property string displayProfile: ""
+    property var choices: []
+    property string backend: ""
 
-    readonly property var profiles: ["power-saver", "balanced", "performance"]
+    // El motor decide qué perfiles existen: power-profiles-daemon no ofrece
+    // "performance" en todo el hardware, así que la lista viene del CLI.
+    readonly property bool supported: root.choices.length > 0
 
     // 0 = fondo actual, 1 = estilo de énfasis. Balanced queda en medio.
     readonly property real tone: root.displayProfile === "performance" ? 1.0
@@ -34,34 +39,76 @@ Item {
 
     implicitWidth: 28
     implicitHeight: 26
+    opacity: root.supported ? 1.0 : 0.4
 
     onProfileChanged: {
         if (root.profile !== root.displayProfile)
             root.displayProfile = root.profile;
     }
 
+    function applyState(doc) {
+        if (!doc || typeof doc !== "object")
+            return;
+        if (Array.isArray(doc.choices))
+            root.choices = doc.choices;
+        if (typeof doc.backend === "string" && doc.backend !== root.backend) {
+            root.backend = doc.backend;
+            if (doc.backend === "none")
+                console.log("caparazon: sin motor de perfil energético disponible");
+        }
+        if (typeof doc.profile === "string" && doc.profile.length > 0)
+            root.profile = doc.profile;
+    }
+
     function applyProfile(next) {
-        if (!next || next === root.displayProfile)
+        if (!next || next === root.displayProfile || !root.supported)
             return;
         root.displayProfile = next;
-        Quickshell.execDetached([
-            "qdbus6",
-            "org.kde.Solid.PowerManagement",
-            "/org/kde/Solid/PowerManagement/Actions/PowerProfile",
-            "org.kde.Solid.PowerManagement.Actions.PowerProfile.setProfile",
-            next
-        ]);
+        Quickshell.execDetached(["caparazon-wm", "power-profile", "--set", next]);
+        // La lectura posterior es la que manda: si el motor rechazó el
+        // perfil, el chip vuelve al que realmente está activo.
+        refresh.restart();
     }
 
     function cycle(step) {
-        let index = root.profiles.indexOf(root.displayProfile);
+        if (!root.supported)
+            return;
+        let index = root.choices.indexOf(root.displayProfile);
         if (index < 0)
-            index = 1;
+            index = 0;
 
-        const next = root.profiles[
-            (index + step + root.profiles.length) % root.profiles.length
+        const next = root.choices[
+            (index + step + root.choices.length) % root.choices.length
         ];
         root.applyProfile(next);
+    }
+
+    Process {
+        id: query
+        command: ["caparazon-wm", "power-profile"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                try {
+                    root.applyState(JSON.parse(text));
+                } catch (e) {
+                    console.log("caparazon: fallo al parsear el perfil energético:", e);
+                }
+            }
+        }
+    }
+
+    Timer {
+        id: refresh
+        interval: 250
+        onTriggered: {
+            query.running = false;
+            query.running = true;
+        }
+    }
+
+    Component.onCompleted: {
+        if (!query.running)
+            query.running = true;
     }
 
     // Mismo círculo de fondo que el resto de indicadores de estado.
@@ -100,6 +147,7 @@ Item {
     MouseArea {
         anchors.fill: parent
         acceptedButtons: Qt.NoButton
+        enabled: root.supported
         cursorShape: Qt.PointingHandCursor
         onWheel: function(wheel) {
             if (wheel.angleDelta.y > 0)
