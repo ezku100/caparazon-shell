@@ -1,9 +1,12 @@
 #!/bin/bash
 # Caparazon — instalador de la shell de escritorio.
 #
-#   ./install.sh              instala la shell, el puente de escritorios, el
+#   ./install.sh [-y|--yes] [instalar|desinstalar]
+#                             instala la shell, el puente de escritorios, el
 #                             arranque automatico y el tema accent-theme
 #   ./install.sh desinstalar  quita lo que instalo este script
+#
+# El instalador no exige KDE ni niri: se adapta a la sesion actual.
 set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -34,7 +37,10 @@ ACCENT_THEME_PALETTES=(
     "$HOME/.cache/caparazon/colors-oled.json"
     "$HOME/.cache/caparazon/colors-perla.json"
 )
-REQUIRED_THEME_DEPENDENCIES=(matugen python3 inotifywait flock kreadconfig6 git)
+# Dependencias que hacen falta en cualquier compositor.
+REQUIRED_THEME_DEPENDENCIES=(matugen python3 inotifywait flock git)
+# kreadconfig6 viene de KDE Frameworks: solo se exige en sesiones Plasma.
+KDE_ONLY_THEME_DEPENDENCIES=(kreadconfig6)
 THEME_APT_PACKAGES="matugen python3 inotify-tools util-linux libkf6config-bin git"
 CALENDAR_APT_PACKAGES="python3 python3-dateutil"
 MENU_SHORTCUT_ID="net.local.quickshell-2"
@@ -44,13 +50,65 @@ MENU_SHORTCUT_PATTERN="^\[services\]\[${MENU_SHORTCUT_ID//./\\.}\.desktop\]$"
 
 usage() {
     cat <<EOF
-Uso: $(basename "$0") [instalar|desinstalar]
+Uso: $(basename "$0") [-y|--yes] [instalar|desinstalar]
 
   instalar     Copia la shell a $SHELL_DIR, instala el puente de
                escritorios, registra el arranque automatico y conecta el
                tema accent-theme con la paleta dinamica.
   desinstalar  Quita lo que instalo este script.
+
+Opciones:
+  -y, --yes    No preguntar nada: acepta copiar el dotfile de niri.
+               (tambien se puede con CAPARAZON_ASSUME_YES=1)
+
+Notas:
+  En Plasma instala el motor accent-theme (necesita kreadconfig6).
+  En niri se lo salta y usa la paleta Material por defecto de la shell.
 EOF
+}
+
+# Compositor de la sesion actual: kde, niri o unknown.
+current_compositor() {
+    if [ -n "${CAPARAZON_COMPOSITOR:-}" ]; then
+        printf '%s\n' "$CAPARAZON_COMPOSITOR"
+        return 0
+    fi
+    case "${XDG_CURRENT_DESKTOP:-}" in
+        *KDE*) printf 'kde\n'; return 0 ;;
+        *niri*) printf 'niri\n'; return 0 ;;
+    esac
+    if pgrep -x plasmashell >/dev/null 2>&1; then
+        printf 'kde\n'
+        return 0
+    fi
+    if pgrep -x niri >/dev/null 2>&1; then
+        printf 'niri\n'
+        return 0
+    fi
+    printf 'unknown\n'
+}
+
+is_kde_session() {
+    [ "$(current_compositor)" = "kde" ]
+}
+
+# Pregunta al usuario. Sin terminal o con -y responde "si" para no romper
+# las instalaciones no interactivas.
+confirm() {
+    local question="$1"
+    local answer=""
+    if [ "${ASSUME_YES:-0}" = "1" ]; then
+        return 0
+    fi
+    printf '%s [S/n] ' "$question"
+    if ! read -r answer; then
+        printf '\n'
+        return 0
+    fi
+    case "$answer" in
+        [nN]*) return 1 ;;
+        *) return 0 ;;
+    esac
 }
 
 require_quickshell() {
@@ -69,6 +127,19 @@ require_theme_dependencies() {
     done
     if [ "${#missing[@]}" -gt 0 ]; then
         echo "ERROR: faltan dependencias del tema: ${missing[*]}" >&2
+        echo "       En PikaOS: sudo apt install $THEME_APT_PACKAGES" >&2
+        exit 1
+    fi
+}
+
+require_kde_theme_dependencies() {
+    local missing=()
+    local dependency
+    for dependency in "${KDE_ONLY_THEME_DEPENDENCIES[@]}"; do
+        command -v "$dependency" >/dev/null 2>&1 || missing+=("$dependency")
+    done
+    if [ "${#missing[@]}" -gt 0 ]; then
+        echo "ERROR: faltan dependencias de KDE para el tema: ${missing[*]}" >&2
         echo "       En PikaOS: sudo apt install $THEME_APT_PACKAGES" >&2
         exit 1
     fi
@@ -99,9 +170,40 @@ install_bridge() {
     install -m755 "$REPO/integration/bin/ezku-desktops-bootstrap.sh" "$BIN_DIR/"
     install -m755 "$REPO/integration/bin/ezku-desktops-daemon.py" "$BIN_DIR/"
     install -m755 "$REPO/integration/bin/caparazon-guardian.sh" "$BIN_DIR/"
+    install -m755 "$REPO/integration/bin/caparazon-wm.py" "$BIN_DIR/caparazon-wm"
+    install -m755 "$REPO/integration/bin/caparazon-shell-ipc.sh" "$BIN_DIR/caparazon-shell-ipc"
     install -m644 \
         "$REPO/integration/kwin/ezkudesktops/contents/code/main.js" \
         "$KWIN_DIR/main.js"
+}
+
+install_niri_config() {
+    # Sólo si no hay config de niri: nunca pisar ~/.config/niri/config.kdl.
+    local source="$REPO/integration/niri/config.kdl"
+    local target="$CONFIG_HOME/niri/config.kdl"
+    if [ ! -f "$source" ]; then
+        return 0
+    fi
+    if [ -e "$target" ]; then
+        echo "AVISO: $target ya existe; no se sobreescribe."
+        echo "       Diff con el dotfile del repo:"
+        echo "       diff -u '$target' '$source'"
+        return 0
+    fi
+    if ! command -v niri >/dev/null 2>&1; then
+        echo "AVISO: no se detecto niri en el PATH; el dotfile queda listo por si lo instalas."
+    fi
+    if ! confirm "Copiar el dotfile de niri a $target?"; then
+        echo "       Se omite el dotfile de niri. Copialo a mano con:"
+        echo "       install -Dm644 '$source' '$target'"
+        return 0
+    fi
+    echo "Instalando el dotfile de niri en $target"
+    mkdir -p "$(dirname "$target")"
+    install -m644 "$source" "$target"
+    if command -v niri >/dev/null 2>&1; then
+        niri validate -c "$target"
+    fi
 }
 
 update_branch() {
@@ -197,8 +299,12 @@ install_shortcut() {
         "$REPO/integration/shortcuts/caparazon-menu.desktop.in" \
         > "$desktop"
     chmod 644 "$desktop"
-    bind_shortcut_key
-    refresh_service_cache
+    if is_kde_session; then
+        bind_shortcut_key
+        refresh_service_cache
+    else
+        echo "       En niri los atajos los aporta el bloque binds de ~/.config/niri/config.kdl"
+    fi
 }
 
 refresh_service_cache() {
@@ -219,6 +325,10 @@ refresh_shortcut_hint() {
 }
 
 bind_shortcut_key() {
+    # El atajo global de KDE solo aplica a Plasma; en niri manda el binds.
+    if ! is_kde_session; then
+        return 0
+    fi
     local file="$CONFIG_HOME/kglobalshortcutsrc"
     mkdir -p "$CONFIG_HOME"
     touch "$file"
@@ -315,8 +425,18 @@ validate_palette() {
 }
 
 install_theme() {
+    if ! is_kde_session; then
+        echo "El motor accent-theme es exclusivo de KDE/Plasma: se omite."
+        echo "       La shell usara su paleta Material por defecto (matugen no hace falta)."
+        if ! command -v powerprofilesctl >/dev/null 2>&1; then
+            echo "AVISO: el selector de perfil energético necesita power-profiles-daemon."
+            echo "       En PikaOS: sudo apt install power-profiles-daemon"
+        fi
+        return 0
+    fi
     echo "Conectando el tema accent-theme"
     require_theme_dependencies
+    require_kde_theme_dependencies
     fetch_theme_engine
     install_theme_engine
     register_caparazon_theme
@@ -357,15 +477,33 @@ uninstall() {
     rm -f "$BIN_DIR/caparazon-guardian.sh"
     rm -f "$BIN_DIR/caparazon-update-check.sh"
     rm -f "$BIN_DIR/caparazon-update.sh"
+    rm -f "$BIN_DIR/caparazon-wm"
+    rm -f "$BIN_DIR/caparazon-shell-ipc"
     rm -f "$UPDATE_CONF"
     rm -rf "$HOME/.local/share/kwin/scripts/ezkudesktops"
     remove_shortcut
     uninstall_theme
     echo "Listo. El proceso de Quickshell sigue vivo: cierralo con"
     echo "  pkill -f 'quickshell -p $SHELL_DIR'"
+    echo "El dotfile de niri no se toca: es tuyo y puedes editarlo a mano."
 }
 
-case "${1:-instalar}" in
+COMMAND="instalar"
+ASSUME_YES="${CAPARAZON_ASSUME_YES:-0}"
+for argument in "$@"; do
+    case "$argument" in
+        -y|--yes) ASSUME_YES=1 ;;
+        instalar|desinstalar) COMMAND="$argument" ;;
+        -h|--help|help) COMMAND="help" ;;
+        *)
+            echo "Opcion desconocida: $argument" >&2
+            usage >&2
+            exit 1
+            ;;
+    esac
+done
+
+case "$COMMAND" in
     instalar)
         require_quickshell
         require_calendar_dependencies
@@ -386,6 +524,7 @@ case "${1:-instalar}" in
         install_shortcut "$ACTIVE_SHELL_DIR"
         refresh_shortcut_hint
         install_bridge
+        install_niri_config
         install_updater "$ACTIVE_SHELL_DIR"
         install_theme
         echo
@@ -393,16 +532,16 @@ case "${1:-instalar}" in
         echo "  quickshell -p $ACTIVE_SHELL_DIR"
         echo
         echo "En el siguiente inicio de sesion arrancara sola."
-        echo "Atajo global: $MENU_SHORTCUT_KEY abre el menu central."
+        if is_kde_session; then
+            echo "Atajo global: $MENU_SHORTCUT_KEY abre el menu central."
+        else
+            echo "Atajos: Mod+Space (menu central) y Mod+D (menus) en ~/.config/niri/config.kdl"
+        fi
         ;;
     desinstalar)
         uninstall
         ;;
-    -h|--help|help)
+    help)
         usage
-        ;;
-    *)
-        usage >&2
-        exit 1
         ;;
 esac
