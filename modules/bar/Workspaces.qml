@@ -5,11 +5,8 @@ import QtQuick.Effects
 import QtQuick.Shapes
 import "../../theme"
 
-// Pager de escritorios virtuales de KWin.
-// KWin no expone ext-workspace, así que vamos por DBus:
-//   - estado: busctl --json=short (JSON limpio, parseable con JSON.parse)
-//   - cambios en vivo: dbus-monitor escuchando la interfaz de KWin
-//   - cambiar: org.kde.KWin.setCurrentDesktop(int) (1-based)
+// Pager de escritorios virtuales. El estado y el cambio de escritorio
+// pasan por caparazon-wm (kwin o niri); este módulo sólo pinta y delega.
 Grid {
     id: root
 
@@ -134,8 +131,7 @@ Grid {
                 anchors.fill: parent
                 cursorShape: Qt.PointingHandCursor
                 onClicked: Quickshell.execDetached([
-                    "qdbus6", "org.kde.KWin", "/KWin",
-                    "org.kde.KWin.setCurrentDesktop",
+                    "caparazon-wm", "workspace-switch",
                     String(pill.modelData.pos + 1)
                 ])
             }

@@ -99,12 +99,16 @@ def test_clicking_an_app_in_the_background_only_focuses_it() -> None:
     }
 
 
-def test_the_dock_asks_kwin_for_the_window_action() -> None:
-    """El dock carga el script de la acción de ventana."""
+def test_the_dock_asks_caparazon_wm_for_the_window_action() -> None:
+    """El dock invoca caparazon-wm window-action (sin gdbus inline)."""
     dock = DOCK.read_text(encoding="utf-8")
 
-    assert "KWinWindowAction.js" in dock
+    assert '"caparazon-wm"' in dock
+    assert '"window-action"' in dock
     assert "windowActionProcess.active = dock.activeAppId" in dock
+    assert "gdbus" not in dock
+    assert "org.kde.KWin" not in dock
+    assert "KWinWindowAction.js" not in dock
 
 
 def test_the_old_focus_script_is_gone() -> None:

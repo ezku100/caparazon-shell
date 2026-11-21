@@ -170,24 +170,11 @@ PanelWindow {
         property string target: ""
         property string active: ""
 
+        // caparazon-wm decide kwin (script KWinWindowAction) o niri (focus-window).
         command: [
-            "bash", "-c",
-            "target=\"$1\"; active=\"$2\"; " +
-            "case \"$target\" in ''|*[!A-Za-z0-9._|-]*) exit 1;; esac; " +
-            "case \"$active\" in *[!A-Za-z0-9._-]*) active='';; esac; " +
-            "tmp=\"${XDG_RUNTIME_DIR:-/tmp}/caparazon-window-action-$$.js\"; " +
-            "sed -e \"s@__TARGET__@$target@g\" -e \"s@__ACTIVE__@$active@g\" \"$3\" > \"$tmp\"; " +
-            "gdbus call --session --dest org.kde.KWin --object-path /Scripting " +
-            "--method org.kde.kwin.Scripting.unloadScript caparazon-window-action >/dev/null 2>&1; " +
-            "gdbus call --session --dest org.kde.KWin --object-path /Scripting " +
-            "--method org.kde.kwin.Scripting.loadScript \"$tmp\" caparazon-window-action >/dev/null; " +
-            "gdbus call --session --dest org.kde.KWin --object-path /Scripting " +
-            "--method org.kde.kwin.Scripting.start >/dev/null; " +
-            "rm -f \"$tmp\"",
-            "bash",
-            windowActionProcess.target,
+            "caparazon-wm", "window-action",
             windowActionProcess.active,
-            Quickshell.shellPath("modules/bar/KWinWindowAction.js")
+            windowActionProcess.target
         ]
     }
 

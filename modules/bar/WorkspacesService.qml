@@ -2,16 +2,20 @@ import Quickshell
 import Quickshell.Io
 import QtQuick
 
-// Servicio global de escritorios virtuales: una sola instancia para todas las barras.
-// Evita duplicar el watcher dbus-monitor y la lectura de ezku-desktops.json por monitor.
+// Servicio global de escritorios: una sola instancia para todas las barras.
+// Habla con caparazon-wm (kwin o niri); la ocupación y el estado vienen en
+// el mismo JSON. El caché local sigue de respaldo si el CLI falla.
 Item {
     id: root
     visible: false
 
     property var queriedDesks: []
     property string queriedCurrentId: ""
-    // La consulta directa a KWin es la fuente principal. El puente local ya
-    // publica la misma lista en caché y sirve de respaldo si KWin no responde.
+    property var queriedOccupied: []
+    property var queriedOccupiedPerOutput: ({})
+    property var queriedPerOutput: ({})
+    property string queriedFocusedScreen: ""
+
     readonly property var desks: queriedDesks.length > 0
         ? queriedDesks
         : stateAdapter.desktops
@@ -19,7 +23,8 @@ Item {
         ? queriedCurrentId
         : stateAdapter.current
 
-    readonly property bool occupancyKnown: stateFile.loaded
+    readonly property bool occupancyKnown:
+        queriedOccupied.length > 0 || stateFile.loaded
 
     FileView {
         id: stateFile
@@ -40,6 +45,11 @@ Item {
     }
 
     function occupiedIds(screenName) {
+        if (queriedOccupiedPerOutput && screenName
+                && queriedOccupiedPerOutput[screenName] !== undefined)
+            return queriedOccupiedPerOutput[screenName];
+        if (queriedOccupied.length > 0)
+            return queriedOccupied;
         const perScreen = stateAdapter.occupiedPerOutput;
         if (screenName && perScreen && perScreen[screenName] !== undefined)
             return perScreen[screenName];
@@ -47,38 +57,51 @@ Item {
     }
 
     function screenCurrentId(screenName) {
-        const map = stateAdapter.perOutput;
-        if (screenName && map && typeof map[screenName] === "string" && map[screenName].length > 0)
+        const map = queriedPerOutput && Object.keys(queriedPerOutput).length > 0
+            ? queriedPerOutput
+            : stateAdapter.perOutput;
+        if (screenName && map && typeof map[screenName] === "string"
+                && map[screenName].length > 0)
             return map[screenName];
         return root.currentId;
     }
 
     function screenFocused(screenName) {
-        return stateAdapter.focusedScreen === ""
+        const focused = queriedFocusedScreen || stateAdapter.focusedScreen;
+        return focused === ""
             || screenName === ""
-            || stateAdapter.focusedScreen === screenName;
+            || focused === screenName;
     }
 
     function refresh() {
         if (!fetch.running)
             fetch.running = true;
-        if (!fetchCurrent.running)
-            fetchCurrent.running = true;
+    }
+
+    function applyState(doc) {
+        if (!doc || typeof doc !== "object")
+            return;
+        if (Array.isArray(doc.desktops))
+            root.queriedDesks = doc.desktops;
+        if (typeof doc.current === "string")
+            root.queriedCurrentId = doc.current;
+        if (Array.isArray(doc.occupied))
+            root.queriedOccupied = doc.occupied;
+        if (doc.perOutput && typeof doc.perOutput === "object")
+            root.queriedPerOutput = doc.perOutput;
+        if (doc.occupiedPerOutput && typeof doc.occupiedPerOutput === "object")
+            root.queriedOccupiedPerOutput = doc.occupiedPerOutput;
+        if (typeof doc.focusedScreen === "string")
+            root.queriedFocusedScreen = doc.focusedScreen;
     }
 
     Process {
         id: fetch
-        command: ["busctl", "--user", "--json=short", "call", "org.kde.KWin",
-                  "/VirtualDesktopManager", "org.freedesktop.DBus.Properties", "Get",
-                  "ss", "org.kde.KWin.VirtualDesktopManager", "desktops"]
+        command: ["caparazon-wm", "workspaces"]
         stdout: StdioCollector {
-            id: outDesks
             onStreamFinished: {
                 try {
-                    const j = JSON.parse(outDesks.text);
-                    root.queriedDesks = j.data[0].data.map(function (e) {
-                        return { pos: e[0], id: e[1], name: e[2] };
-                    });
+                    root.applyState(JSON.parse(text));
                 } catch (e) {
                     console.log("caparazon: fallo al parsear escritorios:", e);
                 }
@@ -87,27 +110,17 @@ Item {
     }
 
     Process {
-        id: fetchCurrent
-        command: ["busctl", "--user", "--json=short", "call", "org.kde.KWin",
-                  "/VirtualDesktopManager", "org.freedesktop.DBus.Properties", "Get",
-                  "ss", "org.kde.KWin.VirtualDesktopManager", "current"]
-        stdout: StdioCollector {
-            id: outCurrent
-            onStreamFinished: {
-                try {
-                    root.queriedCurrentId = JSON.parse(outCurrent.text).data[0].data;
-                } catch (e) { }
-            }
-        }
-    }
-
-    Process {
         id: watcher
         running: true
-        command: ["dbus-monitor", "--session",
-                  "type='signal',interface='org.kde.KWin.VirtualDesktopManager'"]
+        command: ["caparazon-wm", "watch-workspaces"]
         stdout: SplitParser {
-            onRead: function (line) { root.refresh(); }
+            onRead: function(line) {
+                if (!line || line.length === 0)
+                    return;
+                try {
+                    root.applyState(JSON.parse(line));
+                } catch (e) { }
+            }
         }
     }
 

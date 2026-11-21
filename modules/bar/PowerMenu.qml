@@ -157,8 +157,7 @@ PanelWindow {
         if (key === "lock") {
             command = ["loginctl", "lock-session"];
         } else if (key === "logout") {
-            command = ["qdbus6", "org.kde.Shutdown", "/Shutdown",
-                       "org.kde.Shutdown.logout"];
+            command = ["caparazon-wm", "logout"];
         } else if (key === "shutdown") {
             command = ["systemctl", "poweroff"];
         } else if (key === "reboot") {

@@ -15,13 +15,14 @@ def test_the_options_live_in_display_json() -> None:
     assert "property bool dockOnSecondary: true" in contents
 
 
-def test_the_primary_screen_comes_from_kscreen() -> None:
-    """El principal es el que KDE marca (prioridad 1), no el primero."""
+def test_the_primary_screen_comes_from_caparazon_wm() -> None:
+    """El principal lo resuelve caparazon-wm (kscreen vive dentro del CLI)."""
     contents = LAYOUT.read_text(encoding="utf-8")
 
-    assert "kscreen-doctor" in contents
-    assert "priority < best.priority" in contents
-    assert "root.primaryName = best.name" in contents
+    assert "kscreen-doctor" not in contents
+    assert '"caparazon-wm"' in contents
+    assert '"primary-output"' in contents
+    assert "root.primaryName" in contents
 
 
 def test_screens_are_filtered_by_the_options() -> None:

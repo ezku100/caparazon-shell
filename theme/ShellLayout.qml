@@ -7,9 +7,8 @@ import QtQuick
 // de la pantalla se anclan ("barra arriba/abajo", "dock abajo/arriba").
 // Todo se guarda en ~/.config/caparazon/display.json.
 //
-// El monitor principal es el que KDE considera principal, no el primero de
-// la lista: se pregunta a kscreen (la misma prioridad que reporta
-// kscreen-doctor), igual que hace el propio Plasma.
+// El monitor principal lo resuelve caparazon-wm (misma prioridad KDE que
+// Plasma), no el primero de la lista.
 Item {
     id: root
     visible: false
@@ -43,7 +42,7 @@ Item {
             if (list[i] && list[i].name === root.primaryName)
                 return list[i];
         }
-        // Sin respuesta de kscreen todavía: la primera pantalla.
+        // Sin respuesta de primary-output todavía: la primera pantalla.
         return list.length > 0 ? list[0] : null;
     }
 
@@ -176,44 +175,14 @@ Item {
 
     Process {
         id: probe
-        command: ["kscreen-doctor", "--json", "-o"]
+        command: ["caparazon-wm", "primary-output"]
         stdout: StdioCollector {
-            onStreamFinished: root.parsePrimary(text)
+            onStreamFinished: {
+                const name = text.trim();
+                if (name.length > 0)
+                    root.primaryName = name;
+            }
         }
-    }
-
-    // kscreen-doctor imprime el JSON y después su resumen en texto; se
-    // recorta el objeto antes de parsearlo. La principal es la de menor
-    // prioridad (1) entre las pantallas activas.
-    function parsePrimary(raw) {
-        if (!raw)
-            return;
-        const start = raw.indexOf("{");
-        const end = raw.lastIndexOf("}");
-        if (start < 0 || end <= start)
-            return;
-        let doc = null;
-        try {
-            doc = JSON.parse(raw.substring(start, end + 1));
-        } catch (e) {
-            return;
-        }
-        const outs = doc && doc.outputs ? doc.outputs : [];
-        let best = null;
-        for (let i = 0; i < outs.length; i++) {
-            const out = outs[i];
-            if (!out || !out.name)
-                continue;
-            if (out.enabled === false || out.connected === false)
-                continue;
-            const priority = typeof out.priority === "number" ? out.priority : 0;
-            if (priority <= 0)
-                continue;
-            if (!best || priority < best.priority)
-                best = { name: out.name, priority: priority };
-        }
-        if (best)
-            root.primaryName = best.name;
     }
 
     Process {

@@ -96,9 +96,11 @@ ShellRoot {
         property bool opened: false
         property bool closing: false
         property var activeScreen: null
+        property var lastScreen: null
 
         function open(screen) {
             activeScreen = screen;
+            lastScreen = screen;
             closing = false;
             opened = true;
         }
@@ -206,6 +208,16 @@ ShellRoot {
         return Quickshell.screens.length > 0 ? Quickshell.screens[0] : null;
     }
 
+    // Pantalla donde abre el menú de sesión por teclado.
+    function powerMenuScreen() {
+        const last = shellRoot.powerMenuState.lastScreen;
+        for (let i = 0; i < Quickshell.screens.length; ++i) {
+            if (Quickshell.screens[i] === last)
+                return last;
+        }
+        return Quickshell.screens.length > 0 ? Quickshell.screens[0] : null;
+    }
+
     // Pantalla cuyo nombre de salida coincide (p. ej. "DP-1"); null si no hay.
     function screenByName(name) {
         for (let i = 0; i < Quickshell.screens.length; ++i) {
@@ -215,17 +227,15 @@ ShellRoot {
         return null;
     }
 
-    // Pregunta a KWin cuál es la pantalla activa (la de la ventana enfocada,
-    // o la del cursor si está activada "La pantalla activa sigue al ratón") y
-    // abre ahí el menú. busctl responde algo como: s "DP-1"
+    // Pantalla activa (ventana enfocada o cursor) vía caparazon-wm; el
+    // backend kwin/niri resuelve el nombre y el menú abre ahí.
     Process {
         id: activeOutputQuery
-        command: ["busctl", "--user", "call", "org.kde.KWin", "/KWin",
-                  "org.kde.KWin", "activeOutputName"]
+        command: ["caparazon-wm", "active-output"]
         stdout: StdioCollector {
             onStreamFinished: {
-                const match = /"([^"]*)"/.exec(text);
-                const screen = (match && shellRoot.screenByName(match[1]))
+                const name = text.trim();
+                const screen = (name && shellRoot.screenByName(name))
                     || shellRoot.appMenuScreen();
                 shellRoot.appMenuState.open(screen);
             }
@@ -235,12 +245,11 @@ ShellRoot {
     // Igual que activeOutputQuery, pero para el menú secundario (calendario).
     Process {
         id: secondOutputQuery
-        command: ["busctl", "--user", "call", "org.kde.KWin", "/KWin",
-                  "org.kde.KWin", "activeOutputName"]
+        command: ["caparazon-wm", "active-output"]
         stdout: StdioCollector {
             onStreamFinished: {
-                const match = /"([^"]*)"/.exec(text);
-                const screen = (match && shellRoot.screenByName(match[1]))
+                const name = text.trim();
+                const screen = (name && shellRoot.screenByName(name))
                     || shellRoot.secondMenuScreen();
                 shellRoot.secondMenuState.open(screen);
             }
@@ -293,6 +302,27 @@ ShellRoot {
         }
     }
 
+    // Control del menú de sesión (bloquear, cerrar sesión, reiniciar, apagar).
+    IpcHandler {
+        target: "power"
+
+        function toggle(): void {
+            if (shellRoot.powerMenuState.opened)
+                shellRoot.powerMenuState.close();
+            else
+                shellRoot.powerMenuState.open(shellRoot.powerMenuScreen());
+        }
+
+        function open(): void {
+            if (!shellRoot.powerMenuState.opened)
+                shellRoot.powerMenuState.open(shellRoot.powerMenuScreen());
+        }
+
+        function close(): void {
+            shellRoot.powerMenuState.close();
+        }
+    }
+
     // Estado global de menús de bandeja: sólo puede haber uno abierto.
     property QtObject trayMenuState: QtObject {
         property var active: null
@@ -339,7 +369,6 @@ ShellRoot {
             gpuUsage: resourceService.gpu
             swapUsage: resourceService.swap
             networkUsage: resourceService.network
-            powerProfile: resourceService.powerProfile
             resources: resourceService
         }
     }
