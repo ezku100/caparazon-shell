@@ -1,0 +1,102 @@
+// Preferencias de sesión: bordes alrededor de ventanas que aceptan no-CSD.
+prefer-no-csd
+
+layout {
+    gaps 12
+
+    border {
+        width 2
+        active-color "#8ab4f8"
+        inactive-color "#3c4043"
+    }
+
+    focus-ring {
+        width 0
+    }
+
+    shadow {
+        on
+        softness 30
+        spread 4
+        offset x=0 y=6
+        color "#00000070"
+    }
+}
+
+animations {
+    window-open { duration-ms 150; curve "ease-out-expo"; }
+    window-close { duration-ms 120; curve "ease-out-quad"; }
+    workspace-switch { spring damping-ratio=1.0 stiffness=1000 epsilon=0.0001; }
+}
+
+window-rule {
+    // Esquinas redondeadas coherentes con el border radius.
+    geometry-corner-radius 12
+}
+
+// Blur tras las capas de la shell (PowerMenu / overlay).
+// Namespaces a confirmar con `niri msg layers` en sesión niri.
+layer-rule {
+    match namespace="quickshell"
+    background-effect {
+        blur true
+    }
+}
+
+// Atajos de teclado. La shell se maneja por IPC (caparazon-shell-ipc), así que
+// sus menús se abren igual que en Plasma. Las teclas que niri ya trae por
+// defecto se redeclaran aquí sólo cuando cambian de sentido.
+binds {
+    // --- Ventanas ---
+    Mod+Q repeat=false { close-window; }
+
+    // --- Escritorios: Meta+N cambia de escritorio, Meta+Shift+N mueve la ventana ---
+    Mod+1 { focus-workspace 1; }
+    Mod+2 { focus-workspace 2; }
+    Mod+3 { focus-workspace 3; }
+    Mod+4 { focus-workspace 4; }
+    Mod+5 { focus-workspace 5; }
+    Mod+6 { focus-workspace 6; }
+    Mod+7 { focus-workspace 7; }
+    Mod+8 { focus-workspace 8; }
+    Mod+9 { focus-workspace 9; }
+    Mod+Shift+1 { move-window-to-workspace 1; }
+    Mod+Shift+2 { move-window-to-workspace 2; }
+    Mod+Shift+3 { move-window-to-workspace 3; }
+    Mod+Shift+4 { move-window-to-workspace 4; }
+    Mod+Shift+5 { move-window-to-workspace 5; }
+    Mod+Shift+6 { move-window-to-workspace 6; }
+    Mod+Shift+7 { move-window-to-workspace 7; }
+    Mod+Shift+8 { move-window-to-workspace 8; }
+    Mod+Shift+9 { move-window-to-workspace 9; }
+
+    // --- Mover la ventana dentro del mismo escritorio (cambiarla de lado) ---
+    // En niri el foco va con Meta+Ctrl+flechas: aquí se invierte el sentido
+    // que trae niri, donde Meta+flechas mueve el foco y Meta+Ctrl+flechas
+    // mueve la ventana.
+    Mod+Left { move-column-left; }
+    Mod+Right { move-column-right; }
+    Mod+Up { move-window-up; }
+    Mod+Down { move-window-down; }
+    Mod+Ctrl+Left { focus-column-left; }
+    Mod+Ctrl+Right { focus-column-right; }
+    Mod+Ctrl+Up { focus-window-up; }
+    Mod+Ctrl+Down { focus-window-down; }
+
+    // --- Menús de Caparazón ---
+    Mod+Space { spawn "caparazon-shell-ipc" "menu" "toggle"; }
+    Mod+D { spawn "caparazon-shell-ipc" "menu" "toggle"; }
+    Mod+Shift+C { spawn "caparazon-shell-ipc" "menu2" "open" "calendario"; }
+    Mod+Shift+A { spawn "caparazon-shell-ipc" "menu2" "open" "musica"; }
+    Mod+Shift+M { spawn "caparazon-shell-ipc" "menu2" "open" "sistema"; }
+    Mod+Shift+S { spawn "caparazon-shell-ipc" "menu2" "open" "configs"; }
+
+    // --- Sesión y monitor ---
+    Mod+Shift+E { spawn "caparazon-shell-ipc" "power" "toggle"; }
+    Mod+Shift+P { power-off-monitors; }
+
+    // --- Terminal y overlay de atajos ---
+    Mod+T { spawn "kitty"; }
+    Mod+O repeat=false { toggle-overview; }
+    Mod+Shift+Slash { show-hotkey-overlay; }
+}
