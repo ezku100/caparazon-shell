@@ -62,23 +62,58 @@ animación de despedida.
 - `caparazon-wm` (se instala con el resto en `~/.local/bin`): único punto de
   contacto con el compositor (detect, escritorios, ventanas, pantalla activa,
   logout).
-- En KWin: `qdbus6`, `busctl`, `dbus-monitor`, `gdbus` y `kscreen-doctor`
-  (monitor principal, sólo dentro de `caparazon-wm`).
-- En niri: el binario `niri` (IPC `niri msg`); no hace falta kscreen-doctor.
-- `wl-paste` (historial de portapapeles).
-- Para el tema dinámico en Plasma: `matugen`, `inotify-tools` (`inotifywait`),
-  `util-linux` (`flock`), `libkf6config-bin` (`kreadconfig6`), `git` y
-  `python3`. En niri no hace falta ninguno: el motor accent-theme es
-  exclusivo de KDE y la shell usa su paleta Material por defecto.
-- Opcionales: `wtype` o `ydotool` (pegar emojis),
-  `python3` con `PyGObject` (puente de escritorios).
 
-En PikaOS (Plasma):
+### En niri (≥ 26.04)
+
+| Paquete | Para qué |
+| --- | --- |
+| `niri` | El compositor en sí |
+| `quickshell` | El motor que ejecuta la shell |
+| `power-profiles-daemon` | `powerprofilesctl`: el chip de perfil energético de la barra |
+| `wl-clipboard` | `wl-paste`: el historial de portapapeles |
+| `python3` + `python3-dateutil` | El calendario de Google |
 
 ```bash
-sudo apt install quickshell qdbus6 dbus-tools \
-  matugen inotify-tools util-linux libkf6config-bin git python3
+sudo apt install niri quickshell power-profiles-daemon \
+  wl-clipboard python3 python3-dateutil
 ```
+
+En niri no hace falta nada de KDE: el motor de tema `accent-theme` es exclusivo
+de Plasma y la shell usa su paleta Material por defecto.
+
+### En Plasma 6 (KWin)
+
+| Paquete | Para qué |
+| --- | --- |
+| `quickshell` | El motor que ejecuta la shell |
+| `qdbus-qt6` | `qdbus6`: perfil energético con Solid, apagado y logout |
+| `dbus-bin` | `dbus-monitor`: el puente de escritorios |
+| `libglib2.0-bin` | `gdbus`: las acciones de ventana de KWin |
+| `libkscreen-bin` | `kscreen-doctor`: el monitor principal |
+| `wl-clipboard` | `wl-paste`: el historial de portapapeles |
+| `python3` + `python3-dateutil` | El calendario de Google |
+| `matugen` | La paleta dinámica `accent-theme` |
+| `inotify-tools` | `inotifywait`: el vigilante del tema |
+| `util-linux` | `flock`: el bloqueo del actualizador |
+| `libkf6config-bin` | `kreadconfig6`: el puente de acento de KDE |
+| `git` | Clonar el motor `accent-theme` |
+
+```bash
+sudo apt install quickshell qdbus-qt6 dbus-bin libglib2.0-bin \
+  libkscreen-bin wl-clipboard python3 python3-dateutil \
+  matugen inotify-tools util-linux libkf6config-bin git
+```
+
+En PikaOS 4 todos esos paquetes vienen del repositorio, `niri` 26.04 incluido.
+
+### Opcionales
+
+| Paquete | Para qué |
+| --- | --- |
+| `xdg-utils` | `xdg-open`: abrir los ajustes del calendario |
+| `procps` | `pkill`: limpiar el proceso del feed de espectro |
+| `flatpak` | Abrir Zen Browser desde la barra |
+| `python3-gi` | PyGObject: el puente de escritorios en Python |
 
 ## Instalar
 
