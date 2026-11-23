@@ -191,11 +191,11 @@ PanelWindow {
             id: cardFx
             source: cardSurface
             anchors.fill: cardSurface
-            blurMax: 64
+            blurMax: 16
             shadowEnabled: true
             shadowColor: "black"
             shadowOpacity: 0.38
-            shadowBlur: 0.85
+            shadowBlur: 0.5
             shadowScale: 0.97
             shadowHorizontalOffset: 0
             shadowVerticalOffset: 16

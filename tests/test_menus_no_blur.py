@@ -27,6 +27,24 @@ def test_the_opaque_cards_do_not_request_desktop_blur() -> None:
         )
 
 
+def test_opaque_cards_use_light_shadow_blur() -> None:
+    for path in (APP_MENU, SECOND_MENU):
+        contents = path.read_text(encoding="utf-8")
+
+        assert "blurMax: 64" not in contents, (
+            f"{path.name}: 64 px de blur es costoso en una tarjeta opaca"
+        )
+        assert "shadowBlur: 0.85" not in contents, (
+            f"{path.name}: la sombra no debe usar casi todo el radio disponible"
+        )
+        assert "blurMax: 16" in contents, (
+            f"{path.name}: falta el radio de sombra reducido"
+        )
+        assert "shadowBlur: 0.5" in contents, (
+            f"{path.name}: falta la intensidad de sombra reducida"
+        )
+
+
 def test_the_power_menu_keeps_its_deliberate_blur() -> None:
     contents = POWER_MENU.read_text(encoding="utf-8")
 

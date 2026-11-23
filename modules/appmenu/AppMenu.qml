@@ -561,11 +561,11 @@ PanelWindow {
             // Sombra amplia y suave: el desenfoque grande evita el borde duro,
             // el desplazamiento vertical la "levanta" y la escala algo menor
             // que 1 impide que asome como un marco alrededor de la tarjeta.
-            blurMax: 64
+            blurMax: 16
             shadowEnabled: true
             shadowColor: "black"
             shadowOpacity: 0.38
-            shadowBlur: 0.85
+            shadowBlur: 0.5
             shadowScale: 0.97
             shadowHorizontalOffset: 0
             shadowVerticalOffset: 16
