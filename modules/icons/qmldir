@@ -1,2 +1,3 @@
 singleton IconResolver 1.0 IconResolver.qml
+singleton CompositorService 1.0 CompositorService.qml
 IconThemeWatcher 1.0 IconThemeWatcher.qml
