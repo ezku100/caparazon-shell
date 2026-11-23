@@ -30,6 +30,7 @@ const candidates = context.candidates;
 const iconKind = context.iconKind;
 const stem = context.stem;
 const nameFromPath = context.nameFromPath;
+const iconRank = context.iconRank;
 
 function check(ok, detail) {
     return { ok: ok, detail: detail };
@@ -40,6 +41,18 @@ function list(names) {
 }
 
 const cases = [
+    {
+        id: "query_string_is_stripped_from_names",
+        name: "La query ?fallback= no ensucia los candidatos",
+        run: () => candidates("media-playback-start-symbolic?fallback=media-stop"),
+        expect: (names) =>
+            check(
+                names.length > 0 &&
+                    names[0] === "media-playback-start-symbolic" &&
+                    names.every((n) => n.indexOf("?") === -1),
+                list(names),
+            ),
+    },
     {
         id: "exact_name_comes_first",
         name: "El nombre exacto es el primer candidato",
@@ -176,6 +189,109 @@ const cases = [
                     names[1] === "kitty-symbolic",
                 list(names),
             ),
+    },
+    {
+        id: "scalable_variant_wins_over_the_small_ones",
+        name: "La variante escalable vale mas que las pequeñas",
+        run: () => [
+            iconRank("/usr/share/icons/Papirus-Dark/16x16/places/folder.png"),
+            iconRank(
+                "/usr/share/icons/Papirus-Dark/scalable/places/folder.svg",
+            ),
+        ],
+        expect: (ranks) =>
+            check(ranks[1] > ranks[0], list(ranks)),
+    },
+    {
+        id: "medium_variant_wins_over_the_tiny_one",
+        name: "La variante de 48 gana a la de 16",
+        run: () => [
+            iconRank("/usr/share/icons/Papirus-Dark/16x16/places/folder.png"),
+            iconRank("/usr/share/icons/Papirus-Dark/48x48/places/folder.png"),
+        ],
+        expect: (ranks) => check(ranks[1] > ranks[0], list(ranks)),
+    },
+    {
+        id: "vector_wins_over_the_bitmap_of_the_same_size",
+        name: "El vector gana al mapa de bits del mismo tamaño",
+        run: () => [
+            iconRank("/usr/share/icons/Papirus-Dark/48x48/places/folder.png"),
+            iconRank("/usr/share/icons/Papirus-Dark/48x48/places/folder.svg"),
+        ],
+        expect: (ranks) => check(ranks[1] > ranks[0], list(ranks)),
+    },
+    {
+        id: "file_without_a_size_directory_has_a_middle_rank",
+        name: "Un icono sin carpeta de tamaño tiene un valor intermedio",
+        run: () => iconRank("/usr/share/icons/Adwaita/folder.svg"),
+        expect: (rank) =>
+            check(
+                rank > iconRank("/usr/share/icons/Adwaita/16x16/folder.png") &&
+                    rank <
+                        iconRank("/usr/share/icons/Adwaita/scalable/folder.svg"),
+                String(rank),
+            ),
+    },
+    {
+        id: "active_theme_wins_over_inherited_even_at_a_smaller_size",
+        name: "El tema activo gana al heredado aunque sea mas pequeño",
+        run: () => [
+            iconRank("/usr/share/icons/Activo/16x16/apps/foo.png", [
+                "Activo",
+                "Heredado",
+                "hicolor",
+            ]),
+            iconRank("/usr/share/icons/hicolor/scalable/apps/foo.svg", [
+                "Activo",
+                "Heredado",
+                "hicolor",
+            ]),
+        ],
+        expect: (ranks) => check(ranks[0] > ranks[1], list(ranks)),
+    },
+    {
+        id: "inherited_theme_wins_over_hicolor",
+        name: "Un tema heredado gana a hicolor",
+        run: () => [
+            iconRank("/home/u/.icons/Heredado/48x48/apps/foo.png", [
+                "Activo",
+                "Heredado",
+                "hicolor",
+            ]),
+            iconRank("/usr/share/icons/hicolor/scalable/apps/foo.svg", [
+                "Activo",
+                "Heredado",
+                "hicolor",
+            ]),
+        ],
+        expect: (ranks) => check(ranks[0] > ranks[1], list(ranks)),
+    },
+    {
+        id: "size_ranking_is_kept_inside_the_same_theme",
+        name: "Dentro de un tema sigue ganando la mejor variante",
+        run: () => [
+            iconRank("/usr/share/icons/Activo/16x16/apps/foo.png", [
+                "Activo",
+                "hicolor",
+            ]),
+            iconRank("/usr/share/icons/Activo/scalable/apps/foo.svg", [
+                "Activo",
+                "hicolor",
+            ]),
+        ],
+        expect: (ranks) => check(ranks[1] > ranks[0], list(ranks)),
+    },
+    {
+        id: "icons_outside_the_search_order_have_no_theme_bonus",
+        name: "Un icono fuera de los temas no recibe bonus de tema",
+        run: () => [
+            iconRank("/home/u/.local/share/applications/foo.png", [
+                "Activo",
+                "hicolor",
+            ]),
+            iconRank("/home/u/.local/share/applications/foo.png"),
+        ],
+        expect: (ranks) => check(ranks[0] === ranks[1], list(ranks)),
     },
 ];
 

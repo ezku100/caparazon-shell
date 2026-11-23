@@ -104,3 +104,19 @@ def test_resolved_urls_are_passed_through() -> None:
     cases = run_cases()
     assert_case(cases, "image_url_is_a_url")
     assert_case(cases, "qrc_url_is_a_url")
+
+
+def test_the_best_variant_of_an_icon_is_the_one_kept() -> None:
+    cases = run_cases()
+    assert_case(cases, "scalable_variant_wins_over_the_small_ones")
+    assert_case(cases, "medium_variant_wins_over_the_tiny_one")
+    assert_case(cases, "vector_wins_over_the_bitmap_of_the_same_size")
+    assert_case(cases, "file_without_a_size_directory_has_a_middle_rank")
+
+
+def test_the_active_theme_wins_over_inherited_ones() -> None:
+    cases = run_cases()
+    assert_case(cases, "active_theme_wins_over_inherited_even_at_a_smaller_size")
+    assert_case(cases, "inherited_theme_wins_over_hicolor")
+    assert_case(cases, "size_ranking_is_kept_inside_the_same_theme")
+    assert_case(cases, "icons_outside_the_search_order_have_no_theme_bonus")
