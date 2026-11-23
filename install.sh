@@ -206,6 +206,28 @@ install_niri_config() {
     fi
 }
 
+install_niri_icon_theme() {
+    # El tema de iconos lo fija el config de niri. En Plasma lo pone KDE y no
+    # se toca nada: aquí sólo es para niri, donde nadie lo configura y la shell
+    # se quedaría sin iconos.
+    if is_kde_session; then
+        return 0
+    fi
+    local target="$CONFIG_HOME/niri/config.kdl"
+    if [ ! -f "$target" ]; then
+        return 0
+    fi
+    if grep -q "CAPARAZON_ICON_THEME" "$target"; then
+        return 0
+    fi
+    if ! python3 "$REPO/integration/bin/caparazon-wm.py" \
+        icon-theme --set Papirus-Dark 2>/dev/null; then
+        echo "AVISO: no se pudo poner el tema de iconos por defecto (Papirus-Dark)."
+        return 0
+    fi
+    echo "Tema de iconos por defecto: Papirus-Dark"
+}
+
 update_branch() {
     local dir="$1"
     local branch
@@ -432,6 +454,11 @@ install_theme() {
             echo "AVISO: el selector de perfil energético necesita power-profiles-daemon."
             echo "       En PikaOS: sudo apt install power-profiles-daemon"
         fi
+        if ! dpkg-query -W -f='${db:Status-Abbrev}' papirus-icon-theme 2>/dev/null \
+            | grep -q '^ii'; then
+            echo "AVISO: en niri la shell necesita el tema de iconos Papirus."
+            echo "       En PikaOS: sudo apt install papirus-icon-theme"
+        fi
         return 0
     fi
     echo "Conectando el tema accent-theme"
@@ -525,6 +552,7 @@ case "$COMMAND" in
         refresh_shortcut_hint
         install_bridge
         install_niri_config
+        install_niri_icon_theme
         install_updater "$ACTIVE_SHELL_DIR"
         install_theme
         echo

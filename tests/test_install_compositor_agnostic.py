@@ -142,3 +142,86 @@ def test_the_installer_warns_when_niri_has_no_power_profiles_daemon(
 
     assert result.returncode == 0, result.stderr
     assert "power-profiles-daemon" in result.stdout
+
+
+def _package_installed(name: str) -> bool:
+    """Si el paquete está instalado, según dpkg."""
+    result = subprocess.run(  # noqa: S603
+        ["dpkg-query", "-W", "-f=${db:Status-Abbrev}", name],  # noqa: S607
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    return result.returncode == 0 and result.stdout.startswith("ii")
+
+
+def test_the_installer_sets_the_default_icon_theme_on_niri(tmp_path: Path) -> None:
+    if shutil.which("bash") is None:
+        pytest.skip("bash no disponible")
+    environ = isolated_environment(tmp_path, desktop="niri")
+
+    result = run_installer(environ, answers="y\n")
+
+    assert result.returncode == 0, result.stderr
+    config = tmp_path / "home" / ".config" / "niri" / "config.kdl"
+    assert config.is_file()
+    assert "CAPARAZON_ICON_THEME" in config.read_text(encoding="utf-8")
+    assert "Papirus-Dark" in config.read_text(encoding="utf-8")
+
+
+def test_the_installer_keeps_the_icon_theme_the_user_already_has(
+    tmp_path: Path,
+) -> None:
+    if shutil.which("bash") is None:
+        pytest.skip("bash no disponible")
+    environ = isolated_environment(tmp_path, desktop="niri")
+    config = tmp_path / "home" / ".config" / "niri" / "config.kdl"
+    config.parent.mkdir(parents=True, exist_ok=True)
+    config.write_text(
+        'environment {\n    CAPARAZON_ICON_THEME "Adwaita"\n}\n',
+        encoding="utf-8",
+    )
+
+    result = run_installer(environ, answers="y\n")
+
+    assert result.returncode == 0, result.stderr
+    written = config.read_text(encoding="utf-8")
+    assert "Adwaita" in written
+    assert "Papirus-Dark" not in written
+
+
+def test_the_installer_does_not_touch_the_icon_theme_on_plasma(
+    tmp_path: Path,
+) -> None:
+    if shutil.which("bash") is None:
+        pytest.skip("bash no disponible")
+    engine_factory = make_fake_engine
+    assert engine_factory is not None, "falta el motor falso del contrato del tema"
+    engine = engine_factory(tmp_path)
+    environ = isolated_environment(tmp_path, desktop="KDE")
+    environ["ACCENT_THEME_REPO"] = str(engine)
+    config = tmp_path / "home" / ".config" / "niri" / "config.kdl"
+    config.parent.mkdir(parents=True, exist_ok=True)
+    config.write_text("binds {\n    Mod+Q { quit; }\n}\n", encoding="utf-8")
+
+    result = run_installer(environ, answers="y\n")
+
+    assert result.returncode == 0, result.stderr
+    assert "CAPARAZON_ICON_THEME" not in config.read_text(encoding="utf-8")
+
+
+def test_the_installer_mentions_papirus_only_when_it_is_missing(
+    tmp_path: Path,
+) -> None:
+    if shutil.which("bash") is None:
+        pytest.skip("bash no disponible")
+    environ = isolated_environment(tmp_path, desktop="niri")
+
+    result = run_installer(environ, answers="y\n")
+
+    assert result.returncode == 0, result.stderr
+    if _package_installed("papirus-icon-theme"):
+        assert "sudo apt install papirus-icon-theme" not in result.stdout
+    else:
+        assert "sudo apt install papirus-icon-theme" in result.stdout

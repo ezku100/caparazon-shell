@@ -70,11 +70,12 @@ animación de despedida.
 | `niri` | El compositor en sí |
 | `quickshell` | El motor que ejecuta la shell |
 | `power-profiles-daemon` | `powerprofilesctl`: el chip de perfil energético de la barra |
+| `papirus-icon-theme` | El tema de iconos de la shell y del menú (Papirus-Dark por defecto) |
 | `wl-clipboard` | `wl-paste`: el historial de portapapeles |
 | `python3` + `python3-dateutil` | El calendario de Google |
 
 ```bash
-sudo apt install niri quickshell power-profiles-daemon \
+sudo apt install niri quickshell power-profiles-daemon papirus-icon-theme \
   wl-clipboard python3 python3-dateutil
 ```
 
@@ -322,6 +323,38 @@ Notas de comportamiento en niri:
   layers` en tu sesión reporta otro namespace para la shell, ajusta el
   `match namespace="…"` en `integration/niri/config.kdl` (o en tu copia de
   `~/.config/niri/`).
+
+#### Tema de iconos
+
+En niri, el tema de iconos no lo pone nadie: Qt arranca con el tema `hicolor`
+y la shell se queda sin iconos, tanto en la barra como en el menú de
+aplicaciones. Por eso la shell lo busca ella misma: el tema se fija en el
+config de niri y los iconos se resuelven en el directorio del tema, sin
+depender de Qt.
+
+El instalador deja el bloque siguiente en `~/.config/niri/config.kdl` (si tu
+config ya tiene un tema, se respeta y no se toca):
+
+```kdl
+environment {
+    CAPARAZON_ICON_THEME "Papirus-Dark"
+}
+```
+
+Para cambiarlo, el submenú tiene una categoría **Iconos** que sólo aparece en
+niri: lista los temas instalados, marca el activo y permite elegir otro. Al
+aplicar uno, el config de niri se actualiza y los iconos cambian de golpe,
+sin reiniciar la shell.
+
+También se puede hacer a mano:
+
+```bash
+caparazon-wm icon-theme                      # lista los temas y el activo
+caparazon-wm icon-theme --set Papirus        # aplica uno
+```
+
+En Plasma nada de esto se toca: el tema lo pone KDE y la shell lo sigue como
+siempre.
 
 #### Atajos de teclado en niri
 

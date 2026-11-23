@@ -162,6 +162,10 @@ def isolated_environment(
         "XDG_CACHE_HOME": str(home / ".cache"),
         "XDG_RUNTIME_DIR": str(tmp_path / "runtime"),
         "ACCENT_THEME_REPO": str(engine_repository),
+        # Este contrato es de Plasma: sin esto el instalador deduce el
+        # compositor de los procesos vivos y la prueba dependería de en qué
+        # sesión esté la máquina.
+        "CAPARAZON_COMPOSITOR": "kde",
     }
 
 
