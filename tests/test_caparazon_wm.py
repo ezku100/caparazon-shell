@@ -6,14 +6,20 @@ todo pasa por este CLI con backends kwin y niri.
 
 from __future__ import annotations
 
+import importlib.util
 import json
 import os
 import re
 import shutil
 import stat
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from types import ModuleType
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 CLI = REPOSITORY_ROOT / "integration" / "bin" / "caparazon-wm.py"
@@ -22,6 +28,16 @@ CLI = REPOSITORY_ROOT / "integration" / "bin" / "caparazon-wm.py"
 def _write_exec(path: Path, body: str) -> None:
     path.write_text(body, encoding="utf-8")
     path.chmod(path.stat().st_mode | stat.S_IXUSR)
+
+
+def _load_cli_module() -> ModuleType:
+    spec = importlib.util.spec_from_file_location("caparazon_wm", CLI)
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
 
 
 def _run_cli(
@@ -221,6 +237,7 @@ REQUIRED_WS_KEYS = {
     "perOutput",
     "focusedScreen",
     "occupiedPerOutput",
+    "perOutputDesktops",
 }
 
 FAKE_NIRI_WORKSPACES = """#!/bin/sh
@@ -287,9 +304,70 @@ def test_workspaces_niri_parses_fixture() -> None:
     assert data["current"] == "10"
     assert data["occupied"] == ["10"]
     assert [d["name"] for d in data["desktops"]] == ["1", "code"]
-    assert data["perOutput"] == {"DP-1": "11"}
+    assert data["perOutput"] == {"DP-1": "10"}
     assert data["focusedScreen"] == "DP-1"
     assert data["occupiedPerOutput"] == {"DP-1": ["10"]}
+
+
+def test_workspaces_niri_per_output_active_not_last() -> None:
+    """Con dos outputs, cada perOutput es el is_active de SU output.
+
+    La lista termina con ws no activo de DP-2: no debe vencer por orden.
+    """
+    fixture = """#!/bin/sh
+case "$*" in
+  *version*) echo 26.04; exit 0 ;;
+  *workspaces*)
+    printf '%s\\n' \\
+      '[{"id":10,"idx":1,"name":null,"output":"DP-1","is_active":true,'\\
+      '"is_focused":true,"active_window_id":42},'\\
+      '{"id":11,"idx":2,"name":null,"output":"DP-1","is_active":false,'\\
+      '"is_focused":false,"active_window_id":null},'\\
+      '{"id":20,"idx":1,"name":null,"output":"HDMI-1","is_active":true,'\\
+      '"is_focused":false,"active_window_id":null},'\\
+      '{"id":21,"idx":2,"name":"chat","output":"HDMI-1","is_active":false,'\\
+      '"is_focused":false,"active_window_id":null}]'
+    exit 0 ;;
+  *windows*)
+    printf '%s\\n' \\
+      '[{"id":42,"title":"Term","app_id":"kitty","workspace_id":10,'\\
+      '"is_focused":true,"is_floating":false,"is_urgent":false}]'
+    exit 0 ;;
+  *) exit 1 ;;
+esac
+"""
+    result = _run_cli(
+        ["workspaces"],
+        fake_bin={"busctl": FAKE_BUSCTL_FAIL, "niri": fixture},
+    )
+    assert result.returncode == 0, result.stderr
+    data = json.loads(result.stdout)
+    assert data["perOutput"] == {"DP-1": "10", "HDMI-1": "20"}
+    assert data["focusedScreen"] == "DP-1"
+    assert data["occupiedPerOutput"] == {"DP-1": ["10"]}
+    assert data["current"] == "10"
+
+
+def test_workspaces_niri_desktops_are_per_output() -> None:
+    """niri numera el workspace por output; el pager no debe mezclarlos."""
+    result = _run_cli(
+        ["workspaces"],
+        fake_bin={"busctl": FAKE_BUSCTL_FAIL, "niri": FAKE_NIRI_WORKSPACES},
+    )
+    assert result.returncode == 0, result.stderr
+    data = json.loads(result.stdout)
+    assert data["perOutputDesktops"] == {
+        "DP-1": [
+            {
+                "pos": 0, "id": "10", "name": "1",
+                "idx": 1, "active": True, "occupied": True,
+            },
+            {
+                "pos": 1, "id": "11", "name": "code",
+                "idx": 2, "active": False, "occupied": False,
+            },
+        ]
+    }
 
 
 def test_workspaces_kwin_wraps_virtual_desktop_manager() -> None:
@@ -335,6 +413,32 @@ echo 'signal'
     for ln in lines:
         data = json.loads(ln)
         assert REQUIRED_WS_KEYS.issubset(data.keys())
+
+
+def test_niri_workspace_events_include_activation() -> None:
+    """niri 26.04: WorkspaceActivated y WindowFocusChanged cambian el pager."""
+    cwm = _load_cli_module()
+    events = [
+        '{"WorkspacesChanged":[]}',
+        '{"WorkspaceActivated":{"id":2}}',
+        '{"WindowsChanged":[]}',
+    ]
+    for event in events:
+        assert cwm.niri_event_affects_workspaces(event), event
+    assert not cwm.niri_event_affects_workspaces('{"CastsChanged":[]}')
+
+
+def test_niri_window_events_include_focus() -> None:
+    """El indicador de la app debe reaccionar al foco y al cambio de escritorio."""
+    cwm = _load_cli_module()
+    events = [
+        '{"WindowsChanged":[]}',
+        '{"WindowFocusChanged":{"id":7}}',
+        '{"WorkspaceActivated":{"id":2}}',
+    ]
+    for event in events:
+        assert cwm.niri_event_affects_windows(event), event
+    assert not cwm.niri_event_affects_windows('{"CastsChanged":[]}')
 
 
 # --- window-action -------------------------------------------------------------
@@ -560,3 +664,460 @@ def test_power_profile_prefers_ppd_on_niri() -> None:
     )
     assert result.returncode == 0, result.stderr
     assert json.loads(result.stdout)["backend"] == "ppd"
+
+
+def _icon_theme_env(tmp_path: Path) -> dict[str, str]:
+    """Entorno aislado: HOME propio y rutas de iconos propias."""
+    home = tmp_path / "home"
+    home.mkdir(exist_ok=True)
+    return {
+        "HOME": str(home),
+        "XDG_DATA_DIRS": str(tmp_path / "share"),
+        "XDG_DATA_HOME": str(home / ".local" / "share"),
+    }
+
+
+def _write_icon_theme(root: Path, name: str) -> None:
+    """Crea un tema de iconos mínimo: un directorio con index.theme."""
+    directory = root / name
+    directory.mkdir(parents=True, exist_ok=True)
+    (directory / "index.theme").write_text(
+        f"[Icon Theme]\nName={name}\n",
+        encoding="utf-8",
+    )
+
+
+def test_icon_theme_lists_the_installed_themes(tmp_path: Path) -> None:
+    _write_icon_theme(tmp_path / "share" / "icons", "Papirus-Dark")
+
+    result = _run_cli(["icon-theme"], env_extra=_icon_theme_env(tmp_path))
+
+    assert result.returncode == 0, result.stderr
+    assert "Papirus-Dark" in json.loads(result.stdout)["themes"]
+
+
+def test_icon_theme_reports_the_search_order_with_inheritance(tmp_path: Path) -> None:
+    root = tmp_path / "share" / "icons"
+    _write_icon_theme(root, "Hijo")
+    (root / "Hijo" / "index.theme").write_text(
+        "[Icon Theme]\nName=Hijo\nInherits=Padre,hicolor\n",
+        encoding="utf-8",
+    )
+    _write_icon_theme(root, "Padre")
+    (root / "Padre" / "index.theme").write_text(
+        "[Icon Theme]\nName=Padre\nInherits=Abuelo\n",
+        encoding="utf-8",
+    )
+    _write_icon_theme(root, "Abuelo")
+    environ = _icon_theme_env(tmp_path)
+    config = tmp_path / "home" / ".config" / "niri" / "config.kdl"
+    config.parent.mkdir(parents=True, exist_ok=True)
+    config.write_text(
+        'environment {\n    CAPARAZON_ICON_THEME "Hijo"\n}\n',
+        encoding="utf-8",
+    )
+
+    result = _run_cli(["icon-theme"], env_extra=environ)
+
+    assert result.returncode == 0, result.stderr
+    assert json.loads(result.stdout)["search"] == [
+        "Hijo",
+        "Padre",
+        "Abuelo",
+        "hicolor",
+    ]
+
+
+def test_icon_theme_reports_the_default_without_a_config(tmp_path: Path) -> None:
+    result = _run_cli(["icon-theme"], env_extra=_icon_theme_env(tmp_path))
+
+    assert result.returncode == 0, result.stderr
+    payload = json.loads(result.stdout)
+    assert payload["current"] == "Papirus-Dark"
+    assert payload["configured"] is False
+
+
+def test_icon_theme_reads_the_theme_set_in_the_niri_config(tmp_path: Path) -> None:
+    environ = _icon_theme_env(tmp_path)
+    config = tmp_path / "home" / ".config" / "niri" / "config.kdl"
+    config.parent.mkdir(parents=True, exist_ok=True)
+    config.write_text(
+        'environment {\n    CAPARAZON_ICON_THEME "Adwaita"\n}\n',
+        encoding="utf-8",
+    )
+
+    result = _run_cli(["icon-theme"], env_extra=environ)
+
+    assert result.returncode == 0, result.stderr
+    payload = json.loads(result.stdout)
+    assert payload["current"] == "Adwaita"
+    assert payload["configured"] is True
+
+
+def test_icon_theme_set_writes_the_niri_config(tmp_path: Path) -> None:
+    _write_icon_theme(tmp_path / "share" / "icons", "Papirus-Dark")
+    environ = _icon_theme_env(tmp_path)
+
+    result = _run_cli(["icon-theme", "--set", "Papirus-Dark"], env_extra=environ)
+
+    assert result.returncode == 0, result.stderr
+    written = (
+        tmp_path / "home" / ".config" / "niri" / "config.kdl"
+    ).read_text(encoding="utf-8")
+    assert "CAPARAZON_ICON_THEME" in written
+    assert "Papirus-Dark" in written
+
+
+def test_icon_theme_set_keeps_the_rest_of_the_niri_config(tmp_path: Path) -> None:
+    _write_icon_theme(tmp_path / "share" / "icons", "Papirus-Dark")
+    environ = _icon_theme_env(tmp_path)
+    config = tmp_path / "home" / ".config" / "niri" / "config.kdl"
+    config.parent.mkdir(parents=True, exist_ok=True)
+    config.write_text(
+        "binds {\n    Mod+Q { quit; }\n}\n",
+        encoding="utf-8",
+    )
+
+    result = _run_cli(["icon-theme", "--set", "Papirus-Dark"], env_extra=environ)
+
+    assert result.returncode == 0, result.stderr
+    written = config.read_text(encoding="utf-8")
+    assert "Mod+Q { quit; }" in written
+    assert "CAPARAZON_ICON_THEME" in written
+
+
+def test_icon_theme_reads_the_theme_from_an_included_config(tmp_path: Path) -> None:
+    environ = _icon_theme_env(tmp_path)
+    config_dir = tmp_path / "home" / ".config" / "niri"
+    config_dir.mkdir(parents=True, exist_ok=True)
+    (config_dir / "config.kdl").write_text(
+        'include "config.d/40-environment.kdl"\n',
+        encoding="utf-8",
+    )
+    (config_dir / "config.d").mkdir()
+    (config_dir / "config.d" / "40-environment.kdl").write_text(
+        'environment {\n    CAPARAZON_ICON_THEME "Tela-dark"\n}\n',
+        encoding="utf-8",
+    )
+
+    result = _run_cli(["icon-theme"], env_extra=environ)
+
+    assert result.returncode == 0, result.stderr
+    payload = json.loads(result.stdout)
+    assert payload["current"] == "Tela-dark"
+    assert payload["configured"] is True
+
+
+def test_icon_theme_set_updates_the_included_config(tmp_path: Path) -> None:
+    _write_icon_theme(tmp_path / "share" / "icons", "Tela-dark")
+    _write_icon_theme(tmp_path / "share" / "icons", "Papirus-Dark")
+    environ = _icon_theme_env(tmp_path)
+    config_dir = tmp_path / "home" / ".config" / "niri"
+    config_dir.mkdir(parents=True, exist_ok=True)
+    (config_dir / "config.kdl").write_text(
+        'include "config.d/40-environment.kdl"\n',
+        encoding="utf-8",
+    )
+    (config_dir / "config.d").mkdir()
+    included = config_dir / "config.d" / "40-environment.kdl"
+    included.write_text(
+        'environment {\n    CAPARAZON_ICON_THEME "Papirus-Dark"\n}\n',
+        encoding="utf-8",
+    )
+
+    result = _run_cli(["icon-theme", "--set", "Tela-dark"], env_extra=environ)
+
+    assert result.returncode == 0, result.stderr
+    written = included.read_text(encoding="utf-8")
+    assert 'CAPARAZON_ICON_THEME "Tela-dark"' in written
+    main = (config_dir / "config.kdl").read_text(encoding="utf-8")
+    assert "CAPARAZON_ICON_THEME" not in main
+    check = _run_cli(["icon-theme"], env_extra=environ)
+    assert json.loads(check.stdout)["current"] == "Tela-dark"
+
+
+def test_icon_theme_set_keeps_qs_icon_theme_in_sync(tmp_path: Path) -> None:
+    _write_icon_theme(tmp_path / "share" / "icons", "Tela-dark")
+    _write_icon_theme(tmp_path / "share" / "icons", "Papirus-Dark")
+    environ = _icon_theme_env(tmp_path)
+    config_dir = tmp_path / "home" / ".config" / "niri"
+    config_dir.mkdir(parents=True, exist_ok=True)
+    (config_dir / "config.kdl").write_text(
+        'include "config.d/40-environment.kdl"\n',
+        encoding="utf-8",
+    )
+    (config_dir / "config.d").mkdir()
+    included = config_dir / "config.d" / "40-environment.kdl"
+    included.write_text(
+        'environment {\n'
+        '    CAPARAZON_ICON_THEME "Papirus-Dark"\n'
+        '    QS_ICON_THEME "Papirus-Dark"\n'
+        '}\n',
+        encoding="utf-8",
+    )
+
+    result = _run_cli(["icon-theme", "--set", "Tela-dark"], env_extra=environ)
+
+    assert result.returncode == 0, result.stderr
+    written = included.read_text(encoding="utf-8")
+    assert 'CAPARAZON_ICON_THEME "Tela-dark"' in written
+    assert 'QS_ICON_THEME "Tela-dark"' in written
+
+
+def test_icon_theme_last_value_in_load_order_wins(tmp_path: Path) -> None:
+    environ = _icon_theme_env(tmp_path)
+    config_dir = tmp_path / "home" / ".config" / "niri"
+    config_dir.mkdir(parents=True, exist_ok=True)
+    (config_dir / "config.kdl").write_text(
+        'include "config.d/40-environment.kdl"\n'
+        'environment {\n    CAPARAZON_ICON_THEME "Papirus-Dark"\n}\n',
+        encoding="utf-8",
+    )
+    (config_dir / "config.d").mkdir()
+    (config_dir / "config.d" / "40-environment.kdl").write_text(
+        'environment {\n    CAPARAZON_ICON_THEME "Tela-dark"\n}\n',
+        encoding="utf-8",
+    )
+
+    result = _run_cli(["icon-theme"], env_extra=environ)
+
+    assert result.returncode == 0, result.stderr
+    assert json.loads(result.stdout)["current"] == "Papirus-Dark"
+
+
+def test_icon_theme_set_rejects_an_unknown_theme(tmp_path: Path) -> None:
+    environ = _icon_theme_env(tmp_path)
+
+    result = _run_cli(["icon-theme", "--set", "NoExiste"], env_extra=environ)
+
+    assert result.returncode == 1
+    assert "NoExiste" in result.stderr
+    assert not (
+        tmp_path / "home" / ".config" / "niri" / "config.kdl"
+    ).exists()
+
+
+def test_icon_theme_set_needs_a_theme(tmp_path: Path) -> None:
+    result = _run_cli(["icon-theme", "--set"], env_extra=_icon_theme_env(tmp_path))
+
+    assert result.returncode == 2
+
+
+def _cursor_theme_env(tmp_path: Path) -> dict[str, str]:
+    """Entorno aislado: HOME propio y rutas de datos propias."""
+    home = tmp_path / "home"
+    home.mkdir(exist_ok=True)
+    return {
+        "HOME": str(home),
+        "XDG_CONFIG_HOME": str(home / ".config"),
+        "XDG_DATA_DIRS": str(tmp_path / "share"),
+        "XDG_DATA_HOME": str(home / ".local" / "share"),
+    }
+
+
+def _write_cursor_theme(root: Path, name: str) -> None:
+    """Crea un tema Xcursor mínimo: directorio cursors con un archivo."""
+    cursors = root / name / "cursors"
+    cursors.mkdir(parents=True, exist_ok=True)
+    (cursors / "left_ptr").write_text("", encoding="utf-8")
+
+
+def test_cursor_theme_lists_the_installed_themes(tmp_path: Path) -> None:
+    _write_cursor_theme(tmp_path / "share" / "icons", "Oxygen_Black")
+    _write_cursor_theme(tmp_path / "home" / ".local" / "share" / "icons", "MiCursor")
+
+    result = _run_cli(["cursor-theme"], env_extra=_cursor_theme_env(tmp_path))
+
+    assert result.returncode == 0, result.stderr
+    themes = json.loads(result.stdout)["themes"]
+    assert "Oxygen_Black" in themes
+    assert "MiCursor" in themes
+
+
+def test_cursor_theme_reports_the_default_without_a_config(tmp_path: Path) -> None:
+    result = _run_cli(["cursor-theme"], env_extra=_cursor_theme_env(tmp_path))
+
+    assert result.returncode == 0, result.stderr
+    payload = json.loads(result.stdout)
+    assert payload["current"] == "breeze_cursors"
+    assert payload["default"] == "breeze_cursors"
+    assert payload["configured"] is False
+
+
+def test_cursor_theme_reads_the_theme_from_an_included_config(tmp_path: Path) -> None:
+    environ = _cursor_theme_env(tmp_path)
+    config_dir = tmp_path / "home" / ".config" / "niri"
+    config_dir.mkdir(parents=True, exist_ok=True)
+    (config_dir / "config.kdl").write_text(
+        'include "config.d/10-input-and-cursor.kdl"\n',
+        encoding="utf-8",
+    )
+    (config_dir / "config.d").mkdir()
+    (config_dir / "config.d" / "10-input-and-cursor.kdl").write_text(
+        "cursor {\n"
+        '    xcursor-theme "Oxygen_Black"\n'
+        "    xcursor-size 24\n"
+        "    hide-when-typing\n"
+        "}\n",
+        encoding="utf-8",
+    )
+
+    result = _run_cli(["cursor-theme"], env_extra=environ)
+
+    assert result.returncode == 0, result.stderr
+    payload = json.loads(result.stdout)
+    assert payload["current"] == "Oxygen_Black"
+    assert payload["configured"] is True
+
+
+def test_cursor_theme_last_value_in_load_order_wins(tmp_path: Path) -> None:
+    environ = _cursor_theme_env(tmp_path)
+    config_dir = tmp_path / "home" / ".config" / "niri"
+    config_dir.mkdir(parents=True, exist_ok=True)
+    (config_dir / "config.kdl").write_text(
+        'include "config.d/10-input-and-cursor.kdl"\n'
+        "cursor {\n"
+        '    xcursor-theme "Adwaita"\n'
+        "}\n",
+        encoding="utf-8",
+    )
+    (config_dir / "config.d").mkdir()
+    (config_dir / "config.d" / "10-input-and-cursor.kdl").write_text(
+        'cursor {\n    xcursor-theme "breeze_cursors"\n}\n',
+        encoding="utf-8",
+    )
+
+    result = _run_cli(["cursor-theme"], env_extra=environ)
+
+    assert result.returncode == 0, result.stderr
+    assert json.loads(result.stdout)["current"] == "Adwaita"
+
+
+def test_usage_lists_cursor_theme() -> None:
+    result = _run_cli([])
+
+    assert "cursor-theme" in result.stderr
+
+
+FAKE_NIRI_RELOAD = """#!/bin/sh
+printf '%s\\n' "$*" >> "$NIRI_RELOAD_LOG"
+case "$*" in
+  *load-config-file*) exit 0 ;;
+  *) exit 1 ;;
+esac
+"""
+
+FAKE_NIRI_RELOAD_FAIL = """#!/bin/sh
+printf '%s\\n' "$*" >> "$NIRI_RELOAD_LOG"
+case "$*" in
+  *load-config-file*) exit 1 ;;
+  *) exit 1 ;;
+esac
+"""
+
+
+def test_cursor_theme_set_writes_the_included_config_and_keeps_neighbors(
+    tmp_path: Path,
+) -> None:
+    _write_cursor_theme(tmp_path / "share" / "icons", "Oxygen_Black")
+    environ = _cursor_theme_env(tmp_path)
+    reload_log = tmp_path / "niri-reload.log"
+    environ["NIRI_RELOAD_LOG"] = str(reload_log)
+    config_dir = tmp_path / "home" / ".config" / "niri"
+    config_dir.mkdir(parents=True, exist_ok=True)
+    config = config_dir / "config.kdl"
+    config.write_text(
+        'include "config.d/10-input-and-cursor.kdl"\n',
+        encoding="utf-8",
+    )
+    (config_dir / "config.d").mkdir()
+    included = config_dir / "config.d" / "10-input-and-cursor.kdl"
+    included.write_text(
+        "cursor {\n"
+        '    xcursor-theme "breeze_cursors"\n'
+        "    xcursor-size 24\n"
+        "    hide-when-typing\n"
+        "}\n",
+        encoding="utf-8",
+    )
+
+    result = _run_cli(
+        ["cursor-theme", "--set", "Oxygen_Black"],
+        env_extra=environ,
+        fake_bin={"niri": FAKE_NIRI_RELOAD},
+    )
+
+    assert result.returncode == 0, result.stderr
+    written = included.read_text(encoding="utf-8")
+    assert 'xcursor-theme "Oxygen_Black"' in written
+    assert "xcursor-size 24" in written
+    assert "hide-when-typing" in written
+    assert "xcursor-theme" not in config.read_text(encoding="utf-8")
+    assert "msg action load-config-file" in reload_log.read_text(encoding="utf-8")
+    check = _run_cli(["cursor-theme"], env_extra=environ)
+    assert json.loads(check.stdout)["current"] == "Oxygen_Black"
+
+
+def test_cursor_theme_set_creates_the_cursor_block_when_missing(tmp_path: Path) -> None:
+    _write_cursor_theme(tmp_path / "share" / "icons", "Oxygen_Black")
+    environ = _cursor_theme_env(tmp_path)
+    environ["NIRI_RELOAD_LOG"] = str(tmp_path / "niri-reload.log")
+    config_dir = tmp_path / "home" / ".config" / "niri"
+    config_dir.mkdir(parents=True, exist_ok=True)
+    config = config_dir / "config.kdl"
+    config.write_text(
+        "input {\n    warp-pointer-to-focused-window\n}\n", encoding="utf-8"
+    )
+
+    result = _run_cli(
+        ["cursor-theme", "--set", "Oxygen_Black"],
+        env_extra=environ,
+        fake_bin={"niri": FAKE_NIRI_RELOAD},
+    )
+
+    assert result.returncode == 0, result.stderr
+    written = config.read_text(encoding="utf-8")
+    assert "cursor {" in written
+    assert 'xcursor-theme "Oxygen_Black"' in written
+    assert "warp-pointer-to-focused-window" in written
+
+
+def test_cursor_theme_set_reports_reload_failure(tmp_path: Path) -> None:
+    _write_cursor_theme(tmp_path / "share" / "icons", "Oxygen_Black")
+    environ = _cursor_theme_env(tmp_path)
+    reload_log = tmp_path / "niri-reload.log"
+    environ["NIRI_RELOAD_LOG"] = str(reload_log)
+    config_dir = tmp_path / "home" / ".config" / "niri"
+    config_dir.mkdir(parents=True, exist_ok=True)
+    config = config_dir / "config.kdl"
+    config.write_text(
+        'cursor {\n    xcursor-theme "breeze_cursors"\n}\n',
+        encoding="utf-8",
+    )
+
+    result = _run_cli(
+        ["cursor-theme", "--set", "Oxygen_Black"],
+        env_extra=environ,
+        fake_bin={"niri": FAKE_NIRI_RELOAD_FAIL},
+    )
+
+    assert result.returncode == 1
+    assert "no se pudo recargar niri" in result.stderr
+    assert 'xcursor-theme "Oxygen_Black"' in config.read_text(encoding="utf-8")
+    assert "msg action load-config-file" in reload_log.read_text(encoding="utf-8")
+
+
+def test_cursor_theme_set_rejects_unknown_theme(tmp_path: Path) -> None:
+    environ = _cursor_theme_env(tmp_path)
+
+    result = _run_cli(["cursor-theme", "--set", "NoExiste"], env_extra=environ)
+
+    assert result.returncode == 1
+    assert "NoExiste" in result.stderr
+    assert not (tmp_path / "home" / ".config" / "niri" / "config.kdl").exists()
+
+
+def test_cursor_theme_set_needs_a_theme(tmp_path: Path) -> None:
+    result = _run_cli(["cursor-theme", "--set"], env_extra=_cursor_theme_env(tmp_path))
+
+    assert result.returncode == 2
