@@ -32,4 +32,11 @@ def test_niri_config_has_effects() -> None:
     assert "shadow" in contents
     assert "geometry-corner-radius" in contents
     assert "animations" in contents
-    assert "background-effect" in contents
+
+
+def test_niri_config_does_not_blur_all_quickshell_layers() -> None:
+    """El blur global tapa las ventanas detrás de menús y capturadores."""
+    contents = CONFIG.read_text(encoding="utf-8")
+
+    assert 'match namespace="quickshell"' not in contents
+    assert "background-effect" not in contents

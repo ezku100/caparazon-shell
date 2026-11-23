@@ -1,6 +1,11 @@
 // Preferencias de sesión: bordes alrededor de ventanas que aceptan no-CSD.
 prefer-no-csd
 
+// Tema de iconos de la shell: la categoría "Iconos" del menú escribe aquí.
+environment {
+    CAPARAZON_ICON_THEME "Papirus-Dark"
+}
+
 layout {
     gaps 12
 
@@ -34,14 +39,10 @@ window-rule {
     geometry-corner-radius 12
 }
 
-// Blur tras las capas de la shell (PowerMenu / overlay).
-// Namespaces a confirmar con `niri msg layers` en sesión niri.
-layer-rule {
-    match namespace="quickshell"
-    background-effect {
-        blur true
-    }
-}
+// No hay blur global para `namespace="quickshell"`: en Niri 26.04 el blur
+// activa xray y pinta el wallpaper sobre ventanas detrás de overlays
+// fullscreen (menús, submenús y capturadores), que parecen desaparecer.
+// PowerMenu pide su propio desenfoque con `BackgroundEffect.blurRegion`.
 
 // Atajos de teclado. La shell se maneja por IPC (caparazon-shell-ipc), así que
 // sus menús se abren igual que en Plasma. Las teclas que niri ya trae por
