@@ -261,6 +261,8 @@ def niri_event_affects_workspaces(line: str) -> bool:
 def niri_event_affects_windows(line: str) -> bool:
     keys = (
         "WindowsChanged",
+        "WindowOpenedOrChanged",
+        "WindowClosed",
         "WindowFocusChanged",
         "WorkspaceActivated",
     )

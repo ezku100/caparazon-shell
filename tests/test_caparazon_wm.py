@@ -441,6 +441,52 @@ def test_niri_window_events_include_focus() -> None:
     assert not cwm.niri_event_affects_windows('{"CastsChanged":[]}')
 
 
+def test_watch_windows_emits_on_window_opened_event() -> None:
+    """niri 26.04 publica aperturas como WindowOpenedOrChanged, no WindowsChanged."""
+    fixture = """#!/bin/sh
+case "$*" in
+  *version*) echo 26.04; exit 0 ;;
+  *focused-window*) printf '%s\\n' '{"app_id":"org.kde.dolphin","title":"Videos"}'; exit 0 ;;
+  *windows*)
+    printf '%s\\n' '[{"id":15,"app_id":"org.kde.dolphin","title":"Videos","is_focused":true}]'
+    exit 0 ;;
+  *event-stream*)
+    printf '%s\\n' '{"WindowOpenedOrChanged":{"window":{"id":15,"app_id":"org.kde.dolphin"}}}'
+    exit 0 ;;
+  *) exit 1 ;;
+esac
+"""
+    result = _run_cli(
+        ["watch-windows"],
+        fake_bin={"busctl": FAKE_BUSCTL_FAIL, "niri": fixture},
+    )
+    assert result.returncode == 0, result.stderr
+    lines = [ln for ln in result.stdout.splitlines() if ln.strip()]
+    assert len(lines) == 1, result.stdout
+    assert json.loads(lines[0])["appIds"] == ["org.kde.dolphin"]
+
+
+def test_watch_windows_emits_on_window_closed_event() -> None:
+    """niri 26.04 publica cierres como WindowClosed: el dock debe quitar la app."""
+    fixture = """#!/bin/sh
+case "$*" in
+  *version*) echo 26.04; exit 0 ;;
+  *focused-window*) printf '%s\\n' '{"app_id":"","title":""}'; exit 0 ;;
+  *windows*) printf '%s\\n' '[]'; exit 0 ;;
+  *event-stream*) printf '%s\\n' '{"WindowClosed":{"id":15}}'; exit 0 ;;
+  *) exit 1 ;;
+esac
+"""
+    result = _run_cli(
+        ["watch-windows"],
+        fake_bin={"busctl": FAKE_BUSCTL_FAIL, "niri": fixture},
+    )
+    assert result.returncode == 0, result.stderr
+    lines = [ln for ln in result.stdout.splitlines() if ln.strip()]
+    assert len(lines) == 1, result.stdout
+    assert json.loads(lines[0])["appIds"] == []
+
+
 # --- window-action -------------------------------------------------------------
 
 FAKE_GDBUS = """#!/bin/sh
