@@ -13,11 +13,20 @@ FALLBACK_SHELL_DIR="$CONFIG_HOME/quickshell/caparazon"
 
 shell_dir() {
     if [ -r "$AUTOSTART_FILE" ]; then
-        local detected
+        local detected launcher
         detected="$(sed -n 's|.*quickshell -p \([^ ]*\).*|\1|p' "$AUTOSTART_FILE" | head -n 1)"
         if [ -n "$detected" ] && [ -f "$detected/shell.qml" ]; then
             printf '%s\n' "$detected"
             return 0
+        fi
+
+        launcher_path="$(sed -n 's|^Exec=[[:space:]]*\([^ ]*/scripts/caparazon-shell\)[[:space:]]*$|\1|p' "$AUTOSTART_FILE" | head -n 1)"
+        if [ -n "$launcher_path" ] && [ -f "$launcher_path" ]; then
+            detected="$(cd "$(dirname "$launcher_path")/.." && pwd)"
+            if [ -f "$detected/shell.qml" ]; then
+                printf '%s\n' "$detected"
+                return 0
+            fi
         fi
     fi
     if [ -f "$FALLBACK_SHELL_DIR/shell.qml" ]; then

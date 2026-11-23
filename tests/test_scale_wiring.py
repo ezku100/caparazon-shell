@@ -51,16 +51,14 @@ def test_the_scale_sits_before_the_colour_style() -> None:
     assert contents.index('text: "Escala"') < contents.index('text: "Estilo de color"')
 
 
-def test_the_autostart_stays_on_plain_quickshell() -> None:
-    """El arranque no puede depender de permisos de un script: si el script
-    no es ejecutable, systemd falla con 203/EXEC y el escritorio se queda
-    sin barra ni menús."""
+def test_the_autostart_uses_the_launcher() -> None:
+    """El lanzador aplica escala y elige el tema por sesión; install.sh le da
+    permiso de ejecución para que systemd no falle con 203/EXEC."""
     contents = DESKTOP.read_text(encoding="utf-8")
 
-    assert (
-        "Exec=env MALLOC_ARENA_MAX=2 MALLOC_TRIM_THRESHOLD_=131072 "
-        "mesa_glthread=false quickshell -p @SHELL_PATH@ -d" in contents
-    )
+    assert "Exec=@SHELL_PATH@/scripts/caparazon-shell" in contents
+    assert "QS_ICON_THEME" not in contents
+    assert "CAPARAZON_ICON_THEME" not in contents
 
 
 def test_the_installer_adds_the_scale_dropin() -> None:

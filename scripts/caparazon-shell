@@ -1,9 +1,9 @@
-#!/usr/bin/env bash
-# Caparazón — lanzador manual de la shell con escala.
+#!/bin/sh
+# Caparazón — lanzador de la shell con escala y tema de iconos por sesión.
 #
-# El arranque automático no pasa por aquí: systemd aplica la escala con un
-# drop-in (EnvironmentFile). Este script sirve para lanzarla a mano desde una
-# terminal conservando la escala elegida en Configs.
+# En Plasma se deja que KDE fije el tema vía plataforma Qt.
+# En niri, systemd no hereda el entorno del compositor: se le pide el tema
+# al CLI instalado y se exporta antes de arrancar Quickshell.
 set -u
 
 shell_dir="$(cd "$(dirname "$0")/.." && pwd)"
@@ -21,5 +21,32 @@ for candidate in "$config_dir/scale.env" "$config_dir/scale"; do
 done
 
 export QT_SCALE_FACTOR="$scale"
+
+cli="$(command -v caparazon-wm 2>/dev/null || true)"
+if [ -z "$cli" ] && [ -x "$HOME/.local/bin/caparazon-wm" ]; then
+    cli="$HOME/.local/bin/caparazon-wm"
+fi
+
+if [ -n "$cli" ]; then
+    compositor="$("$cli" detect 2>/dev/null || true)"
+else
+    compositor=""
+fi
+
+case "$compositor" in
+    niri)
+        theme_json="$("$cli" icon-theme 2>/dev/null || true)"
+        theme="$(printf '%s\n' "$theme_json" | sed -n 's/.*"current"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 1)"
+        if [ -n "$theme" ]; then
+            export QS_ICON_THEME="$theme" CAPARAZON_ICON_THEME="$theme"
+        else
+            unset QS_ICON_THEME CAPARAZON_ICON_THEME
+        fi
+        ;;
+    *)
+        unset QS_ICON_THEME CAPARAZON_ICON_THEME
+        ;;
+esac
+
 exec env MALLOC_ARENA_MAX=2 MALLOC_TRIM_THRESHOLD_=131072 mesa_glthread=false \
     quickshell -p "$shell_dir" -d

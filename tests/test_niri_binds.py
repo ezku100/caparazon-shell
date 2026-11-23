@@ -119,6 +119,47 @@ def test_the_ipc_wrapper_uses_the_live_shell_path(tmp_path: Path) -> None:
     assert f"-p {shell_dir} ipc call menu toggle" in recorded
 
 
+def test_the_ipc_wrapper_resolves_the_launcher_autostart(tmp_path: Path) -> None:
+    if shutil.which("bash") is None:
+        pytest.skip("bash no disponible")
+    shell_dir = tmp_path / "repo"
+    scripts_dir = shell_dir / "scripts"
+    scripts_dir.mkdir(parents=True)
+    (shell_dir / "shell.qml").write_text("// shell\n", encoding="utf-8")
+    launcher = scripts_dir / "caparazon-shell"
+    _write_exec(launcher, "#!/bin/sh\nexit 0\n")
+
+    autostart = tmp_path / "home" / ".config" / "autostart"
+    autostart.mkdir(parents=True)
+    (autostart / "caparazon.desktop").write_text(
+        f"[Desktop Entry]\nExec={launcher}\n",
+        encoding="utf-8",
+    )
+    log = tmp_path / "quickshell.log"
+    fake_bin = tmp_path / "bin"
+    fake_bin.mkdir()
+    _write_exec(
+        fake_bin / "quickshell",
+        f'#!/bin/sh\necho "$*" >> "{log}"\n',
+    )
+    env = os.environ.copy()
+    env["HOME"] = str(tmp_path / "home")
+    env["PATH"] = str(fake_bin) + os.pathsep + env.get("PATH", "")
+
+    result = subprocess.run(  # noqa: S603
+        ["bash", str(IPC_WRAPPER), "menu", "toggle"],  # noqa: S607
+        capture_output=True,
+        text=True,
+        env=env,
+        timeout=30,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    recorded = log.read_text(encoding="utf-8")
+    assert f"-p {shell_dir} ipc call menu toggle" in recorded
+
+
 def test_the_ipc_wrapper_fails_when_the_shell_is_missing(tmp_path: Path) -> None:
     if shutil.which("bash") is None:
         pytest.skip("bash no disponible")
