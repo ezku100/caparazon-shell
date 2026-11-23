@@ -65,6 +65,13 @@ def test_niri_config_opens_the_shell_menus_through_the_ipc_wrapper() -> None:
     assert '"power"' in contents
 
 
+def test_niri_config_maximizes_column_with_meta_d() -> None:
+    contents = CONFIG.read_text(encoding="utf-8")
+    assert "Mod+D { maximize-column; }" in contents
+    assert 'Mod+D { spawn "caparazon-shell-ipc" "menu" "toggle"; }' not in contents
+    assert 'Mod+Space { spawn "caparazon-shell-ipc" "menu" "toggle"; }' in contents
+
+
 def test_the_shell_exposes_the_session_menu_over_ipc() -> None:
     contents = SHELL_QML.read_text(encoding="utf-8")
     assert 'target: "power"' in contents

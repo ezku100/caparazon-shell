@@ -50,6 +50,7 @@ window-rule {
 binds {
     // --- Ventanas ---
     Mod+Q repeat=false { close-window; }
+    Mod+D { maximize-column; }
 
     // --- Escritorios: Meta+N cambia de escritorio, Meta+Shift+N mueve la ventana ---
     Mod+1 { focus-workspace 1; }
@@ -86,7 +87,6 @@ binds {
 
     // --- Menús de Caparazón ---
     Mod+Space { spawn "caparazon-shell-ipc" "menu" "toggle"; }
-    Mod+D { spawn "caparazon-shell-ipc" "menu" "toggle"; }
     Mod+Shift+C { spawn "caparazon-shell-ipc" "menu2" "open" "calendario"; }
     Mod+Shift+A { spawn "caparazon-shell-ipc" "menu2" "open" "musica"; }
     Mod+Shift+M { spawn "caparazon-shell-ipc" "menu2" "open" "sistema"; }
