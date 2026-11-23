@@ -3,6 +3,7 @@ import Quickshell.Widgets
 import QtQuick
 import QtQuick.Effects
 import "../../theme"
+import "../icons"
 
 // Botón compacto para los controles del widget de música.
 // No usa fondo permanente: solo ilumina el chip al pasar el cursor.
@@ -30,7 +31,7 @@ Item {
     IconImage {
         anchors.centerIn: parent
         implicitSize: 14
-        source: Quickshell.iconPath(root.icon, "media-playback-start-symbolic")
+        source: IconResolver.source(root.icon, "media-playback-start-symbolic")
 
         layer.enabled: true
         layer.effect: MultiEffect {

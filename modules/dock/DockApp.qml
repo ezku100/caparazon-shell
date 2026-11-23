@@ -46,7 +46,7 @@ function iconSourceFromCandidates() {
         if (found.length > 0)
             return found;
     }
-    return String(Quickshell.iconPath("application-x-executable", ""));
+    return IconResolver.source("application-x-executable", "");
 }
 
     implicitWidth: 44
