@@ -63,12 +63,24 @@ PanelWindow {
     readonly property int railInset: 8
     readonly property string category: menuState ? menuState.category : "calendario"
 
-    readonly property var categories: [
+    readonly property var baseCategories: [
         { key: "calendario", icon: "notifications", label: "Calendario" },
         { key: "musica", icon: "audio", label: "Música" },
         { key: "sistema", icon: "utilities-system-monitor", label: "Monitor del sistema" },
         { key: "configs", glyph: "猫", label: "Configs de Caparazón Shell" }
     ]
+
+    // Los ajustes de niri sólo existen en niri: en Plasma los controla KDE
+    // desde las preferencias del sistema.
+    readonly property var niriConfigsCategory: ({
+        key: "niri-configs",
+        icon: "preferences-desktop-theme",
+        label: "Niri configs"
+    })
+
+    readonly property var categories: CompositorService.niri
+        ? baseCategories.concat([root.niriConfigsCategory])
+        : baseCategories
 
     function close() {
         if (root.menuState)
@@ -288,6 +300,8 @@ PanelWindow {
                     }
                 }
                 sourceComponent: {
+                    if (root.category === "niri-configs")
+                        return niriConfigsComponent;
                     if (root.category === "configs")
                         return configComponent;
                     if (root.category === "musica")
@@ -295,6 +309,13 @@ PanelWindow {
                     if (root.category === "sistema")
                         return systemComponent;
                     return calendarComponent;
+                }
+            }
+
+            Component {
+                id: niriConfigsComponent
+                NiriConfigsPanel {
+                    anchors.fill: parent
                 }
             }
 
