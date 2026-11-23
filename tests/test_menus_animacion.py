@@ -139,25 +139,21 @@ def test_el_submenu_acompana_con_rail_y_panel() -> None:
     )
 
 
-def test_los_menus_se_montan_al_abrir_sin_perder_la_animacion() -> None:
-    # AppMenu y SecondMenu se montan solo mientras estan abiertos (o cerrando)
-    # para no retener sus escenas en memoria. Para que los Behavior de apertura
-    # sigan teniendo una transicion real, cada uno enciende `armed` un turno
-    # despues del montaje. PowerMenu sigue cacheado: su despedida vive en la
-    # ventana y debe sobrevivir al cierre.
-    assert "active: true" in loader_block("PowerMenu"), (
-        "el Loader de PowerMenu debe montar la ventana siempre"
-    )
-    for component, state in (
-        ("AppMenu", "appMenuState"),
-        ("SecondMenu", "secondMenuState"),
-    ):
+def test_los_tres_menus_se_montan_al_arranque_para_abrir_sin_reconstruir() -> None:
+    # Los tres menus quedan montados desde el arranque: reconstruir cientos de
+    # delegates e iconos en cada apertura era lo que hacia pesada la apertura.
+    # `visible` sigue gobernando el mapeo real y `armed` conserva la animacion
+    # de entrada con un turno de retraso.
+    for component in ("PowerMenu", "AppMenu", "SecondMenu"):
         block = loader_block(component)
-        assert f"bar.{state}.opened" in block, (
-            f"el Loader de {component} debe montarse al abrir"
+        assert "active: true" in block, (
+            f"el Loader de {component} debe montar la ventana siempre"
         )
-        assert f"bar.{state}.closing" in block, (
-            f"el Loader de {component} debe seguir montado mientras cierra"
+        assert ".opened" not in block, (
+            f"el Loader de {component} no debe depender de opened"
+        )
+        assert ".closing" not in block, (
+            f"el Loader de {component} no debe depender de closing"
         )
     for path in (APPMENU, SECONDMENU):
         text = source(path)
