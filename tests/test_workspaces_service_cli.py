@@ -27,3 +27,16 @@ def test_workspaces_service_keeps_public_api() -> None:
     assert "function occupiedIds(" in contents
     assert "function screenCurrentId(" in contents
     assert "function refresh(" in contents
+
+
+def test_workspaces_service_exposes_desktops_for_screen() -> None:
+    contents = SERVICE.read_text(encoding="utf-8")
+    assert "function desksForScreen(" in contents
+    assert "perOutputDesktops" in contents
+
+
+def test_workspaces_pager_uses_screen_desktops() -> None:
+    pager = (REPOSITORY_ROOT / "modules" / "bar" / "Workspaces.qml").read_text(
+        encoding="utf-8"
+    )
+    assert "service.desksForScreen(root.screenName)" in pager

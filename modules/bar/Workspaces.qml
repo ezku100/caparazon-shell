@@ -24,7 +24,8 @@ Grid {
     property var service: null
     property string screenName: ""
 
-    readonly property var desks: service ? service.desks : []
+    readonly property var desks: service
+        ? service.desksForScreen(root.screenName) : []
     readonly property var occupiedIds: service ? service.occupiedIds(root.screenName) : []
     readonly property bool occupancyKnown: service ? service.occupancyKnown : false
     readonly property string screenCurrentId: service ? service.screenCurrentId(root.screenName) : ""
@@ -49,7 +50,9 @@ Grid {
             id: pill
             required property var modelData
 
-            readonly property bool active: modelData.id === root.screenCurrentId
+            readonly property bool active: modelData.active !== undefined
+                ? modelData.active
+                : modelData.id === root.screenCurrentId
             readonly property bool hasApps: root.occupancyKnown
                 && root.occupiedIds.indexOf(modelData.id) !== -1
             readonly property color activeColor: root.screenFocused

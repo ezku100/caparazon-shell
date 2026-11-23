@@ -14,6 +14,7 @@ Item {
     property var queriedOccupied: []
     property var queriedOccupiedPerOutput: ({})
     property var queriedPerOutput: ({})
+    property var queriedPerOutputDesktops: ({})
     property string queriedFocusedScreen: ""
 
     readonly property var desks: queriedDesks.length > 0
@@ -38,6 +39,7 @@ Item {
             property var occupied: []
             property var occupiedPerOutput: ({})
             property var perOutput: ({})
+            property var perOutputDesktops: ({})
             property string focusedScreen: ""
             property var desktops: []
             property string current: ""
@@ -54,6 +56,18 @@ Item {
         if (screenName && perScreen && perScreen[screenName] !== undefined)
             return perScreen[screenName];
         return stateAdapter.occupied;
+    }
+
+    function desksForScreen(screenName) {
+        const queried = queriedPerOutputDesktops;
+        if (screenName && queried && Array.isArray(queried[screenName])
+                && queried[screenName].length > 0)
+            return queried[screenName];
+        const cached = stateAdapter.perOutputDesktops;
+        if (screenName && cached && Array.isArray(cached[screenName])
+                && cached[screenName].length > 0)
+            return cached[screenName];
+        return root.desks;
     }
 
     function screenCurrentId(screenName) {
@@ -89,6 +103,8 @@ Item {
             root.queriedOccupied = doc.occupied;
         if (doc.perOutput && typeof doc.perOutput === "object")
             root.queriedPerOutput = doc.perOutput;
+        if (doc.perOutputDesktops && typeof doc.perOutputDesktops === "object")
+            root.queriedPerOutputDesktops = doc.perOutputDesktops;
         if (doc.occupiedPerOutput && typeof doc.occupiedPerOutput === "object")
             root.queriedOccupiedPerOutput = doc.occupiedPerOutput;
         if (typeof doc.focusedScreen === "string")
