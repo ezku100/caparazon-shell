@@ -51,6 +51,13 @@ def test_the_shell_uses_the_filtered_screen_lists() -> None:
     assert "model: ShellLayout.dockScreens" in contents
 
 
+def test_the_primary_probe_can_be_refreshed_after_an_apply() -> None:
+    contents = LAYOUT.read_text(encoding="utf-8")
+
+    assert "function refreshPrimary()" in contents
+    assert "probe.running = true" in contents
+
+
 def test_the_panel_offers_the_four_switches() -> None:
     contents = PANEL.read_text(encoding="utf-8")
 

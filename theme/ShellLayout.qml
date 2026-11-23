@@ -140,6 +140,10 @@ Item {
         root.dockPosition = value;
     }
 
+    function refreshPrimary() {
+        probe.running = true;
+    }
+
     // Al leer el archivo no se reescribe; al cambiarlo desde el panel sí.
     onBarOnPrimaryChanged: if (!root.syncing) root.save()
     onBarOnSecondaryChanged: if (!root.syncing) root.save()
