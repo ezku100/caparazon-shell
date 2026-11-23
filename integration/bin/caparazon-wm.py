@@ -24,12 +24,14 @@ Detección: NIRI_SOCKET → busctl org.kde.KWin → niri msg version → kwin.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
 import shutil
 import subprocess
 import sys
+import time
 from dataclasses import dataclass
 from dataclasses import replace
 from enum import StrEnum
@@ -486,19 +488,25 @@ def watch_workspaces() -> int:
 # --- ventanas ----------------------------------------------------------------
 
 
-def windows_state_kwin() -> dict[str, Any]:
-    """Emplea el mismo script KWin que ActiveWindowService (vía journal hoy).
+def windows_cache_path() -> Path:
+    return Path(os.path.expanduser("~/.cache/ezku-desktops.json")).resolve()
 
-    Aquí sólo leemos el estado publicado en el caché si existe; la carga del
-    script la sigue haciendo el bootstrap. Como mínimos devolvemos shape vacío
-    válido para no romper el QML.
-    """
-    cache = os.path.expanduser("~/.cache/ezku-desktops.json")
+
+def windows_cache_signature(path: Path | None = None) -> str:
+    target = path if path is not None else windows_cache_path()
+    try:
+        return hashlib.sha256(target.read_bytes()).hexdigest()
+    except OSError:
+        return ""
+
+
+def windows_state_kwin() -> dict[str, Any]:
+    """Lee el estado que el bridge KWin publica en el caché del compositor."""
     app_id = ""
     title = ""
     app_ids: list[str] = []
     try:
-        with open(cache, encoding="utf-8") as fh:
+        with open(windows_cache_path(), encoding="utf-8") as fh:
             data = json.load(fh)
         active = data.get("active") or {}
         if isinstance(active, dict):
@@ -509,8 +517,12 @@ def windows_state_kwin() -> dict[str, Any]:
             for w in windows:
                 if isinstance(w, dict):
                     cid = str(w.get("class") or w.get("appId") or "")
-                    if cid and cid not in app_ids:
-                        app_ids.append(cid)
+                elif isinstance(w, str):
+                    cid = w
+                else:
+                    continue
+                if cid and cid not in app_ids:
+                    app_ids.append(cid)
     except (OSError, ValueError):
         pass
     return {"appId": app_id, "title": title, "appIds": app_ids}
@@ -579,53 +591,20 @@ def watch_windows() -> int:
             proc.terminate()
         return 0
 
-    # kwin: journalctl del script (mismo flujo que ActiveWindowService)
-    journal = shutil.which("journalctl")
-    if not journal:
-        return 1
-    proc = subprocess.Popen(  # noqa: S603
-        [
-            journal,
-            "--user",
-            "-b",
-            "-f",
-            "-n",
-            "0",
-            "-o",
-            "cat",
-            "_COMM=kwin_wayland",
-        ],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.DEVNULL,
-        text=True,
-    )
-    assert proc.stdout is not None
-    active_prefix = "js: CAPARAZON_ACTIVE:"
-    windows_prefix = "js: CAPARAZON_WINDOWS:"
-    try:
-        for line in proc.stdout:
-            line = line.rstrip("\n")
-            if line.startswith(active_prefix):
-                try:
-                    info = json.loads(line[len(active_prefix) :])
-                except json.JSONDecodeError:
-                    continue
-                state = windows_state_kwin()
-                state["appId"] = str(info.get("appId") or "")
-                state["title"] = str(info.get("title") or "")
-                print(json.dumps(state), flush=True)
-            elif line.startswith(windows_prefix):
-                try:
-                    ids = json.loads(line[len(windows_prefix) :])
-                except json.JSONDecodeError:
-                    continue
-                state = windows_state_kwin()
-                if isinstance(ids, list):
-                    state["appIds"] = [str(x) for x in ids]
-                print(json.dumps(state), flush=True)
-    finally:
-        proc.terminate()
-    return 0
+    # kwin: el bridge escribe el caché; el journal ya no publica ventanas.
+    cache = windows_cache_path()
+    last_signature = ""
+    while True:
+        signature = windows_cache_signature(cache)
+        if signature != last_signature:
+            last_signature = signature
+            state = windows_state_kwin() if signature else {
+                "appId": "",
+                "title": "",
+                "appIds": [],
+            }
+            print(json.dumps(state), flush=True)
+        time.sleep(0.25)
 
 
 # --- acción del dock ---------------------------------------------------------
