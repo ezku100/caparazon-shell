@@ -3,14 +3,17 @@ import Quickshell.Io
 import QtQuick
 import "IconTheme.js" as IconTheme
 
-// Vigilante del tema de iconos de KDE.
+// Vigilante del tema de iconos.
 //
 // El tema de iconos se lee una sola vez por proceso: Qt lo carga al
-// arrancar y no vuelve a mirarlo. Así que, cuando KDE cambia de tema, la
-// única forma de que los iconos cambien es reiniciar la shell.
+// arrancar y no vuelve a mirarlo. Así que, cuando el tema cambia, la única
+// forma de que los iconos cambien es reiniciar la shell.
 //
-// Este servicio vigila kdeglobals, compara el valor de [Icons] Theme con el
-// que ya conoce y, si ha cambiado de verdad, reinicia la shell:
+// El tema lo pone KDE en las sesiones Plasma, en kdeglobals. Bajo niri el
+// tema lo fija el config de niri y la shell busca ella misma los iconos, sin
+// reiniciar.
+//
+// Cuando el tema de KDE cambia, la shell se reinicia:
 //   - bajo systemd, la unidad de la shell, mediante una unidad transitoria
 //     que vive fuera de su cgroup, para que el reinicio no se mate a sí
 //     mismo a media faena;
@@ -47,6 +50,7 @@ Item {
     }
 
     function scheduleCheck() {
+        globals.reload();
         debounce.restart();
     }
 
@@ -141,10 +145,7 @@ Item {
         printErrors: false
 
         onLoaded: root.checkTheme()
-        onFileChanged: {
-            reload();
-            root.scheduleCheck();
-        }
+        onFileChanged: root.scheduleCheck()
     }
 
     // Red de seguridad: si la vigilancia del archivo se pierde, el sondeo

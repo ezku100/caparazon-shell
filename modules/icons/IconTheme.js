@@ -12,12 +12,12 @@
 var ICONS_SECTION = "icons";
 var THEME_KEY = "theme";
 
-// Valor de la clave Theme de la sección [Icons]; "" si no está.
+// Valor de una clave dentro de una sección. "" si no está.
 //
-// KConfig reescribe el archivo entero cuando cambia algo, así que una
-// lectura puede encontrar la sección a medio escribir: en ese caso no hay
-// tema y la shell se queda con el que ya tenía.
-function iconTheme(text) {
+// KConfig reescribe el archivo entero cuando cambia algo, así que una lectura
+// puede encontrar la sección a medio escribir: en ese caso no hay valor y la
+// shell se queda con el que ya tenía.
+function readKey(text, sectionName, keyName) {
     var raw = typeof text === "string" ? text : "";
     var lines = raw.split("\n");
     var section = "";
@@ -38,13 +38,13 @@ function iconTheme(text) {
             continue;
         }
 
-        if (section !== ICONS_SECTION)
+        if (section !== sectionName.toLowerCase())
             continue;
 
         var equals = line.indexOf("=");
         if (equals === -1)
             continue;
-        if (line.slice(0, equals).trim().toLowerCase() !== THEME_KEY)
+        if (line.slice(0, equals).trim().toLowerCase() !== keyName.toLowerCase())
             continue;
 
         result = line.slice(equals + 1).trim();
@@ -54,6 +54,11 @@ function iconTheme(text) {
     if (result.length >= 2 && result.charAt(0) === "\"" && result.charAt(result.length - 1) === "\"")
         result = result.slice(1, result.length - 1);
     return result;
+}
+
+// Valor de la clave Theme de la sección [Icons]; "" si no está.
+function iconTheme(text) {
+    return readKey(text, ICONS_SECTION, THEME_KEY);
 }
 
 // Qué tema queda como referencia y si hay que reiniciar la shell.
