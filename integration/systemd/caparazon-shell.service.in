@@ -1,0 +1,16 @@
+[Unit]
+Description=Caparazón (shell de escritorio)
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+Type=exec
+ExecStart=@SHELL_LAUNCHER@
+Environment=PATH=@BIN_DIR@:/usr/local/bin:/usr/bin:/bin
+Environment=QT_QPA_PLATFORMTHEME=kde
+Restart=on-failure
+RestartSec=2
+TimeoutStopSec=10
+
+[Install]
+WantedBy=default.target

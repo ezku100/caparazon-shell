@@ -18,6 +18,8 @@ AUTOSTART_DIR="$CONFIG_HOME/autostart"
 BIN_DIR="$HOME/.local/bin"
 UPDATE_CONF="$CONFIG_HOME/caparazon/update.conf"
 KWIN_DIR="$HOME/.local/share/kwin/scripts/ezkudesktops/contents/code"
+APP_THEME_SOURCE_DIR="$REPO/integration/theme/app-theme"
+APP_THEME_CONFIG_DIR="$CONFIG_HOME/caparazon/app-theme"
 
 ACCENT_THEME_REPO="${ACCENT_THEME_REPO:-https://github.com/ezku100/accent-theme.git}"
 ACCENT_THEME_SOURCE="${ACCENT_THEME_SOURCE:-$DATA_HOME/accent-theme/source}"
@@ -177,6 +179,12 @@ install_bridge() {
         "$KWIN_DIR/main.js"
 }
 
+install_app_theme_assets() {
+    mkdir -p "$APP_THEME_CONFIG_DIR/templates" "$APP_THEME_CONFIG_DIR/templates.d"
+    cp -Rf "$APP_THEME_SOURCE_DIR/templates/." "$APP_THEME_CONFIG_DIR/templates/"
+    cp -Rf "$APP_THEME_SOURCE_DIR/templates.d/." "$APP_THEME_CONFIG_DIR/templates.d/"
+}
+
 install_niri_config() {
     # Sólo si no hay config de niri: nunca pisar ~/.config/niri/config.kdl.
     local source="$REPO/integration/niri/config.kdl"
@@ -286,9 +294,6 @@ install_autostart() {
     if [ ! -x "$SHELL_DIR/scripts/caparazon-shell" ]; then
         echo "AVISO: falta $SHELL_DIR/scripts/caparazon-shell o no es ejecutable" >&2
     fi
-    sed -e "s|@SHELL_PATH@|$SHELL_DIR|g" \
-        "$REPO/integration/autostart/caparazon.desktop.in" \
-        > "$AUTOSTART_DIR/caparazon.desktop"
     sed -e "s|@HOME@|$HOME|g" \
         "$REPO/integration/autostart/ezku-desktops-bridge.desktop.in" \
         > "$AUTOSTART_DIR/ezku-desktops-bridge.desktop"
@@ -297,9 +302,39 @@ install_autostart() {
         > "$AUTOSTART_DIR/caparazon-guardian.desktop"
 }
 
+install_shell_service() {
+    local shell_path="$1"
+    echo "Instalando el servicio de la shell"
+    local unit_dir="$CONFIG_HOME/systemd/user"
+    local unit_path="$unit_dir/caparazon-shell.service"
+    mkdir -p "$unit_dir"
+    sed -e "s|@SHELL_LAUNCHER@|$shell_path/scripts/caparazon-shell|g" \
+        -e "s|@BIN_DIR@|$BIN_DIR|g" \
+        "$REPO/integration/systemd/caparazon-shell.service.in" \
+        > "$unit_path"
+    chmod 644 "$unit_path"
+    systemctl --user daemon-reload \
+        || echo "AVISO: no se pudo recargar systemd --user" >&2
+    # El arranque deja de ser un .desktop de autostart: ahora lo manda
+    # systemd, que sobrevive a una actualización del repo.
+    rm -f "$AUTOSTART_DIR/caparazon.desktop"
+    systemctl --user disable --now app-caparazon@autostart.service >/dev/null 2>&1 \
+        || true
+    systemctl --user enable --now caparazon-shell.service \
+        || echo "AVISO: no se pudo habilitar caparazon-shell.service" >&2
+}
+
 existing_shell_dir() {
+    local unit="$CONFIG_HOME/systemd/user/caparazon-shell.service"
     local autostart="$AUTOSTART_DIR/caparazon.desktop"
     local path
+    if [ -f "$unit" ]; then
+        path="$(sed -n 's|^ExecStart=\(.*\)/scripts/caparazon-shell$|\1|p' "$unit" | head -n 1)"
+        if [ -n "$path" ] && [ -f "$path/shell.qml" ]; then
+            printf '%s\n' "$path"
+            return 0
+        fi
+    fi
     [ -f "$autostart" ] || return 1
     path="$(sed -n 's/.*quickshell -p \([^ ]*\).*/\1/p' "$autostart" | head -n 1)"
     # Arranque con el lanzador (aplica la escala): sale la ruta del script.
@@ -447,6 +482,7 @@ validate_palette() {
 }
 
 install_theme() {
+    install_app_theme_assets
     if ! is_kde_session; then
         echo "El motor accent-theme es exclusivo de KDE/Plasma: se omite."
         echo "       La shell usara su paleta Material por defecto (matugen no hace falta)."
@@ -478,6 +514,8 @@ remove_caparazon_theme() {
     rm -rf "$ACCENT_THEME_TEMPLATE_DIR" \
         "$ACCENT_THEME_TEMPLATE_DIR_OLED" \
         "$ACCENT_THEME_TEMPLATE_DIR_PERLA"
+    rm -rf "$APP_THEME_CONFIG_DIR"
+    rm -f "$CONFIG_HOME/caparazon/app-theme.json"
     rm -f "${ACCENT_THEME_PALETTES[@]}"
     if [ -L "$CACHE_HOME/caparazon" ]; then
         rm -f "$CACHE_HOME/caparazon"
@@ -495,6 +533,8 @@ uninstall_theme() {
 
 uninstall() {
     echo "Quitando Caparazon"
+    systemctl --user disable --now caparazon-shell.service >/dev/null 2>&1 || true
+    rm -f "$CONFIG_HOME/systemd/user/caparazon-shell.service"
     rm -rf "$SHELL_DIR"
     rm -f "$AUTOSTART_DIR/caparazon.desktop"
     rm -f "$AUTOSTART_DIR/ezku-desktops-bridge.desktop"
@@ -537,7 +577,7 @@ case "$COMMAND" in
         EXISTING_SHELL_DIR="$(existing_shell_dir || true)"
         if [ -n "$EXISTING_SHELL_DIR" ] && [ "$EXISTING_SHELL_DIR" != "$SHELL_DIR" ]; then
             echo "Reutilizando la shell de $EXISTING_SHELL_DIR"
-            echo "No se crea una copia en $SHELL_DIR ni se toca el arranque automatico"
+            echo "No se crea una copia en $SHELL_DIR"
             if [ -f "$EXISTING_SHELL_DIR/scripts/caparazon-shell" ]; then
                 chmod 755 "$EXISTING_SHELL_DIR/scripts/caparazon-shell"
             fi
@@ -547,6 +587,7 @@ case "$COMMAND" in
             install_autostart
             ACTIVE_SHELL_DIR="$SHELL_DIR"
         fi
+        install_shell_service "$ACTIVE_SHELL_DIR"
         install_scale
         install_shortcut "$ACTIVE_SHELL_DIR"
         refresh_shortcut_hint

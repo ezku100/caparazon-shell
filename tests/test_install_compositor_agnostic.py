@@ -99,11 +99,12 @@ def test_the_installer_works_on_niri_without_kde_tools(tmp_path: Path) -> None:
     assert (home / ".config" / "quickshell" / "caparazon" / "shell.qml").is_file()
     assert (home / ".local" / "bin" / "caparazon-wm").is_file()
     assert (home / ".local" / "bin" / "caparazon-shell-ipc").is_file()
-    # El arranque automático no está limitado a KDE.
-    autostart = (home / ".config" / "autostart" / "caparazon.desktop").read_text(
-        encoding="utf-8",
-    )
-    assert "OnlyShowIn=KDE" not in autostart
+    # El arranque automático no está limitado a KDE: lo lleva un servicio.
+    unit = (
+        home / ".config" / "systemd" / "user" / "caparazon-shell.service"
+    ).read_text(encoding="utf-8")
+    assert "OnlyShowIn=KDE" not in unit
+    assert "Type=exec" in unit
     # Y no se tocan las piezas exclusivas de Plasma.
     assert not (home / ".config" / "kglobalshortcutsrc").exists()
     assert not (home / ".local" / "share" / "accent-theme").exists()
@@ -225,3 +226,29 @@ def test_the_installer_mentions_papirus_only_when_it_is_missing(
         assert "sudo apt install papirus-icon-theme" not in result.stdout
     else:
         assert "sudo apt install papirus-icon-theme" in result.stdout
+
+
+def test_installer_copies_app_theme_assets_on_niri(tmp_path: Path) -> None:
+    if shutil.which("bash") is None:
+        pytest.skip("bash no disponible")
+    environ = isolated_environment(tmp_path, desktop="niri")
+
+    result = run_installer(environ, answers="y\n")
+
+    assert result.returncode == 0, result.stderr
+    target = tmp_path / "home" / ".config" / "caparazon" / "app-theme"
+    assert (target / "templates" / "gtk3-colors.css.tmpl").is_file()
+    assert (target / "templates.d" / "caparazon-app-gtk3.toml").is_file()
+
+
+def test_installer_does_not_register_app_theme_templates(tmp_path: Path) -> None:
+    if shutil.which("bash") is None:
+        pytest.skip("bash no disponible")
+    environ = isolated_environment(tmp_path, desktop="niri")
+
+    result = run_installer(environ, answers="y\n")
+
+    assert result.returncode == 0, result.stderr
+    descriptors = tmp_path / "home" / ".config" / "accent-theme" / "templates.d"
+    assert not descriptors.exists()
+    assert "accent-theme" in result.stdout

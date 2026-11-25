@@ -356,6 +356,26 @@ caparazon-wm icon-theme --set Papirus        # aplica uno
 En Plasma nada de esto se toca: el tema lo pone KDE y la shell lo sigue como
 siempre.
 
+#### Tema de aplicaciones en niri
+
+En niri no hay Plasma que repinte GTK y Qt cuando cambia el color de acento.
+Eso lo resuelve el motor `accent-theme`: generates la paleta desde el
+wallpaper de Waywallen y escribe los colores de GTK 3/4, de Qt y de
+`kdeglobals`. La shell sólo sigue lo que pone KDE:
+
+```bash
+caparazon-wm theme status      # estado del tema automático (JSON)
+caparazon-wm kde-theme-sync    # lleva a niri y a GTK los temas de KDE
+```
+
+Cuando KDE cambia el tema de iconos o el de cursor, el vigilante lee
+`kdeglobals`, propaga el cambio a niri y a GTK y reinicia la shell, que carga
+los iconos una sola vez al arrancar. No hace falta tocar nada en el submenú:
+**Niri configs** sólo tiene monitores y teclado.
+
+El comando `caparazon-wm app-theme` sigue disponible para Diagnostics y
+scripts; el submenú ya no lo usa.
+
 #### Atajos de teclado en niri
 
 Vienen en el bloque `binds` de `integration/niri/config.kdl`:

@@ -48,5 +48,14 @@ case "$compositor" in
         ;;
 esac
 
+export QT_QPA_PLATFORMTHEME="${QT_QPA_PLATFORMTHEME:-kde}"
+
+# Bajo systemd la shell va en primer plano: systemd la gestiona y la puede
+# reiniciar. Fuera de systemd se daemoniza, como siempre.
+if [ -n "${INVOCATION_ID:-}" ]; then
+    exec env MALLOC_ARENA_MAX=2 MALLOC_TRIM_THRESHOLD_=131072 mesa_glthread=false \
+        quickshell -p "$shell_dir"
+fi
+
 exec env MALLOC_ARENA_MAX=2 MALLOC_TRIM_THRESHOLD_=131072 mesa_glthread=false \
     quickshell -p "$shell_dir" -d
