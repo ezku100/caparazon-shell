@@ -174,6 +174,7 @@ install_bridge() {
     install -m755 "$REPO/integration/bin/caparazon-guardian.sh" "$BIN_DIR/"
     install -m755 "$REPO/integration/bin/caparazon-wm.py" "$BIN_DIR/caparazon-wm"
     install -m755 "$REPO/integration/bin/caparazon-shell-ipc.sh" "$BIN_DIR/caparazon-shell-ipc"
+    install -m755 "$REPO/integration/bin/caparazon-shell-path.sh" "$BIN_DIR/caparazon-shell-path"
     install -m644 \
         "$REPO/integration/kwin/ezkudesktops/contents/code/main.js" \
         "$KWIN_DIR/main.js"
@@ -272,7 +273,7 @@ install_scale() {
     # El arranque automático sigue siendo el de siempre (env ... quickshell):
     # si este drop-in falta o el fichero no existe, systemd arranca igual con
     # escala 1, así que nunca puede dejar la shell sin arrancar.
-    local dropin_dir="$CONFIG_HOME/systemd/user/app-caparazon@autostart.service.d"
+    local dropin_dir="$CONFIG_HOME/systemd/user/caparazon-shell.service.d"
     echo "Preparando la escala de la interfaz"
     mkdir -p "$dropin_dir"
     cat > "$dropin_dir/scale.conf" <<'EOF'
@@ -546,6 +547,7 @@ uninstall() {
     rm -f "$BIN_DIR/caparazon-update.sh"
     rm -f "$BIN_DIR/caparazon-wm"
     rm -f "$BIN_DIR/caparazon-shell-ipc"
+    rm -f "$BIN_DIR/caparazon-shell-path"
     rm -f "$UPDATE_CONF"
     rm -rf "$HOME/.local/share/kwin/scripts/ezkudesktops"
     remove_shortcut

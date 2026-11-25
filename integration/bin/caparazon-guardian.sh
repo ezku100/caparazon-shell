@@ -14,18 +14,21 @@
 # arranque automático del usuario y no escribe nada en disco.
 set -u
 
-SERVICE="${CAPARAZON_SERVICE:-app-caparazon@autostart.service}"
+SERVICE="${CAPARAZON_SERVICE:-caparazon-shell.service}"
 RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
-AUTOSTART="$HOME/.config/autostart/caparazon.desktop"
 
-# La ruta de la shell es la del arranque automático real del usuario.
-SHELL_PATH="$(sed -n 's/.*quickshell -p \([^ ]*\).*/\1/p' "$AUTOSTART" 2>/dev/null | head -n 1)"
-# Arranque con el lanzador (aplica la escala): sale la ruta del script.
-if [ -z "$SHELL_PATH" ]; then
-    SHELL_PATH="$(sed -n 's|^Exec=\(.*\)/scripts/caparazon-shell$|\1|p' "$AUTOSTART" 2>/dev/null | head -n 1)"
+# La ruta de la shell la dice la unit que la arranca.
+SELF="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+HELPER="$SELF/caparazon-shell-path.sh"
+if [ ! -x "$HELPER" ]; then
+    HELPER="$(command -v caparazon-shell-path 2>/dev/null || true)"
+fi
+SHELL_PATH=""
+if [ -n "$HELPER" ] && [ -x "$HELPER" ]; then
+    SHELL_PATH="$("$HELPER" 2>/dev/null || true)"
 fi
 if [ -z "$SHELL_PATH" ]; then
-    echo "caparazon-guardian: no encuentro la ruta de la shell en $AUTOSTART" >&2
+    echo "caparazon-guardian: no encuentro la ruta de la shell de Caparazon" >&2
     exit 1
 fi
 

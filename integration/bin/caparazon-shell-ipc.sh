@@ -3,49 +3,33 @@
 #
 # La ruta de la shell viva no es fija: install.sh la deja en
 # ~/.config/quickshell/caparazon, pero un clon anterior puede seguir
-# arrancándose desde su propio directorio. Por eso se lee la ruta real
-# del lanzador de arranque automático y, si no hay, se usa la de XDG.
+# arrancándose desde su propio directorio. La busca caparazon-shell-path.sh,
+# que mira primero la unit systemd que la arranca y, si no hay, el arranque
+# automático antiguo.
 set -euo pipefail
 
-CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
-AUTOSTART_FILE="$CONFIG_HOME/autostart/caparazon.desktop"
-FALLBACK_SHELL_DIR="$CONFIG_HOME/quickshell/caparazon"
+SELF="$(command -v "$0" 2>/dev/null || printf '%s' "$0")"
+SELF_DIR="$(cd "$(dirname "$SELF")" && pwd)"
+HELPER="$SELF_DIR/caparazon-shell-path.sh"
+if [ ! -x "$HELPER" ]; then
+    HELPER="$(command -v caparazon-shell-path 2>/dev/null || true)"
+fi
 
-shell_dir() {
-    if [ -r "$AUTOSTART_FILE" ]; then
-        local detected launcher
-        detected="$(sed -n 's|.*quickshell -p \([^ ]*\).*|\1|p' "$AUTOSTART_FILE" | head -n 1)"
-        if [ -n "$detected" ] && [ -f "$detected/shell.qml" ]; then
-            printf '%s\n' "$detected"
-            return 0
-        fi
-
-        launcher_path="$(sed -n 's|^Exec=[[:space:]]*\([^ ]*/scripts/caparazon-shell\)[[:space:]]*$|\1|p' "$AUTOSTART_FILE" | head -n 1)"
-        if [ -n "$launcher_path" ] && [ -f "$launcher_path" ]; then
-            detected="$(cd "$(dirname "$launcher_path")/.." && pwd)"
-            if [ -f "$detected/shell.qml" ]; then
-                printf '%s\n' "$detected"
-                return 0
-            fi
-        fi
-    fi
-    if [ -f "$FALLBACK_SHELL_DIR/shell.qml" ]; then
-        printf '%s\n' "$FALLBACK_SHELL_DIR"
-        return 0
-    fi
-    return 1
-}
+if [ -z "$HELPER" ] || [ ! -x "$HELPER" ]; then
+    echo "caparazon-shell-ipc: no encuentro caparazon-shell-path.sh" >&2
+    exit 1
+fi
 
 if [ "$#" -eq 0 ]; then
     echo "uso: caparazon-shell-ipc <menu|menu2|power> <abrir|cerrar|alternar> [categoria]" >&2
     exit 2
 fi
 
-target_dir="$(shell_dir || true)"
+target_dir="$("$HELPER" || true)"
 if [ -z "$target_dir" ]; then
     echo "caparazon-shell-ipc: no encuentro la shell de Caparazon" >&2
-    echo "  revisado: $AUTOSTART_FILE" >&2
-    echo "  revisado: $FALLBACK_SHELL_DIR" >&2
+    echo "  revisado: ${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user/caparazon-shell.service" >&2
+    echo "  revisado: ${XDG_CONFIG_HOME:-$HOME/.config}/autostart/caparazon.desktop" >&2
     exit 1
 fi
 

@@ -89,6 +89,11 @@ def _write_exec(path: Path, body: str) -> None:
     path.chmod(path.stat().st_mode | stat.S_IXUSR)
 
 
+def _write_fake_systemctl(fake_bin: Path) -> None:
+    """systemd que falla: el test no debe ver la unit real del sistema."""
+    _write_exec(fake_bin / "systemctl", "#!/bin/sh\nexit 1\n")
+
+
 def test_the_ipc_wrapper_uses_the_live_shell_path(tmp_path: Path) -> None:
     if shutil.which("bash") is None:
         pytest.skip("bash no disponible")
@@ -104,6 +109,50 @@ def test_the_ipc_wrapper_uses_the_live_shell_path(tmp_path: Path) -> None:
     log = tmp_path / "quickshell.log"
     fake_bin = tmp_path / "bin"
     fake_bin.mkdir()
+    _write_fake_systemctl(fake_bin)
+    _write_exec(
+        fake_bin / "quickshell",
+        f'#!/bin/sh\necho "$*" >> "{log}"\n',
+    )
+    env = os.environ.copy()
+    env["HOME"] = str(tmp_path / "home")
+    env["PATH"] = str(fake_bin) + os.pathsep + env.get("PATH", "")
+
+    result = subprocess.run(  # noqa: S603
+        ["bash", str(IPC_WRAPPER), "menu", "toggle"],  # noqa: S607
+        capture_output=True,
+        text=True,
+        env=env,
+        timeout=30,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    recorded = log.read_text(encoding="utf-8")
+    assert f"-p {shell_dir} ipc call menu toggle" in recorded
+
+
+def test_the_ipc_wrapper_resolves_the_systemd_unit(tmp_path: Path) -> None:
+    """La shell la arranca el servicio: el IPC la busca ahí primero."""
+    if shutil.which("bash") is None:
+        pytest.skip("bash no disponible")
+    shell_dir = tmp_path / "repo"
+    scripts_dir = shell_dir / "scripts"
+    scripts_dir.mkdir(parents=True)
+    (shell_dir / "shell.qml").write_text("// shell\n", encoding="utf-8")
+    launcher = scripts_dir / "caparazon-shell"
+    _write_exec(launcher, "#!/bin/sh\nexit 0\n")
+
+    unit_dir = tmp_path / "home" / ".config" / "systemd" / "user"
+    unit_dir.mkdir(parents=True)
+    (unit_dir / "caparazon-shell.service").write_text(
+        f"[Service]\nExecStart={launcher}\n",
+        encoding="utf-8",
+    )
+    log = tmp_path / "quickshell.log"
+    fake_bin = tmp_path / "bin"
+    fake_bin.mkdir()
+    _write_fake_systemctl(fake_bin)
     _write_exec(
         fake_bin / "quickshell",
         f'#!/bin/sh\necho "$*" >> "{log}"\n',
@@ -145,6 +194,7 @@ def test_the_ipc_wrapper_resolves_the_launcher_autostart(tmp_path: Path) -> None
     log = tmp_path / "quickshell.log"
     fake_bin = tmp_path / "bin"
     fake_bin.mkdir()
+    _write_fake_systemctl(fake_bin)
     _write_exec(
         fake_bin / "quickshell",
         f'#!/bin/sh\necho "$*" >> "{log}"\n',
@@ -172,6 +222,7 @@ def test_the_ipc_wrapper_fails_when_the_shell_is_missing(tmp_path: Path) -> None
         pytest.skip("bash no disponible")
     fake_bin = tmp_path / "bin"
     fake_bin.mkdir()
+    _write_fake_systemctl(fake_bin)
     _write_exec(fake_bin / "quickshell", "#!/bin/sh\nexit 0\n")
     env = os.environ.copy()
     env["HOME"] = str(tmp_path / "home")

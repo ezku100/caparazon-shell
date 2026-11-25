@@ -2,15 +2,17 @@
 # Repara el arranque de Caparazón cuando la shell no aparece.
 #
 # Hace lo que haría alguien a mano: comprobar el lanzador, arreglar permisos,
-# dejar el arranque automático apuntando a esta carpeta, recargar systemd,
-# reiniciar la shell y, si no arranca, dejar el error a la vista.
+# dejar el servicio apuntando a esta carpeta, recargar systemd, reiniciar la
+# shell y, si no arranca, dejar el error a la vista.
 set -u
 
-SERVICE="app-caparazon@autostart.service"
-AUTOSTART="${XDG_CONFIG_HOME:-$HOME/.config}/autostart/caparazon.desktop"
+SERVICE="caparazon-shell.service"
+SYSTEMD_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
+UNIT="$SYSTEMD_DIR/caparazon-shell.service"
 REPORT="$HOME/caparazon-repair.log"
 shell_dir="$(cd "$(dirname "$0")/.." && pwd)"
 launcher="$shell_dir/scripts/caparazon-shell"
+HELPER="$shell_dir/integration/bin/caparazon-shell-path.sh"
 
 exec > >(tee "$REPORT") 2>&1
 
@@ -18,10 +20,11 @@ say() {
     printf '%s\n' "$*"
 }
 
-rewrite_autostart() {
-    mkdir -p "$(dirname "$AUTOSTART")"
-    sed -e "s|@SHELL_PATH@|$shell_dir|g" \
-        "$shell_dir/integration/autostart/caparazon.desktop.in" > "$AUTOSTART"
+rewrite_service() {
+    mkdir -p "$SYSTEMD_DIR"
+    sed -e "s|@SHELL_LAUNCHER@|$launcher|g" \
+        -e "s|@BIN_DIR@|$HOME/.local/bin|g" \
+        "$shell_dir/integration/systemd/caparazon-shell.service.in" > "$UNIT"
 }
 
 say "== Caparazon: reparacion =="
@@ -36,16 +39,16 @@ fi
 chmod 755 "$launcher" 2>/dev/null
 say "Lanzador: $(stat -c '%A' "$launcher" 2>/dev/null)"
 
-if [ ! -f "$AUTOSTART" ]; then
-    say "No habia arranque automatico: lo creo."
-    rewrite_autostart
+if [ ! -f "$UNIT" ]; then
+    say "No habia servicio: lo creo."
+    rewrite_service
 else
-    exec_line="$(sed -n 's/^Exec=//p' "$AUTOSTART" | head -n 1)"
+    exec_line="$(sed -n 's|^ExecStart=||p' "$UNIT" | head -n 1)"
     if [ "$exec_line" = "$launcher" ]; then
-        say "Arranque automatico: correcto."
+        say "Servicio: correcto."
     else
-        say "Arranque automatico: apuntaba a '$exec_line'; lo corrijo."
-        rewrite_autostart
+        say "Servicio: apuntaba a '$exec_line'; lo corrijo."
+        rewrite_service
     fi
 fi
 
@@ -77,3 +80,4 @@ journalctl --user -u "$SERVICE" -n 12 --no-pager 2>/dev/null | tail -n 12
 say "--- ejecucion directa (aqui sale el error real) ---"
 timeout 8 quickshell -p "$shell_dir" 2>&1 | tail -n 25
 say "== fin: manda el fichero $REPORT =="
+

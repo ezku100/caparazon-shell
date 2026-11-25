@@ -191,15 +191,18 @@ def test_installer_does_not_duplicate_an_existing_shell(tmp_path: Path) -> None:
     environ = isolated_environment(tmp_path, engine_repository=engine)
     home = tmp_path / "home"
     existing = home / "Projects" / "caparazon-shell"
-    _ = existing.mkdir(parents=True)
+    (existing / "scripts").mkdir(parents=True)
     _ = (existing / "shell.qml").write_text(
         "// shell del clon\n",
         encoding="utf-8",
     )
-    autostart = home / ".config" / "autostart" / "caparazon.desktop"
-    _ = autostart.parent.mkdir(parents=True)
-    _ = autostart.write_text(
-        f"[Desktop Entry]\nExec=quickshell -p {existing} -d\n",
+    launcher = existing / "scripts" / "caparazon-shell"
+    _ = launcher.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+    launcher.chmod(0o755)
+    unit_dir = home / ".config" / "systemd" / "user"
+    unit_dir.mkdir(parents=True)
+    _ = (unit_dir / "caparazon-shell.service").write_text(
+        f"[Service]\nExecStart={launcher}\n",
         encoding="utf-8",
     )
 
@@ -210,7 +213,10 @@ def test_installer_does_not_duplicate_an_existing_shell(tmp_path: Path) -> None:
         existing / "shell.qml"
     ).read_text(encoding="utf-8") == "// shell del clon\n"
     assert not (home / ".config" / "quickshell" / "caparazon").exists()
-    assert str(existing) in autostart.read_text(encoding="utf-8")
+    unit = (
+        home / ".config" / "systemd" / "user" / "caparazon-shell.service"
+    ).read_text(encoding="utf-8")
+    assert str(existing) in unit
 
 
 def test_installer_registers_the_global_menu_shortcut(tmp_path: Path) -> None:
