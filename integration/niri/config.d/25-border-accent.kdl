@@ -1,0 +1,11 @@
+// Generado por accent-theme: el borde de niri sigue el acento de la shell.
+// No editar a mano; el motor lo reescribe en cada cambio de tema.
+layout {
+    border {
+        on
+        width 4
+        active-color "#3daee9"
+        inactive-color "#18465d"
+        urgent-color "#cc4444"
+    }
+}

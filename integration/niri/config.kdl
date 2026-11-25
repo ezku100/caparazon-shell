@@ -9,12 +9,6 @@ environment {
 layout {
     gaps 16
 
-    border {
-        width 2
-        active-color "#8ab4f8"
-        inactive-color "#3c4043"
-    }
-
     focus-ring {
         width 0
     }
@@ -106,3 +100,7 @@ binds {
     Mod+O repeat=false { toggle-overview; }
     Mod+Shift+Slash { show-hotkey-overlay; }
 }
+
+// El borde de las ventanas lo publica accent-theme con el acento de la
+// shell: la ventana activa se ciñe a ese color.
+include "config.d/25-border-accent.kdl"

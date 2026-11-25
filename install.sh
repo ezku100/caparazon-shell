@@ -210,6 +210,12 @@ install_niri_config() {
     echo "Instalando el dotfile de niri en $target"
     mkdir -p "$(dirname "$target")"
     install -m644 "$source" "$target"
+    # El config incluye config.d/: el borde lo publica accent-theme ahí.
+    local snippets="$REPO/integration/niri/config.d"
+    if [ -d "$snippets" ]; then
+        mkdir -p "$CONFIG_HOME/niri/config.d"
+        install -m644 "$snippets"/*.kdl "$CONFIG_HOME/niri/config.d/"
+    fi
     if command -v niri >/dev/null 2>&1; then
         niri validate -c "$target"
     fi

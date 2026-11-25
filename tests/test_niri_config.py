@@ -10,6 +10,7 @@ import pytest
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 CONFIG = REPOSITORY_ROOT / "integration" / "niri" / "config.kdl"
+INSTALLER = REPOSITORY_ROOT / "install.sh"
 
 
 def test_niri_config_validates() -> None:
@@ -32,6 +33,21 @@ def test_niri_config_has_effects() -> None:
     assert "shadow" in contents
     assert "geometry-corner-radius" in contents
     assert "animations" in contents
+
+
+def test_niri_config_takes_the_border_from_accent_theme() -> None:
+    """El borde lo publica el motor con el acento de la shell."""
+    contents = CONFIG.read_text(encoding="utf-8")
+
+    assert 'include "config.d/25-border-accent.kdl"' in contents
+    assert "open-maximized" in contents
+
+
+def test_the_installer_copies_the_niri_snippets() -> None:
+    """Sin copiar config.d/, el include del config quedaría roto."""
+    contents = INSTALLER.read_text(encoding="utf-8")
+
+    assert "integration/niri/config.d" in contents
 
 
 def test_niri_config_does_not_blur_all_quickshell_layers() -> None:
