@@ -6,6 +6,7 @@ arranque automático; los tres tienen que hablar del mismo fichero.
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
@@ -39,9 +40,9 @@ def test_the_panel_writes_the_scale_file_and_restarts() -> None:
     assert 'ThemeStyle.configDir + "/scale.env"' in contents
     assert "QT_SCALE_FACTOR=" in contents
     assert "function setScale(key)" in contents
-    assert 'os.replace(tmp, path)' in contents
-    assert "systemctl --user restart app-caparazon@autostart.service" in contents
-    assert "app-caparazon@autostart.service.d/scale.conf" in contents
+    assert "os.replace(tmp, path)" in contents
+    assert "systemctl --user restart caparazon-shell.service" in contents
+    assert "caparazon-shell.service.d/scale.conf" in contents
     assert '"setsid", "sh", "-c"' in contents
 
 
@@ -65,12 +66,13 @@ def test_the_installer_adds_the_scale_dropin() -> None:
     contents = INSTALLER.read_text(encoding="utf-8")
 
     assert "EnvironmentFile=-%h/.config/caparazon/scale.env" in contents
-    assert "app-caparazon@autostart.service.d" in contents
+    assert "caparazon-shell.service.d" in contents
     assert "install_scale" in contents
 
 
 def test_the_installer_and_guardian_still_find_the_shell() -> None:
-    marker = "/scripts/caparazon-shell$"
+    """Los dos descubren la shell por el servicio, no por el .desktop."""
+    marker = "caparazon-shell-path.sh"
 
     assert marker in INSTALLER.read_text(encoding="utf-8")
     assert marker in GUARDIAN.read_text(encoding="utf-8")
@@ -85,14 +87,12 @@ def test_the_installer_keeps_the_launcher_executable() -> None:
 
 def test_the_repair_script_fixes_the_launch() -> None:
     """Un solo comando para quien no quiere tocar systemd a mano."""
-    import os
-
     script = REPOSITORY_ROOT / "scripts" / "caparazon-repair"
     contents = script.read_text(encoding="utf-8")
 
     assert os.access(script, os.X_OK)
     assert "chmod 755" in contents
-    assert "rewrite_autostart" in contents
+    assert "rewrite_service" in contents
     assert "daemon-reload" in contents
     assert "quickshell -p" in contents
 

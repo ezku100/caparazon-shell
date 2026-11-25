@@ -310,7 +310,7 @@ Flickable {
             ThemeStyle.configDir + "/scale.env",
             key,
             ThemeStyle.configDir + "/../systemd/user/"
-                + "app-caparazon@autostart.service.d/scale.conf"
+                + "caparazon-shell.service.d/scale.conf"
         ];
         scaleWriter.running = true;
     }
@@ -902,7 +902,7 @@ Flickable {
         id: shellRestart
         command: [
             "setsid", "sh", "-c",
-            "sleep 0.5; systemctl --user daemon-reload; systemctl --user restart app-caparazon@autostart.service"
+            "sleep 0.5; systemctl --user daemon-reload; systemctl --user restart caparazon-shell.service"
         ]
     }
 
