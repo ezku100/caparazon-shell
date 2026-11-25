@@ -23,11 +23,23 @@ HELPER="$SELF/caparazon-shell-path.sh"
 if [ ! -x "$HELPER" ]; then
     HELPER="$(command -v caparazon-shell-path 2>/dev/null || true)"
 fi
+
+# Al inicio de sesión la shell puede tardar en aparecer: el guardián espera
+# en vez de rendirse y dejar la sesión sin vigilancia.
+wait_for_shell() {
+    local deadline=$((SECONDS + 60))
+    while [ "$SECONDS" -lt "$deadline" ]; do
+        if [ -n "$HELPER" ] && [ -x "$HELPER" ]; then
+            SHELL_PATH="$("$HELPER" 2>/dev/null || true)"
+        fi
+        [ -n "$SHELL_PATH" ] && return 0
+        sleep 1
+    done
+    return 1
+}
+
 SHELL_PATH=""
-if [ -n "$HELPER" ] && [ -x "$HELPER" ]; then
-    SHELL_PATH="$("$HELPER" 2>/dev/null || true)"
-fi
-if [ -z "$SHELL_PATH" ]; then
+if ! wait_for_shell; then
     echo "caparazon-guardian: no encuentro la ruta de la shell de Caparazon" >&2
     exit 1
 fi
@@ -44,11 +56,17 @@ while true; do
     # hay ni barra ni menús, así que si lleva ~30 s ausente se relanza.
     if [ -n "$pid" ]; then
         missing_polls=0
+    elif systemctl --user is-active "$SERVICE" >/dev/null 2>&1; then
+        # systemd está levantando la shell: el proceso aún no aparece.
+        missing_polls=0
     else
         missing_polls=$((missing_polls + 1))
         if [ "$missing_polls" -ge "$missing_limit" ]; then
             missing_polls=0
-            if ! systemctl --user restart "$SERVICE" 2>/dev/null; then
+            if systemctl --user cat "$SERVICE" >/dev/null 2>&1; then
+                # La shell la trae el servicio: se reinicia, no se duplica.
+                systemctl --user restart "$SERVICE" 2>/dev/null || true
+            else
                 setsid sh "$SHELL_PATH/scripts/caparazon-shell" >/dev/null 2>&1 &
             fi
         fi

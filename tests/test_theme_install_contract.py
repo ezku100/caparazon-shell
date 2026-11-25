@@ -219,6 +219,24 @@ def test_installer_does_not_duplicate_an_existing_shell(tmp_path: Path) -> None:
     assert str(existing) in unit
 
 
+def test_installer_removes_stale_autostart_entries(tmp_path: Path) -> None:
+    """Un resto del ``.desktop`` en autostart abre una segunda shell."""
+    if shutil.which("git") is None:
+        pytest.skip("git no disponible")
+    engine = make_fake_engine(tmp_path)
+    environ = isolated_environment(tmp_path, engine_repository=engine)
+    home = tmp_path / "home"
+    autostart = home / ".config" / "autostart"
+    autostart.mkdir(parents=True)
+    stale = autostart / "caparazon.desktop.bak.20260101-000000"
+    _ = stale.write_text("[Desktop Entry]\n", encoding="utf-8")
+
+    result = run_installer("instalar", environ)
+
+    assert result.returncode == 0, result.stderr
+    assert not stale.exists()
+
+
 def test_installer_registers_the_global_menu_shortcut(tmp_path: Path) -> None:
     if shutil.which("git") is None:
         pytest.skip("git no disponible")

@@ -50,6 +50,33 @@ esac
 
 export QT_QPA_PLATFORMTHEME="${QT_QPA_PLATFORMTHEME:-kde}"
 
+# Al inicio de sesión el socket de Wayland puede tardar: si Quickshell
+# arranca antes, muere con "no Qt platform plugin could be initialized" y
+# systemd reinicia la unit, dejando el arranque a medias.
+wait_for_wayland() {
+    runtime="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+    deadline=$(( $(date +%s) + 60 ))
+    while [ "$(date +%s)" -lt "$deadline" ]; do
+        if [ -n "${WAYLAND_DISPLAY:-}" ] && [ -S "$runtime/$WAYLAND_DISPLAY" ]; then
+            return 0
+        fi
+        if [ -z "${WAYLAND_DISPLAY:-}" ]; then
+            for sock in "$runtime"/wayland-*; do
+                if [ -S "$sock" ]; then
+                    WAYLAND_DISPLAY="$(basename "$sock")"
+                    export WAYLAND_DISPLAY
+                fi
+            done
+        fi
+        sleep 0.2
+    done
+    return 0
+}
+
+if [ -n "${WAYLAND_DISPLAY:-}" ] || [ -z "${DISPLAY:-}" ]; then
+    wait_for_wayland
+fi
+
 # Bajo systemd la shell va en primer plano: systemd la gestiona y la puede
 # reiniciar. Fuera de systemd se daemoniza, como siempre.
 if [ -n "${INVOCATION_ID:-}" ]; then

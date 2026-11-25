@@ -303,6 +303,20 @@ install_autostart() {
         > "$AUTOSTART_DIR/caparazon-guardian.desktop"
 }
 
+stop_stale_app_units() {
+    # systemd convierte cada .desktop de autostart en una unit app-*: un
+    # resto del arranque antiguo (por ejemplo un .bak) abriría una segunda
+    # shell junto a la del servicio.
+    local unit
+    while IFS= read -r unit; do
+        [ -n "$unit" ] || continue
+        systemctl --user disable --now "$unit" >/dev/null 2>&1 || true
+    done < <(
+        systemctl --user list-units --all --no-legend --plain 'app-caparazon*' \
+            2>/dev/null | cut -d' ' -f1
+    )
+}
+
 install_shell_service() {
     local shell_path="$1"
     echo "Instalando el servicio de la shell"
@@ -314,11 +328,12 @@ install_shell_service() {
         "$REPO/integration/systemd/caparazon-shell.service.in" \
         > "$unit_path"
     chmod 644 "$unit_path"
-    systemctl --user daemon-reload \
-        || echo "AVISO: no se pudo recargar systemd --user" >&2
     # El arranque deja de ser un .desktop de autostart: ahora lo manda
     # systemd, que sobrevive a una actualización del repo.
-    rm -f "$AUTOSTART_DIR/caparazon.desktop"
+    stop_stale_app_units
+    rm -f "$AUTOSTART_DIR"/caparazon.desktop*
+    systemctl --user daemon-reload \
+        || echo "AVISO: no se pudo recargar systemd --user" >&2
     systemctl --user disable --now app-caparazon@autostart.service >/dev/null 2>&1 \
         || true
     systemctl --user enable --now caparazon-shell.service \

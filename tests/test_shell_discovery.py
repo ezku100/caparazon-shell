@@ -136,3 +136,29 @@ def test_the_scale_dropin_targets_the_new_service() -> None:
 
     assert "caparazon-shell.service.d" in contents
     assert "app-caparazon@autostart.service.d" not in contents
+
+
+def test_the_installer_cleans_stale_autostart_entries() -> None:
+    """Un ``.desktop.bak`` en autostart lo图表 systemd como app y duplica la shell."""
+    contents = INSTALLER.read_text(encoding="utf-8")
+
+    assert 'rm -f "$AUTOSTART_DIR"/caparazon.desktop*' in contents
+    assert "stop_stale_app_units" in contents
+
+
+def test_the_launcher_waits_for_wayland() -> None:
+    """Si el socket aún no está, Quickshell muere y systemd reinicia la unit."""
+    launcher = REPOSITORY_ROOT / "scripts" / "caparazon-shell"
+    contents = launcher.read_text(encoding="utf-8")
+
+    assert "wait_for_wayland" in contents
+    assert "WAYLAND_DISPLAY" in contents
+
+
+def test_the_guardian_waits_and_never_duplicates_the_shell() -> None:
+    """El guardián espera a la shell y, si hay servicio, no lanza una copia."""
+    contents = GUARDIAN.read_text(encoding="utf-8")
+
+    assert "wait_for_shell" in contents
+    assert 'systemctl --user is-active "$SERVICE"' in contents
+    assert 'systemctl --user cat "$SERVICE"' in contents
