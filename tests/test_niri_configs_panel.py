@@ -23,46 +23,41 @@ def test_the_panel_has_a_category_header() -> None:
     assert "font.weight: Font.DemiBold" in contents
 
 
-def test_the_panel_registers_its_sections() -> None:
+def test_the_panel_has_no_theme_sections() -> None:
     contents = PANEL.read_text(encoding="utf-8")
 
-    assert "readonly property var sections: [" in contents
-    assert '{ key: "iconos", label: "Iconos" }' in contents
-    assert '{ key: "cursor", label: "Cursor" }' in contents
-    assert '{ key: "monitores", label: "Monitores" }' not in contents
+    assert "readonly property var sections: [" not in contents
+    assert '{ key: "iconos", label: "Iconos" }' not in contents
+    assert '{ key: "cursor", label: "Cursor" }' not in contents
 
 
-def test_the_panel_uses_the_shared_segmented_choice() -> None:
+def test_the_panel_has_no_segmented_choice() -> None:
     contents = PANEL.read_text(encoding="utf-8")
 
-    assert "SegmentedChoice" in contents
-    assert "options: root.sections" in contents
-    assert "value: root.tab" in contents
-    assert "onPicked: (key) => root.tab = key" in contents
+    assert "SegmentedChoice" not in contents
+    assert "options: root.sections" not in contents
+    assert "value: root.tab" not in contents
 
 
-def test_the_panel_resolves_each_section_to_a_component() -> None:
+def test_the_panel_resolves_no_section_to_a_component() -> None:
     contents = PANEL.read_text(encoding="utf-8")
 
-    assert "function componentFor(key)" in contents
-    assert 'if (key === "cursor")' in contents
-    assert "return cursorComponent" in contents
-    assert "return iconComponent" in contents
-    assert "sourceComponent: root.componentFor(root.tab)" in contents
-    assert 'if (key === "monitores")' not in contents
+    assert "function componentFor(key)" not in contents
+    assert "return cursorComponent" not in contents
+    assert "return iconComponent" not in contents
 
 
-def test_the_wrapper_defaults_to_the_icon_tab() -> None:
+def test_the_panel_has_no_default_tab() -> None:
     contents = PANEL.read_text(encoding="utf-8")
 
-    assert 'property string tab: "iconos"' in contents
+    assert 'property string tab: "iconos"' not in contents
 
 
-def test_the_wrapper_mounts_both_panels() -> None:
+def test_the_panel_mounts_no_theme_panel() -> None:
     contents = PANEL.read_text(encoding="utf-8")
 
-    assert "IconThemePanel" in contents
-    assert "CursorThemePanel" in contents
+    assert "IconThemePanel" not in contents
+    assert "CursorThemePanel" not in contents
 
 
 def test_the_wrapper_has_no_custom_tabs() -> None:
@@ -87,14 +82,12 @@ def test_the_panel_mounts_monitors_as_a_separate_section() -> None:
     assert "sourceComponent: monitorComponent" in contents
     assert 'text: "Monitores"' in contents
     assert "Theme.m3OutlineVariant" in contents
-    assert contents.index("id: monitorsHost") < contents.index("id: panelHost")
+    assert contents.index("id: monitorsHost") < contents.index("id: keyboardHost")
 
 
 def test_the_panel_sizes_its_sections_to_their_content() -> None:
     contents = PANEL.read_text(encoding="utf-8")
 
-    assert "id: panelLoader" in contents
-    assert "height: panelLoader.item ? panelLoader.item.implicitHeight" in contents
     assert "id: monitorsLoader" in contents
     assert (
         "height: monitorsLoader.item ? monitorsLoader.item.implicitHeight"
@@ -114,13 +107,11 @@ def test_the_wrapper_mounts_the_monitors_panel() -> None:
     assert "MonitorsPanel" in contents
 
 
-def test_the_panel_orders_monitors_keyboard_and_themes() -> None:
+def test_the_panel_orders_monitors_and_keyboard() -> None:
     contents = PANEL.read_text(encoding="utf-8")
     assert "id: monitorsHost" in contents
     assert "id: keyboardHost" in contents
-    assert "id: panelHost" in contents
     assert contents.index("id: monitorsHost") < contents.index("id: keyboardHost")
-    assert contents.index("id: keyboardHost") < contents.index("id: panelHost")
 
 
 def test_the_panel_mounts_the_keyboard_panel() -> None:
@@ -128,3 +119,18 @@ def test_the_panel_mounts_the_keyboard_panel() -> None:
     assert "KeyboardLayoutPanel" in contents
     assert "id: keyboardComponent" in contents
     assert "sourceComponent: keyboardComponent" in contents
+
+
+def test_the_theme_is_not_part_of_the_panel() -> None:
+    contents = PANEL.read_text(encoding="utf-8")
+    assert '{ key: "tema", label: "Tema" }' not in contents
+    assert 'if (key === "tema")' not in contents
+    assert "return appThemeComponent" not in contents
+
+
+def test_the_manual_app_theme_panel_is_gone() -> None:
+    contents = PANEL.read_text(encoding="utf-8")
+    assert "AppThemePanel" not in contents
+    assert "appThemeComponent" not in contents
+    assert "id: themeHost" not in contents
+    assert "id: themeLoader" not in contents

@@ -4,19 +4,6 @@ import "../../theme"
 Flickable {
     id: root
 
-    property string tab: "iconos"
-
-    readonly property var sections: [
-        { key: "iconos", label: "Iconos" },
-        { key: "cursor", label: "Cursor" }
-    ]
-
-    function componentFor(key) {
-        if (key === "cursor")
-            return cursorComponent;
-        return iconComponent;
-    }
-
     clip: true
     contentWidth: width
     contentHeight: body.implicitHeight
@@ -101,49 +88,10 @@ Flickable {
             color: Theme.m3OutlineVariant
         }
 
-        Text {
+        Rectangle {
             width: parent.width
-            text: "Sección"
-            color: Theme.textDim
-            font.family: Theme.fontUI
-            font.pixelSize: 11
-        }
-
-        SegmentedChoice {
-            width: parent.width
-            options: root.sections
-            value: root.tab
-            onPicked: (key) => root.tab = key
-        }
-
-        Item {
-            id: panelHost
-
-            width: parent.width
-            height: panelLoader.item ? panelLoader.item.implicitHeight : 0
-
-            Loader {
-                id: panelLoader
-
-                anchors.fill: parent
-                sourceComponent: root.componentFor(root.tab)
-            }
-        }
-    }
-
-    Component {
-        id: iconComponent
-
-        IconThemePanel {
-            anchors.fill: parent
-        }
-    }
-
-    Component {
-        id: cursorComponent
-
-        CursorThemePanel {
-            anchors.fill: parent
+            height: 1
+            color: Theme.m3OutlineVariant
         }
     }
 

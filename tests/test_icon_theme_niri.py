@@ -13,8 +13,6 @@ from pathlib import Path
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 COMPOSITOR_SERVICE = REPOSITORY_ROOT / "modules" / "icons" / "CompositorService.qml"
 ICONS_QMLDIR = REPOSITORY_ROOT / "modules" / "icons" / "qmldir"
-ICON_THEME_PANEL = REPOSITORY_ROOT / "modules" / "secondmenu" / "IconThemePanel.qml"
-CURSOR_THEME_PANEL = REPOSITORY_ROOT / "modules" / "secondmenu" / "CursorThemePanel.qml"
 SECOND_MENU = REPOSITORY_ROOT / "modules" / "secondmenu" / "SecondMenu.qml"
 WATCHER = REPOSITORY_ROOT / "modules" / "icons" / "IconThemeWatcher.qml"
 ICON_RESOLVER = REPOSITORY_ROOT / "modules" / "icons" / "IconResolver.qml"
@@ -41,35 +39,12 @@ def test_the_compositor_service_exposes_the_niri_flag() -> None:
     assert '"niri"' in contents
 
 
-def test_the_icon_panel_reads_and_writes_through_the_cli() -> None:
-    contents = ICON_THEME_PANEL.read_text(encoding="utf-8")
+def test_the_niri_configs_panel_has_no_theme_panels() -> None:
+    panel = REPOSITORY_ROOT / "modules" / "secondmenu" / "NiriConfigsPanel.qml"
+    contents = panel.read_text(encoding="utf-8")
 
-    assert '"caparazon-wm"' in contents
-    assert '"icon-theme"' in contents
-    assert '"--set"' in contents
-
-
-def test_the_icon_panel_does_not_write_configuration_files() -> None:
-    contents = ICON_THEME_PANEL.read_text(encoding="utf-8")
-
-    assert ".icons/default" not in contents
-    assert "FileView" not in contents
-
-
-def test_the_niri_theme_panels_have_no_nested_scroll() -> None:
-    for path in (ICON_THEME_PANEL, CURSOR_THEME_PANEL):
-        contents = path.read_text(encoding="utf-8")
-
-        assert "GridView" not in contents
-        assert "Grid {" in contents
-        assert "interactive" not in contents
-        assert "implicitHeight: footer.y + footer.height + 8" in contents
-
-
-def test_the_icon_panel_does_not_announce_a_restart() -> None:
-    contents = ICON_THEME_PANEL.read_text(encoding="utf-8")
-
-    assert "reinici" not in contents
+    assert "IconThemePanel" not in contents
+    assert "CursorThemePanel" not in contents
 
 
 def test_the_icon_category_only_shows_on_niri() -> None:
