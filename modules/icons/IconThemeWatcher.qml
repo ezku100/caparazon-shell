@@ -37,6 +37,9 @@ Item {
     // Si ya se ha visto un tema real: el primero sólo fija la línea base,
     // porque el proceso ya ha arrancado con él.
     property bool baselineKnown: false
+    // Último cursor conocido y su línea base.
+    property string currentCursor: ""
+    property bool cursorBaselineKnown: false
     // Evita encolar dos reinicios por el mismo cambio.
     property bool restarting: false
 
@@ -46,7 +49,17 @@ Item {
 
     // Lee el archivo y compara el tema con el que ya conoce.
     function checkTheme() {
-        applyTheme(IconTheme.iconTheme(globals.text()));
+        const text = globals.text();
+        applyTheme(IconTheme.iconTheme(text));
+        applyCursor(IconTheme.cursorTheme(text));
+    }
+
+    function applyCursor(value) {
+        const decision = IconTheme.themeDecision(currentCursor, value, cursorBaselineKnown);
+        currentCursor = decision.theme;
+        cursorBaselineKnown = true;
+        if (decision.restart)
+            requestRestart();
     }
 
     function scheduleCheck() {
@@ -66,8 +79,7 @@ Item {
         if (restarting)
             return;
         restarting = true;
-        restartGuard.restart();
-        processState.running = true;
+        syncTheme.running = true;
     }
 
     // Reinicia la shell según dónde esté corriendo.
@@ -171,6 +183,18 @@ Item {
         id: restartGuard
         interval: 3000
         onTriggered: root.restarting = false
+    }
+
+    // Propaga a niri y a GTK los temas que pone KDE.
+    Process {
+        id: syncTheme
+
+        command: ["caparazon-wm", "kde-theme-sync"]
+
+        onExited: {
+            restartGuard.restart();
+            processState.running = true;
+        }
     }
 
     // Estado del proceso: dónde corre y con qué argumentos arrancó.

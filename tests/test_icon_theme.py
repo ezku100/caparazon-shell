@@ -55,6 +55,12 @@ def test_the_icon_theme_is_read_from_the_icons_section() -> None:
     assert_case(cases, "value_is_trimmed")
 
 
+def test_the_cursor_theme_is_read_from_the_cursor_section() -> None:
+    cases = run_cases()
+    assert_case(cases, "cursor_theme_is_read_from_the_cursor_section")
+    assert_case(cases, "missing_cursor_section_gives_empty")
+
+
 def test_a_missing_section_or_key_gives_no_theme() -> None:
     cases = run_cases()
     assert_case(cases, "missing_section_gives_empty")

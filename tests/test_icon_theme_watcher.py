@@ -63,3 +63,21 @@ def test_the_watcher_reads_the_process_state() -> None:
 
     assert "/proc/self/cgroup" in contents
     assert "/proc/$PPID/cmdline" in contents
+
+
+def test_the_watcher_also_watches_the_cursor_theme() -> None:
+    """El cursor lo pone KDE en kdeglobals, igual que los iconos."""
+    contents = WATCHER.read_text(encoding="utf-8")
+
+    assert "IconTheme.cursorTheme" in contents
+    assert "currentCursor" in contents
+    assert "cursorBaselineKnown" in contents
+
+
+def test_the_watcher_syncs_the_kde_themes_before_restarting() -> None:
+    """Los temas de KDE se llevan a niri y a GTK antes de reiniciar."""
+    contents = WATCHER.read_text(encoding="utf-8")
+
+    assert "kde-theme-sync" in contents
+    sync = contents.index("kde-theme-sync")
+    assert sync < contents.index("processState.running = true")

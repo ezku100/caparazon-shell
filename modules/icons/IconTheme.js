@@ -9,6 +9,8 @@
 //
 // El estado es ninguno: cada función devuelve su resultado.
 
+var CURSOR_SECTION = "cursor";
+var CURSOR_KEY = "theme";
 var ICONS_SECTION = "icons";
 var THEME_KEY = "theme";
 
@@ -57,6 +59,10 @@ function readKey(text, sectionName, keyName) {
 }
 
 // Valor de la clave Theme de la sección [Icons]; "" si no está.
+function cursorTheme(text) {
+    return readKey(text, CURSOR_SECTION, CURSOR_KEY);
+}
+
 function iconTheme(text) {
     return readKey(text, ICONS_SECTION, THEME_KEY);
 }

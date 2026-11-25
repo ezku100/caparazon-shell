@@ -28,6 +28,7 @@ try {
 }
 
 const iconTheme = context.iconTheme;
+const cursorTheme = context.cursorTheme;
 const themeDecision = context.themeDecision;
 const restartCommand = context.restartCommand;
 const relaunchCommand = context.relaunchCommand;
@@ -41,6 +42,18 @@ function list(values) {
 }
 
 const cases = [
+    {
+        id: "cursor_theme_is_read_from_the_cursor_section",
+        name: "El cursor se lee de la seccion [Cursor]",
+        run: () => cursorTheme("[Cursor]\ntheme=Breeze_Cursor\n"),
+        expect: (value) => check(value === "Breeze_Cursor", String(value)),
+    },
+    {
+        id: "missing_cursor_section_gives_empty",
+        name: "Sin seccion [Cursor] no hay cursor",
+        run: () => cursorTheme("[Icons]\nTheme=Tela-dark\n"),
+        expect: (value) => check(value === "", String(value)),
+    },
     {
         id: "theme_is_read_from_the_icons_section",
         name: "El tema se lee de la seccion [Icons]",
