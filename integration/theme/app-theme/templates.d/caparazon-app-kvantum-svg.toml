@@ -1,0 +1,3 @@
+name = "caparazon-app-kvantum-svg"
+input_path = "~/.config/caparazon/app-theme/templates/kvantum.svg.tmpl"
+output_path = "~/.config/Kvantum/matugen/matugen.svg"

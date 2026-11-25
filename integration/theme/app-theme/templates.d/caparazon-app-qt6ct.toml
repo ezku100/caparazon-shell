@@ -1,0 +1,3 @@
+name = "caparazon-app-qt6ct"
+input_path = "~/.config/caparazon/app-theme/templates/qt6ct-colors.conf.tmpl"
+output_path = "~/.config/qt6ct/colors/matugen.conf"

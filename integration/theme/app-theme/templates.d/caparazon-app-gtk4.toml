@@ -1,0 +1,3 @@
+name = "caparazon-app-gtk4"
+input_path = "~/.config/caparazon/app-theme/templates/gtk4-colors.css.tmpl"
+output_path = "~/.config/gtk-4.0/colors.css"

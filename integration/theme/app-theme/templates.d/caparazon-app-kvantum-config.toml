@@ -1,0 +1,3 @@
+name = "caparazon-app-kvantum-config"
+input_path = "~/.config/caparazon/app-theme/templates/kvantum.kvconfig.tmpl"
+output_path = "~/.config/Kvantum/matugen/matugen.kvconfig"
