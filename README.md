@@ -373,8 +373,10 @@ Cuando KDE cambia el tema de iconos o el de cursor, el vigilante lee
 los iconos una sola vez al arrancar. No hace falta tocar nada en el submenú:
 **Niri configs** sólo tiene monitores y teclado.
 
-El comando `caparazon-wm app-theme` sigue disponible para Diagnostics y
-scripts; el submenú ya no lo usa.
+El comando `caparazon-wm app-theme` y `caparazon-wm app-theme --set <token>`
+siguen disponibles para Diagnostics y scripts; el submenú ya no lo usa. El
+vigilante de wallpaper es el motor `accent-theme`, que aplica la paleta a GTK
+y a Qt sin pasar por este comando.
 
 #### Atajos de teclado en niri
 

@@ -71,7 +71,8 @@ def test_readme_documents_cli_contract() -> None:
     assert "caparazon-wm app-theme --set" in text
 
 
-def test_readme_documents_future_watcher() -> None:
+def test_readme_documents_the_wallpaper_watcher() -> None:
+    """El vigilante del wallpaper es el motor accent-theme, no app-theme."""
     text = (REPOSITORY_ROOT / "README.md").read_text(encoding="utf-8")
     assert "vigilante de wallpaper" in text
-    assert "mismo comando" in text
+    assert "accent-theme" in text
