@@ -15,8 +15,11 @@ Subcomandos estables (el QML sólo invoca estos):
   workspace-switch cambia al escritorio N (1-based)
   power-profile    perfil energético actual (JSON) y --set para aplicarlo
   icon-theme       tema de iconos actual (JSON) y --set para aplicarlo
+  app-theme        tema de aplicaciones GTK/Qt en niri (JSON) y --set para aplicarlo
   cursor-theme     tema de cursor Xcursor actual (JSON) y --set para aplicarlo
   keyboard-layout  idioma de teclado actual (JSON) y --set para aplicarlo
+  theme status     estado del tema automático publicado por accent-theme (JSON)
+  kde-theme-sync   lleva a niri y a GTK los temas de iconos y cursor de KDE
   logout           cierra la sesión
 
 Detección: NIRI_SOCKET → busctl org.kde.KWin → niri msg version → kwin.
@@ -25,6 +28,7 @@ Detección: NIRI_SOCKET → busctl org.kde.KWin → niri msg version → kwin.
 from __future__ import annotations
 
 import hashlib
+import importlib
 import json
 import os
 import re
@@ -36,9 +40,14 @@ from dataclasses import dataclass
 from dataclasses import replace
 from enum import StrEnum
 from pathlib import Path
+from typing import TYPE_CHECKING
 from typing import Any
 from typing import Final
+from typing import Mapping
 from typing import Protocol
+
+if TYPE_CHECKING:
+    from types import ModuleType
 
 BUS_KWIN = "org.kde.KWin"
 
@@ -2440,6 +2449,537 @@ def monitor_apply(payload_json: str) -> int:
     return 0
 
 
+APP_THEME_TOKENS: Final[tuple[tuple[str, str], ...]] = (
+    ("surface", "surface"),
+    ("surfaceContainerLowest", "surface_container_lowest"),
+    ("surfaceContainerLow", "surface_container_low"),
+    ("surfaceContainer", "surface_container"),
+    ("surfaceContainerHigh", "surface_container_high"),
+    ("surfaceContainerHighest", "surface_container_highest"),
+    ("fgSurface", "on_surface"),
+    ("fgSurfaceVariant", "on_surface_variant"),
+    ("outline", "outline"),
+    ("outlineVariant", "outline_variant"),
+    ("primary", "primary"),
+    ("fgPrimary", "on_primary"),
+    ("secondary", "secondary"),
+    ("tertiary", "tertiary"),
+    ("error", "error"),
+    ("errorContainer", "error_container"),
+    ("fgErrorContainer", "on_error_container"),
+)
+
+APP_THEME_STYLES: Final[tuple[str, ...]] = ("material", "oled", "perla")
+APP_THEME_HEX_RE: Final[re.Pattern[str]] = re.compile(r"^#[0-9a-f]{6}$")
+APP_THEME_OWN_OUTPUTS: Final[dict[str, str]] = {
+    "caparazon-app-gtk3": ".config/gtk-3.0/colors.css",
+    "caparazon-app-gtk4": ".config/gtk-4.0/colors.css",
+    "caparazon-app-qt5ct": ".config/qt5ct/colors/matugen.conf",
+    "caparazon-app-qt6ct": ".config/qt6ct/colors/matugen.conf",
+    "caparazon-app-kvantum-config": ".config/Kvantum/matugen/matugen.kvconfig",
+    "caparazon-app-kvantum-svg": ".config/Kvantum/matugen/matugen.svg",
+}
+APP_THEME_APP_OUTPUTS: Final[dict[str, str]] = {
+    "cava-matugen": ".cache/matugen-cava-snippet",
+    "ghostty-matugen": ".config/ghostty/theme",
+    "heroic-matugen": ".config/heroic/themes/dinamico.css",
+    "kate-matugen": ".local/share/org.kde.syntax-highlighting/themes/dinamico.theme",
+    "kitty-matugen": ".config/kitty/theme.conf",
+    "konsole-matugen": ".local/share/konsole/Dinamico.colorscheme",
+    "steam-matugen": (
+        ".local/share/Steam/millennium/themes/Material-Theme/css/main/colors/"
+        "matugen.css"
+    ),
+    "zen-matugen": ".cache/matugen-zen-kde-accent.css",
+}
+
+
+@dataclass(frozen=True, slots=True)
+class AppThemePaths:
+    home: Path
+    config_home: Path
+    cache_home: Path
+    data_home: Path
+    style_file: Path
+    palette_file: Path
+    selection_file: Path
+    templates_dir: Path
+    descriptors_dir: Path
+    matugen_config: Path
+    engine_source: Path
+
+
+def app_theme_paths(environ: Mapping[str, str]) -> AppThemePaths:
+    home = Path(environ.get("HOME", Path.home()))
+    config_home = Path(environ.get("XDG_CONFIG_HOME", home / ".config"))
+    cache_home = Path(environ.get("XDG_CACHE_HOME", home / ".cache"))
+    data_home = Path(environ.get("XDG_DATA_HOME", home / ".local/share"))
+    style = app_theme_read_style(config_home / "caparazon" / "style.json")
+    palette_name = {
+        "material": "colors.json",
+        "oled": "colors-oled.json",
+        "perla": "colors-perla.json",
+    }[style]
+    return AppThemePaths(
+        home=home,
+        config_home=config_home,
+        cache_home=cache_home,
+        data_home=data_home,
+        style_file=config_home / "caparazon" / "style.json",
+        palette_file=cache_home / "caparazon" / palette_name,
+        selection_file=config_home / "caparazon" / "app-theme.json",
+        templates_dir=config_home / "caparazon" / "app-theme" / "templates",
+        descriptors_dir=config_home / "caparazon" / "app-theme" / "templates.d",
+        matugen_config=cache_home / "caparazon" / "app-theme" / "matugen.toml",
+        engine_source=Path(
+            environ.get("ACCENT_THEME_SOURCE", data_home / "accent-theme" / "source")
+        ),
+    )
+
+
+def app_theme_read_style(path: Path) -> str:
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError, TypeError):
+        return "material"
+    style = payload.get("style") if isinstance(payload, dict) else None
+    return style if style in APP_THEME_STYLES else "material"
+
+
+def app_theme_read_palette(path: Path) -> tuple[dict[str, str], str]:
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError, TypeError) as error:
+        return {}, f"paleta no disponible: {error}"
+    if not isinstance(payload, dict):
+        return {}, "paleta inválida: se esperaba un objeto JSON"
+    errors: list[str] = []
+    palette: dict[str, str] = {}
+    for name, _ in APP_THEME_TOKENS:
+        value = payload.get(name)
+        if not isinstance(value, str) or APP_THEME_HEX_RE.fullmatch(value) is None:
+            errors.append(f"{name} inválido")
+        else:
+            palette[name] = value.lower()
+    return palette, ("paleta inválida: " + ", ".join(errors)) if errors else ""
+
+
+def app_theme_read_selection(path: Path) -> tuple[str, str]:
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError, TypeError):
+        return "", "selección no disponible"
+    token = payload.get("token") if isinstance(payload, dict) else None
+    if not isinstance(token, str) or token not in dict(APP_THEME_TOKENS):
+        return "", "selección inválida"
+    return token, ""
+
+
+class AppThemeError(RuntimeError):
+    pass
+
+
+@dataclass(frozen=True, slots=True)
+class AppThemeEngine:
+    accent: ModuleType
+    matugen: ModuleType
+    registry: ModuleType
+    apps: ModuleType
+    live: ModuleType
+
+
+def load_app_theme_engine(paths: AppThemePaths) -> AppThemeEngine:
+    source = paths.engine_source / "src"
+    if not source.is_dir():
+        raise AppThemeError("motor accent-theme no disponible")
+    source_text = str(source)
+    if source_text not in sys.path:
+        sys.path.insert(0, source_text)
+    for name in tuple(sys.modules):
+        if name == "accent_theme" or name.startswith("accent_theme."):
+            del sys.modules[name]
+    importlib.invalidate_caches()
+    try:
+        accent = importlib.import_module("accent_theme.accent")
+        matugen = importlib.import_module("accent_theme.matugen")
+        registry = importlib.import_module("accent_theme.registry")
+        apps = importlib.import_module("accent_theme.apps")
+        live = importlib.import_module("accent_theme.live")
+    except (ImportError, OSError, AttributeError) as error:
+        raise AppThemeError(f"motor accent-theme no disponible: {error}") from error
+    return AppThemeEngine(
+        accent=accent,
+        matugen=matugen,
+        registry=registry,
+        apps=apps,
+        live=live,
+    )
+
+
+def app_theme_engine_available(paths: AppThemePaths, environ: Mapping[str, str]) -> bool:
+    try:
+        engine = load_app_theme_engine(paths)
+        return engine.matugen.find_matugen(environ) is not None
+    except (AppThemeError, ImportError, OSError, AttributeError):
+        return False
+
+
+def app_theme_load_registrations(
+    engine: AppThemeEngine, paths: AppThemePaths
+) -> tuple[Any, ...]:
+    registrations: list[Any] = []
+    names: dict[str, Path] = {}
+    own_root = paths.templates_dir.resolve(strict=False)
+    for descriptor_path in sorted(paths.descriptors_dir.glob("*.toml")):
+        descriptor = engine.registry.parse_descriptor(descriptor_path)
+        name = descriptor.name
+        relative_output = APP_THEME_OWN_OUTPUTS.get(name)
+        if relative_output is None:
+            raise AppThemeError(f"descriptor propio no permitido: {name}")
+        input_path = engine.registry.expand_home_path(descriptor.input_path, paths.home)
+        output_path = engine.registry.expand_home_path(descriptor.output_path, paths.home)
+        expected_output = (paths.home / relative_output).resolve(strict=False)
+        if output_path != expected_output:
+            raise AppThemeError(f"salida no permitida: {name}")
+        if not input_path.is_file() or not input_path.is_relative_to(own_root):
+            raise AppThemeError(f"input no válido: {name}")
+        if name in names:
+            raise AppThemeError(f"descriptor duplicado: {name}")
+        names[name] = descriptor_path
+        registrations.append(
+            engine.registry.TemplateRegistration(
+                name=name,
+                input_path=input_path,
+                output_path=output_path,
+                saturation=descriptor.saturation,
+            )
+        )
+    external_dir = paths.config_home / "accent-theme" / "templates.d"
+    for descriptor_path in sorted(external_dir.glob("*.toml")):
+        descriptor = engine.registry.parse_descriptor(descriptor_path)
+        name = descriptor.name
+        relative_output = APP_THEME_APP_OUTPUTS.get(name)
+        if relative_output is None:
+            continue
+        input_path = engine.registry.expand_home_path(descriptor.input_path, paths.home)
+        output_path = engine.registry.expand_home_path(descriptor.output_path, paths.home)
+        expected_output = (paths.home / relative_output).resolve(strict=False)
+        if output_path != expected_output:
+            raise AppThemeError(f"salida no permitida: {name}")
+        if not input_path.is_file():
+            raise AppThemeError(f"input no válido: {name}")
+        if name in names:
+            raise AppThemeError(f"descriptor duplicado: {name}")
+        names[name] = descriptor_path
+        registrations.append(
+            engine.registry.TemplateRegistration(
+                name=name,
+                input_path=input_path,
+                output_path=output_path,
+                saturation=descriptor.saturation,
+            )
+        )
+    return tuple(registrations)
+
+
+def app_theme_render_config(
+    registrations: tuple[Any, ...], paths: AppThemePaths, engine: AppThemeEngine
+) -> str:
+    rendered = engine.registry.render_matugen_config(registrations)
+    _atomic_write_text(paths.matugen_config, rendered)
+    return rendered
+
+
+@dataclass(frozen=True, slots=True)
+class AppThemeToken:
+    name: str
+    hex: str
+
+    def to_json(self) -> dict[str, str]:
+        return {"name": self.name, "hex": self.hex}
+
+
+@dataclass(frozen=True, slots=True)
+class AppThemeState:
+    style: str
+    selected: str
+    engineAvailable: bool
+    tokens: tuple[AppThemeToken, ...]
+    error: str
+
+    def to_json(self) -> str:
+        return json.dumps(
+            {
+                "style": self.style,
+                "selected": self.selected,
+                "engineAvailable": self.engineAvailable,
+                "tokens": [token.to_json() for token in self.tokens],
+                "error": self.error,
+            },
+            ensure_ascii=False,
+        )
+
+
+def app_theme_accent(hex_value: str, engine: AppThemeEngine) -> Any:
+    return engine.accent.Accent(
+        red=int(hex_value[1:3], 16),
+        green=int(hex_value[3:5], 16),
+        blue=int(hex_value[5:7], 16),
+    )
+
+
+def app_theme_publish_outputs(registrations: tuple[Any, ...]) -> tuple[str, ...]:
+    staging_paths = [registration.staging_path for registration in registrations]
+    missing = [str(path) for path in staging_paths if not path.is_file()]
+    if missing:
+        raise AppThemeError("faltan salidas: " + ", ".join(missing))
+    published: list[str] = []
+    try:
+        for registration in registrations:
+            output = registration.output_path
+            output.parent.mkdir(parents=True, exist_ok=True)
+            os.replace(registration.staging_path, output)
+            published.append(str(output))
+    finally:
+        for path in staging_paths:
+            path.unlink(missing_ok=True)
+    return tuple(published)
+
+
+def app_theme_serialize_results(items: object) -> list[dict[str, str]]:
+    if not isinstance(items, (list, tuple)):
+        return []
+    return [
+        {
+            "app": str(getattr(item, "app", "")),
+            "status": str(getattr(item, "status", "")),
+            "detail": str(getattr(item, "detail", "")),
+        }
+        for item in items
+    ]
+
+
+def app_theme_apply(token: str, environ: Mapping[str, str] | None = None) -> int:
+    env = dict(os.environ if environ is None else environ)
+    if detect_compositor() != "niri":
+        sys.stderr.write("app-theme: sólo niri\n")
+        return 1
+    if token not in dict(APP_THEME_TOKENS):
+        sys.stderr.write(f"app-theme: token inválido: {token}\n")
+        return 1
+    paths = app_theme_paths(env)
+    palette, error = app_theme_read_palette(paths.palette_file)
+    if error:
+        sys.stderr.write(f"app-theme: {error}\n")
+        return 1
+    hex_value = palette[token]
+    if APP_THEME_HEX_RE.fullmatch(hex_value) is None:
+        sys.stderr.write(f"app-theme: paleta inválida: {token}\n")
+        return 1
+    if not app_theme_engine_available(paths, env):
+        sys.stderr.write("app-theme: motor accent-theme no disponible\n")
+        return 1
+    registrations: tuple[Any, ...] = ()
+    try:
+        engine = load_app_theme_engine(paths)
+        binary = engine.matugen.find_matugen(dict(env))
+        if binary is None:
+            raise AppThemeError("matugen no disponible")
+        registrations = app_theme_load_registrations(engine, paths)
+        _ = app_theme_render_config(registrations, paths, engine)
+        tokens = engine.matugen.invoke_matugen(binary, hex_value, paths.matugen_config)
+        outputs = app_theme_publish_outputs(registrations)
+        accent = app_theme_accent(hex_value, engine)
+        app_paths = engine.apps.AppPaths.from_environment(dict(env))
+        apps = engine.apps.apply_app_integrations(
+            app_paths, accent, tokens.app_environment()
+        )
+        live_paths = engine.live.LivePaths.from_environment(dict(env))
+        live = engine.live.apply_live_integrations(live_paths, hex_value, dict(env))
+        _atomic_write_text(
+            paths.selection_file, json.dumps({"token": token}) + "\n"
+        )
+    except (
+        AppThemeError,
+        ImportError,
+        OSError,
+        ValueError,
+        TypeError,
+        AttributeError,
+        RuntimeError,
+    ) as failure:
+        for registration in registrations:
+            registration.staging_path.unlink(missing_ok=True)
+        sys.stderr.write(f"app-theme: {failure}\n")
+        return 1
+    print(
+        json.dumps(
+            {
+                "style": app_theme_read_style(paths.style_file),
+                "token": token,
+                "hex": hex_value,
+                "outputs": list(outputs),
+                "apps": app_theme_serialize_results(apps),
+                "live": app_theme_serialize_results(live),
+            },
+            ensure_ascii=False,
+        )
+    )
+    return 0
+
+
+def app_theme_state(environ: Mapping[str, str] | None = None) -> AppThemeState:
+    env = dict(os.environ if environ is None else environ)
+    paths = app_theme_paths(env)
+    palette, error = app_theme_read_palette(paths.palette_file)
+    selected, _ = app_theme_read_selection(paths.selection_file)
+    tokens = tuple(
+        AppThemeToken(name, palette.get(name, "") if not error else "")
+        for name, _ in APP_THEME_TOKENS
+    )
+    return AppThemeState(
+        style=app_theme_read_style(paths.style_file),
+        selected=selected,
+        engineAvailable=app_theme_engine_available(paths, env),
+        tokens=tokens,
+        error=error,
+    )
+
+
+# --- theme status (sólo lectura) ---------------------------------------------
+
+
+def theme_state_path(environ: Mapping[str, str]) -> Path:
+    """Ruta del estado que publica el motor accent-theme."""
+    home = Path(environ.get("HOME", str(Path.home()))).expanduser()
+    cache_home = Path(environ.get("XDG_CACHE_HOME", home / ".cache")).expanduser()
+    return cache_home / "accent-theme" / "niri-state.json"
+
+
+def theme_status(environ: Mapping[str, str]) -> str:
+    """Devuelve el estado del tema automático sin modificar nada.
+
+    Nunca lanza: si el motor aún no publicó estado responde
+    ``status: missing`` y si el archivo está corrupto ``status: invalid``.
+    """
+    path = theme_state_path(environ)
+    try:
+        raw = path.read_text(encoding="utf-8")
+    except OSError:
+        return json.dumps({"source": None, "status": "missing", "path": str(path)})
+    try:
+        decoded = json.loads(raw)
+    except json.JSONDecodeError:
+        return json.dumps({"source": None, "status": "invalid", "path": str(path)})
+    if not isinstance(decoded, dict):
+        return json.dumps({"source": None, "status": "invalid", "path": str(path)})
+    state: dict[str, object] = {str(key): value for key, value in decoded.items()}
+    state.setdefault("status", "ok")
+    state["path"] = str(path)
+    return json.dumps(state)
+
+
+# --- sincronización con KDE ---------------------------------------------------
+
+
+def _config_home() -> Path:
+    """El directorio de configuración del usuario."""
+    xdg = os.environ.get("XDG_CONFIG_HOME")
+    if xdg:
+        return Path(xdg)
+    return Path.home() / ".config"
+
+
+def _ini_value(text: str, section: str, key: str) -> str:
+    """Valor de una clave dentro de una sección de un INI."""
+    current = ""
+    for raw in text.splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        if line.startswith("[") and line.endswith("]"):
+            current = line[1:-1].strip().lower()
+            continue
+        if current != section.lower():
+            continue
+        name, separator, value = line.partition("=")
+        if separator and name.strip().lower() == key.lower():
+            return value.strip()
+    return ""
+
+
+def read_kde_themes(path: Path) -> tuple[str, str]:
+    """Tema de iconos y de cursor que KDE tiene escritos."""
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return ("", "")
+    return (
+        _ini_value(text, "icons", "theme"),
+        _ini_value(text, "cursor", "theme"),
+    )
+
+
+def write_gtk_setting(path: Path, key: str, value: str) -> None:
+    """Escribe una clave del apartado [Settings] de GTK sin tocar el resto."""
+    try:
+        raw = path.read_text(encoding="utf-8")
+    except OSError:
+        raw = ""
+    lines = raw.splitlines()
+    section_index = -1
+    for index, line in enumerate(lines):
+        stripped = line.strip()
+        if stripped.startswith("[") and stripped.endswith("]"):
+            if stripped[1:-1].strip().lower() == "settings":
+                section_index = index
+                break
+    if section_index < 0:
+        lines = ["[Settings]"]
+        section_index = 0
+    replaced = False
+    for index in range(section_index + 1, len(lines)):
+        stripped = lines[index].strip()
+        if stripped.startswith("[") and stripped.endswith("]"):
+            break
+        name, separator, _ = stripped.partition("=")
+        if separator and name.strip() == key:
+            lines[index] = f"{key}={value}"
+            replaced = True
+            break
+    if not replaced:
+        lines.insert(section_index + 1, f"{key}={value}")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(path.name + ".tmp")
+    temporary.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    os.chmod(temporary, 0o644)
+    os.replace(temporary, path)
+
+
+def write_gtk_themes(key: str, value: str) -> None:
+    """Propaga un tema a GTK 3 y GTK 4."""
+    config_home = _config_home()
+    for version in ("gtk-3.0", "gtk-4.0"):
+        write_gtk_setting(config_home / version / "settings.ini", key, value)
+
+
+def kde_theme_sync() -> int:
+    """Lleva a niri y a GTK los temas de iconos y cursor que pone KDE."""
+    config_home = _config_home()
+    icons, cursor = read_kde_themes(config_home / "kdeglobals")
+    niri_session = detect_compositor() == "niri"
+    if icons:
+        if niri_session:
+            _ = write_icon_theme(icons)
+        write_gtk_themes("gtk-icon-theme-name", icons)
+    if cursor:
+        if niri_session:
+            _ = write_cursor_theme(cursor)
+            _ = reload_niri_config()
+        write_gtk_themes("gtk-cursor-theme-name", cursor)
+    return 0
+
+
 # --- main --------------------------------------------------------------------
 
 
@@ -2449,8 +2989,8 @@ def main(argv: list[str] | None = None) -> int:
         sys.stderr.write(
             "uso: caparazon-wm {detect|active-output|primary-output|monitors|"
             "workspaces|watch-workspaces|windows|watch-windows|"
-            "window-action|workspace-switch|power-profile|icon-theme|"
-            "cursor-theme|keyboard-layout|logout} [args]\n"
+            "window-action|workspace-switch|power-profile|icon-theme|app-theme|"
+            "cursor-theme|keyboard-layout|theme|logout} [args]\n"
         )
         return 2
     cmd, rest = args[0], args[1:]
@@ -2530,6 +3070,25 @@ def main(argv: list[str] | None = None) -> int:
                 return 2
             return icon_theme_apply(rest[1])
         sys.stderr.write("uso: caparazon-wm icon-theme [--set <tema>]\n")
+        return 2
+    if cmd == "app-theme":
+        if not rest:
+            print(app_theme_state().to_json())
+            return 0
+        if rest[0] == "--set":
+            if len(rest) < 2:
+                sys.stderr.write("uso: caparazon-wm app-theme --set <token>\n")
+                return 2
+            return app_theme_apply(rest[1])
+        sys.stderr.write("uso: caparazon-wm app-theme [--set <token>]\n")
+        return 2
+    if cmd == "kde-theme-sync":
+        return kde_theme_sync()
+    if cmd == "theme":
+        if rest == ["status"]:
+            print(theme_status(os.environ))
+            return 0
+        sys.stderr.write("uso: caparazon-wm theme status\n")
         return 2
     if cmd == "cursor-theme":
         if not rest:
