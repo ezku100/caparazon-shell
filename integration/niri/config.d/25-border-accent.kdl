@@ -3,7 +3,7 @@
 layout {
     border {
         on
-        width 4
+        width 2
         active-color "#3daee9"
         inactive-color "#18465d"
         urgent-color "#cc4444"
