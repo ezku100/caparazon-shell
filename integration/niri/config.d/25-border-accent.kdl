@@ -1,4 +1,5 @@
-// Generado por accent-theme: el borde de niri sigue el acento de la shell.
+// Generado por accent-theme: el borde y el fondo del overview de niri
+// siguen el acento de la shell.
 // No editar a mano; el motor lo reescribe en cada cambio de tema.
 layout {
     border {
@@ -8,4 +9,8 @@ layout {
         inactive-color "#18465d"
         urgent-color "#cc4444"
     }
+}
+
+overview {
+    backdrop-color "#18455d"
 }
