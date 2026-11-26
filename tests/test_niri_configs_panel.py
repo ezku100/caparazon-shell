@@ -81,7 +81,6 @@ def test_the_panel_mounts_monitors_as_a_separate_section() -> None:
     assert "id: monitorsHost" in contents
     assert "sourceComponent: monitorComponent" in contents
     assert 'text: "Monitores"' in contents
-    assert "Theme.m3OutlineVariant" in contents
     assert contents.index("id: monitorsHost") < contents.index("id: keyboardHost")
 
 
@@ -134,3 +133,10 @@ def test_the_manual_app_theme_panel_is_gone() -> None:
     assert "appThemeComponent" not in contents
     assert "id: themeHost" not in contents
     assert "id: themeLoader" not in contents
+
+
+def test_the_panel_leaves_no_separator_line_at_the_end() -> None:
+    """El panel no usa líneas separadoras: ninguna otra categoría las lleva."""
+    contents = PANEL.read_text(encoding="utf-8")
+
+    assert "Theme.m3OutlineVariant" not in contents

@@ -54,12 +54,6 @@ Flickable {
             }
         }
 
-        Rectangle {
-            width: parent.width
-            height: 1
-            color: Theme.m3OutlineVariant
-        }
-
         Text {
             width: parent.width
             text: "Teclado"
@@ -80,18 +74,6 @@ Flickable {
                 anchors.fill: parent
                 sourceComponent: keyboardComponent
             }
-        }
-
-        Rectangle {
-            width: parent.width
-            height: 1
-            color: Theme.m3OutlineVariant
-        }
-
-        Rectangle {
-            width: parent.width
-            height: 1
-            color: Theme.m3OutlineVariant
         }
     }
 
