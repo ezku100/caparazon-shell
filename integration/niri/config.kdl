@@ -104,3 +104,7 @@ binds {
 // El borde de las ventanas lo publica accent-theme con el acento de la
 // shell: la ventana activa se ciñe a ese color.
 include "config.d/25-border-accent.kdl"
+
+// Procesos que arrancan con la sesión: el helper que ensancha la columna
+// sola, el agente de polkit y el portal de escritorio.
+include "config.d/50-startup.kdl"

@@ -175,6 +175,7 @@ install_bridge() {
     install -m755 "$REPO/integration/bin/caparazon-wm.py" "$BIN_DIR/caparazon-wm"
     install -m755 "$REPO/integration/bin/caparazon-shell-ipc.sh" "$BIN_DIR/caparazon-shell-ipc"
     install -m755 "$REPO/integration/bin/caparazon-shell-path.sh" "$BIN_DIR/caparazon-shell-path"
+    install -m755 "$REPO/integration/bin/niri-solo-maximize" "$BIN_DIR/"
     install -m644 \
         "$REPO/integration/kwin/ezkudesktops/contents/code/main.js" \
         "$KWIN_DIR/main.js"
@@ -569,6 +570,7 @@ uninstall() {
     rm -f "$BIN_DIR/caparazon-wm"
     rm -f "$BIN_DIR/caparazon-shell-ipc"
     rm -f "$BIN_DIR/caparazon-shell-path"
+    rm -f "$BIN_DIR/niri-solo-maximize"
     rm -f "$UPDATE_CONF"
     rm -rf "$HOME/.local/share/kwin/scripts/ezkudesktops"
     remove_shortcut

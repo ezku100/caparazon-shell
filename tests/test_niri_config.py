@@ -56,3 +56,25 @@ def test_niri_config_does_not_blur_all_quickshell_layers() -> None:
 
     assert 'match namespace="quickshell"' not in contents
     assert "background-effect" not in contents
+
+
+def test_the_installer_installs_the_solo_maximize_helper() -> None:
+    """El helper que ensancha la columna sola queda instalado y se puede quitar."""
+    contents = INSTALLER.read_text(encoding="utf-8")
+
+    assert 'install -m755 "$REPO/integration/bin/niri-solo-maximize" "$BIN_DIR/"' in contents
+    assert 'rm -f "$BIN_DIR/niri-solo-maximize"' in contents
+
+
+def test_the_solo_maximize_helper_ships_with_the_shell() -> None:
+    helper = REPOSITORY_ROOT / "integration" / "bin" / "niri-solo-maximize"
+
+    assert helper.is_file()
+    assert helper.read_text(encoding="utf-8").startswith("#!/usr/bin/env python3")
+
+
+def test_the_niri_startup_launches_the_solo_maximize_helper() -> None:
+    startup = REPOSITORY_ROOT / "integration" / "niri" / "config.d" / "50-startup.kdl"
+
+    assert "niri-solo-maximize" in startup.read_text(encoding="utf-8")
+    assert 'include "config.d/50-startup.kdl"' in CONFIG.read_text(encoding="utf-8")

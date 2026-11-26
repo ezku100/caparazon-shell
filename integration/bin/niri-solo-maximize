@@ -1,0 +1,152 @@
+#!/usr/bin/env python3
+"""niri-solo-maximize
+
+Cuando un workspace tiene UNA sola columna de ventanas, la ensancha al 100%.
+En cuanto aparece una segunda columna, la primera vuelve a su ancho normal.
+
+Niri no trae esto de serie (open-maximized afecta a cada ventana al abrir, no
+mira cuántas hay), así que se resuelve escuchando el event-stream de niri.
+
+Instalar:  lo hace install.sh del caparazon-shell (~/.local/bin).
+Arranque:  spawn-sh-at-startup en config.d/50-startup.kdl
+"""
+import fcntl
+import json
+import os
+import queue
+import subprocess
+import threading
+
+SOLO_WIDTH = "100%"    # ancho de la columna cuando está sola
+NORMAL_WIDTH = "50%"   # ancho al que vuelve; igual que default-column-width
+DEBOUNCE = 0.08        # segundos de espera para agrupar eventos
+
+# app-id que nunca se deben ensanchar (diálogos, utilidades...).
+EXCLUDE_APP_IDS = set()
+
+RELEVANT = {
+    "WindowsChanged",
+    "WindowOpenedOrChanged",
+    "WindowClosed",
+    "WindowLayoutsChanged",
+    "WindowFocusChanged",
+    "WorkspaceActivated",
+}
+
+
+def run(*args):
+    return subprocess.run(args, capture_output=True, text=True)
+
+
+def windows():
+    r = run("niri", "msg", "--json", "windows")
+    try:
+        return json.loads(r.stdout)
+    except ValueError:
+        return []
+
+
+def set_width(wid, value, focused_id):
+    """Cambia el ancho de la columna de la ventana `wid`."""
+    r = run("niri", "msg", "action", "set-window-width", "--id", str(wid), value)
+    if r.returncode == 0:
+        return True
+    # Respaldo si esta versión de niri no acepta --id: usar el foco.
+    if focused_id == wid:
+        return run("niri", "msg", "action", "set-column-width", value).returncode == 0
+    if focused_id is None:
+        return False
+    run("niri", "msg", "action", "focus-window", "--id", str(wid))
+    ok = run("niri", "msg", "action", "set-column-width", value).returncode == 0
+    run("niri", "msg", "action", "focus-window", "--id", str(focused_id))
+    return ok
+
+
+# workspace_id -> ids de las ventanas de la columna que ya ensanchamos.
+solo = {}
+
+
+def reconcile():
+    wins = windows()
+    by_id = {w["id"]: w for w in wins}
+    focused = next((w["id"] for w in wins if w.get("is_focused")), None)
+
+    # workspace -> {columna: [ids]} solo con ventanas en mosaico.
+    cols = {}
+    for w in wins:
+        pos = (w.get("layout") or {}).get("pos_in_scrolling_layout")
+        ws = w.get("workspace_id")
+        if w.get("is_floating") or not pos or ws is None:
+            continue
+        if w.get("app_id") in EXCLUDE_APP_IDS:
+            continue
+        cols.setdefault(ws, {}).setdefault(pos[0], []).append(w["id"])
+
+    for ws in set(cols) | set(solo):
+        columns = cols.get(ws, {})
+
+        if len(columns) == 1:
+            ids = next(iter(columns.values()))
+            if ws in solo and solo[ws] & set(ids):
+                continue  # ya está ensanchada
+            if set_width(ids[0], SOLO_WIDTH, focused):
+                solo[ws] = set(ids)
+
+        elif len(columns) >= 2 and ws in solo:
+            # Apareció otra columna: la que estaba sola vuelve a su ancho.
+            previous = solo.pop(ws)
+            for wid in previous:
+                if wid in by_id:
+                    set_width(wid, NORMAL_WIDTH, focused)
+                    break
+
+        elif not columns:
+            solo.pop(ws, None)  # el workspace quedó vacío
+
+
+def main():
+    # Una sola instancia.
+    runtime = os.environ.get("XDG_RUNTIME_DIR", "/tmp")
+    lock = open(os.path.join(runtime, "niri-solo-maximize.lock"), "w")
+    try:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        return
+
+    events = queue.Queue()
+
+    def reader(proc):
+        for line in proc.stdout:
+            try:
+                ev = json.loads(line)
+            except ValueError:
+                continue
+            if RELEVANT & set(ev):
+                events.put(1)
+        events.put(None)  # el stream se cerró (niri terminó)
+
+    proc = subprocess.Popen(
+        ["niri", "msg", "--json", "event-stream"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        text=True,
+    )
+    threading.Thread(target=reader, args=(proc,), daemon=True).start()
+
+    reconcile()
+    while True:
+        item = events.get()
+        if item is None:
+            break
+        # Agrupa ráfagas de eventos en una sola pasada.
+        try:
+            while True:
+                if events.get(timeout=DEBOUNCE) is None:
+                    return
+        except queue.Empty:
+            pass
+        reconcile()
+
+
+if __name__ == "__main__":
+    main()

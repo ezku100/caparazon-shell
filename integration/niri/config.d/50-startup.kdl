@@ -1,0 +1,17 @@
+// ────────────────────────────────────────────────────────────────────────────
+// 50 — Procesos al inicio de sesión
+// ────────────────────────────────────────────────────────────────────────────
+// Cada línea corre una vez al arrancar niri (no al recargar la config).
+// spawn-sh-at-startup sirve para pipelines y variables como $HOME.
+
+// Ensancha al 100% la columna que queda sola en un workspace y la devuelve a
+// su ancho normal cuando aparece otra. El binario lo instala install.sh.
+spawn-sh-at-startup "exec \"$HOME/.local/bin/niri-solo-maximize\""
+
+// Agente de autenticación de KDE: los diálogos de polkit salen con el aspecto
+// de Plasma.
+spawn-at-startup "systemctl" "--user" "start" "plasma-polkit-agent.service"
+
+// Portal de GNOME: selector de archivos, impresión, capturas, permisos y
+// notificaciones para las aplicaciones.
+spawn-at-startup "systemctl" "--user" "start" "xdg-desktop-portal-gnome.service"
